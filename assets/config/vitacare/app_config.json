@@ -1,0 +1,10 @@
+{
+  "isCloud": false,
+  "brand": { "appName": "VitaCare", "logo": "assets/brand/vitacare/logo.svg" },
+  "theme": { "primary": "#0F766E", "font": "Nunito", "cornerRadius": 22 },
+  "features": { "registration": true, "faceIdLogin": true, "export": true },
+  "history": { "daysOnPhone": 7 },
+  "cloud": { "baseUrl": "https://api.example", "uploader": "flutterModule", "autoSyncDefault": "15m" },
+  "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1"],
+  "deviceProfiles": []
+}

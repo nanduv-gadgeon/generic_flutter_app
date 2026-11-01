@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "VitaCare (debug)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "debug",
+      "args": ["--dart-define=CUSTOMER=vitacare"]
+    },
+    {
+      "name": "VitaCare (profile)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "flutterMode": "profile",
+      "args": ["--dart-define=CUSTOMER=vitacare"]
+    }
+  ]
+}

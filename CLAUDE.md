@@ -1,0 +1,47 @@
+# CLAUDE.md
+
+Rules for AI assistants working in this repository.
+
+## Before planning
+
+- Read `docs/requirements.md`, `docs/architecture.md` and the task brief in `docs/tasks/`.
+- The mockup (`docs/device-monitor-mockup-v1.html`) is the visual source of truth.
+
+## Architecture
+
+- Layers: presentation → application (Riverpod) → domain → data. `core` wires them together.
+- `lib/domain` is pure Dart: no Flutter imports.
+- Screens talk only to service interfaces (`AuthService`, `DeviceService`, `ReadingRepository`, `ExportService`, `AlertEngine`, `Uploader`). They never talk to BLE, the DB or HTTP directly.
+- `isCloud` is read once. Branch on it only in `core/di`. Phase 2 code is empty hooks marked `// TODO(phase2)`.
+- With `isCloud: false` the app makes zero network calls.
+- Nothing device-specific in Dart code; devices come from the config profile.
+- Use Riverpod with code generation, go_router and freezed.
+- Keep files under 300 lines.
+- Generated files (`*.g.dart`, `*.freezed.dart`) come from `dart run build_runner build --delete-conflicting-outputs`. They are not committed.
+- Add packages only with `flutter pub add`; never type versions by hand.
+
+## Accessibility
+
+- Every button and spinner has a Semantics label.
+- Colour is never the only signal.
+
+## Security
+
+- No secrets or real data anywhere: not in code, config, tests, fixtures or docs.
+- Hash local passwords with Argon2id.
+- Use Drift + SQLCipher, with the DB key in flutter_secure_storage.
+- Never log passwords, Wi‑Fi passwords, tokens or health readings.
+- Phase 2 uses HTTPS with TLS 1.2+ only.
+
+## Tests
+
+- Every change adds unit tests (mocktail).
+- The decoder and alert rules use table-driven tests.
+
+## Way of working
+
+1. Plan first and wait for approval.
+2. Implement in small steps.
+3. Run `dart format .`, `flutter analyze` and `flutter test`.
+4. Summarise what changed.
+5. Never commit or push.

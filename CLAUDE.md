@@ -6,6 +6,7 @@ Rules for AI assistants working in this repository.
 
 - Read `docs/requirements.md`, `docs/architecture.md` and the task brief in `docs/tasks/`.
 - The mockup (`docs/device-monitor-mockup-v1.html`) is the visual source of truth.
+- Before building or changing any screen, open its screenshot: `docs/SCREENS.md` lists every screen with its file in `docs/screens/` (2× images: divide pixels by 2 for Flutter logical pixels). Match layout, spacing, sizes and colours. Theme colours, font and radii still come from the config file, never hard-coded from the image.
 
 ## Architecture
 

@@ -1,11 +1,246 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// Placeholder until the login screen is built in task 1.1.6.
-class LoginScreen extends StatelessWidget {
+import '../../application/app_config_provider.dart';
+import '../../application/auth_controller.dart';
+import '../../core/di/services.dart';
+import '../../core/theme/app_tokens.dart';
+import '../../domain/services/auth_service.dart';
+import '../../domain/services/biometric_auth.dart';
+import '../widgets/brand_header.dart';
+import '../widgets/labeled_field.dart';
+import '../widgets/password_field.dart';
+import 'biometric_offer_dialog.dart';
+
+final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+/// Email + password login, optional biometric login, links to register and forgot password.
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _logIn() async {
+    setState(() => _error = null);
+    if (!_formKey.currentState!.validate()) return;
+    await _run(() async {
+      final auth = ref.read(authControllerProvider.notifier);
+      final result = await auth.login(_email.text, _password.text);
+      if (result is! LoginSuccess) {
+        _showError('Email or password is incorrect.');
+        return;
+      }
+      var enable = false;
+      if (result.offerBiometrics && mounted) {
+        final kind = await ref.read(biometricAuthProvider).kind();
+        if (mounted) enable = await showBiometricOfferDialog(context, kind);
+      }
+      await auth.completeLogin(result.user, enableBiometrics: enable);
+    });
+  }
+
+  Future<void> _logInWithBiometrics(BiometricKind kind) async {
+    setState(() => _error = null);
+    await _run(() async {
+      final result = await ref.read(authControllerProvider.notifier).loginWithBiometrics();
+      if (result is! LoginSuccess) {
+        _showError('${_capitalised(biometricName(kind))} login did not work. Use your password.');
+      }
+    });
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    try {
+      await action();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) setState(() => _error = message);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('Login (task 1.1.6)')));
+    final config = ref.watch(appConfigProvider).requireValue;
+    final biometric = config.features.faceIdLogin ? ref.watch(biometricLoginProvider).value : null;
+
+    return Scaffold(
+      body: SafeArea(
+        // Fills the screen so "New here?" sits at the bottom; scrolls on small screens or with
+        // large text.
+        child: CustomScrollView(
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 88, 24, 32),
+                child: AutofillGroup(
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        BrandHeader(brand: config.brand),
+                        const SizedBox(height: 28),
+                        ..._fields(),
+                        if (_error case final error?) _ErrorMessage(error),
+                        const SizedBox(height: 14),
+                        _LogInButton(busy: _busy, onPressed: _logIn),
+                        if (biometric != null) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: _busy ? null : () => _logInWithBiometrics(biometric),
+                            icon: Icon(
+                              biometric == BiometricKind.face
+                                  ? Icons.face_outlined
+                                  : Icons.fingerprint,
+                            ),
+                            label: Text('Log in with ${biometricName(biometric)}'),
+                          ),
+                        ],
+                        const Spacer(),
+                        if (config.features.registration) ...[
+                          const SizedBox(height: 28),
+                          _CreateAccountLink(enabled: !_busy),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _fields() => [
+    LabeledField(
+      label: 'Email',
+      child: TextFormField(
+        controller: _email,
+        enabled: !_busy,
+        keyboardType: TextInputType.emailAddress,
+        autofillHints: const [AutofillHints.email],
+        autocorrect: false,
+        textInputAction: TextInputAction.next,
+        decoration: const InputDecoration(hintText: 'you@example.com'),
+        validator: (v) =>
+            _emailPattern.hasMatch(v?.trim() ?? '') ? null : 'Enter a valid email address.',
+      ),
+    ),
+    const SizedBox(height: 14),
+    PasswordField(
+      controller: _password,
+      enabled: !_busy,
+      validator: (v) => (v ?? '').isEmpty ? 'Enter your password.' : null,
+      onSubmitted: (_) => _logIn(),
+    ),
+    Align(
+      alignment: Alignment.centerRight,
+      child: TextButton(
+        onPressed: _busy ? null : () => context.push('/forgot'),
+        child: const Text('Forgot password?'),
+      ),
+    ),
+  ];
+}
+
+class _CreateAccountLink extends StatelessWidget {
+  const _CreateAccountLink({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).extension<AppTokens>()?.muted;
+    // Wrap, not Row: goes onto two lines with large text instead of overflowing.
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text('New here?', style: TextStyle(fontSize: 15, color: muted)),
+        TextButton(
+          onPressed: enabled ? () => context.push('/register') : null,
+          style: TextButton.styleFrom(
+            textStyle: Theme.of(context).textTheme.labelLarge
+                ?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          child: const Text('Create account'),
+        ),
+      ],
+    );
   }
 }
+
+/// The main button. While busy it shows only a spinner (requirement 2.5), labelled for screen
+/// readers.
+class _LogInButton extends StatelessWidget {
+  const _LogInButton({required this.busy, required this.onPressed});
+
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      onPressed: busy ? null : onPressed,
+      child: busy
+          ? Semantics(
+              label: 'Signing in',
+              child: const SizedBox.square(
+                dimension: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+            )
+          : const Text('Log in'),
+    );
+  }
+}
+
+/// Error text with an icon, so colour is not the only signal.
+class _ErrorMessage extends StatelessWidget {
+  const _ErrorMessage(this.message);
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.error;
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: color, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(message, style: TextStyle(color: color)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _capitalised(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

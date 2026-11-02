@@ -65,4 +65,36 @@ void main() {
     expect(light.lerp(dark, 1).ok, dark.ok);
     expect(light.lerp(dark, 0.5).radius, 15);
   });
+
+  group('mockup component styles', () {
+    final theme = buildTheme(config, Brightness.light);
+    final tokens = theme.extension<AppTokens>()!;
+
+    test('fields are filled white with a light border and the small radius', () {
+      final input = theme.inputDecorationTheme;
+      final enabled = input.enabledBorder! as OutlineInputBorder;
+
+      expect(input.filled, isTrue);
+      expect(input.fillColor, tokens.surface);
+      expect(enabled.borderSide.color, tokens.border);
+      expect(enabled.borderRadius, BorderRadius.circular(12));
+      expect(
+        (input.focusedBorder! as OutlineInputBorder).borderSide.color,
+        const Color(0xFF123456),
+      );
+    });
+
+    test('outlined buttons are white with a light border and dark text', () {
+      final style = theme.outlinedButtonTheme.style!;
+
+      expect(style.backgroundColor!.resolve({}), tokens.surface);
+      expect(style.foregroundColor!.resolve({}), const Color(0xFF0F172A));
+      expect(style.side!.resolve({})!.color, tokens.border);
+    });
+
+    test('main buttons are 52 px tall', () {
+      expect(theme.filledButtonTheme.style!.minimumSize!.resolve({})!.height, 52);
+      expect(theme.outlinedButtonTheme.style!.minimumSize!.resolve({})!.height, 52);
+    });
+  });
 }

@@ -1,8 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/di/database.dart';
+
 import '../core/di/services.dart';
 import 'app_config_provider.dart';
+import 'auth_controller.dart';
 
 part 'startup_provider.g.dart';
 
@@ -19,8 +21,8 @@ class LocalDataException implements Exception {
   String toString() => 'LocalDataException: $cause';
 }
 
-/// Loads the config, opens the local database, then checks the backend (always reachable in
-/// Phase 1).
+/// Loads the config, opens the local database, checks the backend (always reachable in
+/// Phase 1), then restores a saved login session.
 ///
 /// Throws [ConfigException] or [LocalDataException]. Invalidate to retry.
 @riverpod
@@ -32,5 +34,7 @@ Future<StartupResult> startup(Ref ref) async {
     throw LocalDataException(e);
   }
   final reachable = await ref.watch(backendHealthProvider).isReachable();
-  return reachable ? StartupResult.ready : StartupResult.backendUnreachable;
+  if (!reachable) return StartupResult.backendUnreachable;
+  await ref.watch(authControllerProvider.future); // restores a saved session
+  return StartupResult.ready;
 }

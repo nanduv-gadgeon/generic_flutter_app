@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../application/startup_provider.dart';
 import '../../core/config/config_loader.dart';
 
-/// Shows a spinner while the config loads and the backend is checked, then goes to login.
+/// Shows a spinner while the config loads, the local database opens and the backend is checked,
+/// then goes to login.
 class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
@@ -18,7 +19,7 @@ class SplashScreen extends ConsumerWidget {
     final startup = ref.watch(startupProvider);
 
     final Widget body = switch (startup) {
-      AsyncError(:final error) => _ConfigError(error: error),
+      AsyncError(:final error) => _StartupError(error: error),
       AsyncData(value: StartupResult.backendUnreachable) => _Unreachable(
         onRetry: () => ref.invalidate(startupProvider),
       ),
@@ -33,22 +34,30 @@ class SplashScreen extends ConsumerWidget {
   }
 }
 
-class _ConfigError extends StatelessWidget {
-  const _ConfigError({required this.error});
+class _StartupError extends StatelessWidget {
+  const _StartupError({required this.error});
 
   final Object error;
 
   @override
   Widget build(BuildContext context) {
     final error = this.error;
+    final (message, details) = switch (error) {
+      ConfigException(:final errors) => (
+        'Could not load the app configuration.',
+        errors.join('\n'),
+      ),
+      LocalDataException(:final cause) => ("Could not open the app's local data.", '$cause'),
+      _ => ('Something went wrong while starting the app.', '$error'),
+    };
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Could not load the app configuration.', textAlign: TextAlign.center),
-        // Schema details help developers; release builds show only the message above.
-        if (kDebugMode && error is ConfigException) ...[
+        Text(message, textAlign: TextAlign.center),
+        // Details help developers; release builds show only the message above.
+        if (kDebugMode) ...[
           const SizedBox(height: 12),
-          Text(error.errors.join('\n'), style: Theme.of(context).textTheme.bodySmall),
+          Text(details, style: Theme.of(context).textTheme.bodySmall),
         ],
       ],
     );

@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/config/config_loader.dart';
+import 'package:generic_flutter_app/core/di/database.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
+import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/domain/services/backend_health.dart';
 import 'package:generic_flutter_app/presentation/splash/splash_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -16,7 +19,11 @@ import '../../fixtures/test_config.dart';
 
 class MockBackendHealth extends Mock implements BackendHealth {}
 
-Widget _app({required Future<AppConfig> Function() config, BackendHealth? health}) {
+Widget _app({
+  required Future<AppConfig> Function() config,
+  BackendHealth? health,
+  Future<AppDatabase> Function()? database,
+}) {
   final router = GoRouter(
     routes: [
       GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
@@ -26,6 +33,7 @@ Widget _app({required Future<AppConfig> Function() config, BackendHealth? health
   return ProviderScope(
     overrides: [
       appConfigProvider.overrideWith((ref) => config()),
+      appDatabaseProvider.overrideWith((ref) => (database ?? _memoryDatabase)()),
       if (health != null) backendHealthProvider.overrideWithValue(health),
     ],
     child: MaterialApp.router(routerConfig: router),
@@ -33,6 +41,12 @@ Widget _app({required Future<AppConfig> Function() config, BackendHealth? health
 }
 
 Future<AppConfig> _validConfig() async => AppConfig.fromJson(validConfigJson());
+
+Future<AppDatabase> _memoryDatabase() async {
+  final db = AppDatabase(NativeDatabase.memory());
+  addTearDown(db.close);
+  return db;
+}
 
 void main() {
   testWidgets('shows a labelled spinner while loading', (tester) async {
@@ -76,5 +90,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('login page'), findsOneWidget);
+  });
+
+  testWidgets('shows an error when the local database cannot be opened', (tester) async {
+    await tester.pumpWidget(
+      _app(config: _validConfig, database: () async => throw StateError('no key')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("Could not open the app's local data."), findsOneWidget);
+    expect(find.text('login page'), findsNothing);
   });
 }

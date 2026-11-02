@@ -43,6 +43,16 @@ flutter test
 
 CI (`.github/workflows/ci.yml`) runs the same checks on every pull request, plus a debug APK build.
 
+## Local database
+
+- The app stores accounts, the session and devices in a Drift database encrypted with SQLCipher (`lib/data/db/`).
+- SQLCipher is selected in `pubspec.yaml` under `hooks: user_defines: sqlite3: source: sqlcipher`. The binary is downloaded and sha256-checked at build time, so the first build needs internet.
+- The key is created on first launch and kept in Keychain / Keystore.
+- After changing a table:
+  1. Bump `schemaVersion` in `lib/data/db/app_database.dart`.
+  2. Run `dart run drift_dev make-migrations`. This snapshots the schema into `drift_schemas/` and, from version 2, generates migration tests in `test/drift/`.
+  3. Write the migration step and commit the new snapshot.
+
 ## Project layout
 
 | Folder | Holds |

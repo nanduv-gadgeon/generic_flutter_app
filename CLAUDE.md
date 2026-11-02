@@ -31,6 +31,7 @@ Rules for AI assistants working in this repository.
 - No secrets or real data anywhere: not in code, config, tests, fixtures or docs.
 - Hash local passwords with Argon2id.
 - Use Drift + SQLCipher, with the DB key in flutter_secure_storage.
+- Database schema change: bump `schemaVersion`, run `dart run drift_dev make-migrations`, then write the migration step and its test. Never edit files in `drift_schemas/` by hand.
 - Never log passwords, Wi‑Fi passwords, tokens or health readings.
 - Phase 2 uses HTTPS with TLS 1.2+ only.
 

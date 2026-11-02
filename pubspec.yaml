@@ -44,7 +44,6 @@ dependencies:
   web_socket_channel: ^3.0.3
   multicast_dns: ^0.3.3+1
   drift: ^2.35.3
-  sqlcipher_flutter_libs: ^0.7.0+eol
   sqlite3: ^3.8.0
   path_provider: ^2.1.6
   path: ^1.9.1
@@ -133,3 +132,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Build package:sqlite3 against SQLCipher so the local database is encrypted.
+# The hook downloads the SQLCipher binary at build time (sha256-checked); the app makes no calls.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher

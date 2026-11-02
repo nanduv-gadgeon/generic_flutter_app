@@ -5,8 +5,9 @@ Open decisions from [architecture.md](architecture.md) ("Risks and decisions nee
 | Date | Decision | Chosen | Decided by |
 | --- | --- | --- | --- |
 |  | Phase 1 forgot-password method (Face ID / passcode, or another check) |  |  |
-|  | Phase 1: one user per phone, or several local users |  |  |
+| 2026-11-02 | Phase 1: one user per phone, or several local users | Several local users; devices belong to a user | Nandu Viswanathan |
 |  | Phase 1 → Phase 2: migrate local accounts and data, or start fresh |  |  |
 |  | Phase 2 uploader: C++ cloud library (Option A) or Flutter sync module (Option B) |  |  |
 |  | Cloud API contract and backend (decided by the cloud team) |  |  |
 |  | Heartbeat interval per device, and whether each device accepts a new interval from the app |  |  |
+| 2026-11-02 | Android auto-backup of app data | Off (`android:allowBackup="false"`): the encrypted DB stays on the phone, and a restored copy would be unreadable without its Keystore key | Nandu Viswanathan |

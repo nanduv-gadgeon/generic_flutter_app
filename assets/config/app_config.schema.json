@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Customer app config",
+  "description": "One app_config.json per customer. Holds no secrets. Device profiles are checked in detail from task 1.2.3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["isCloud", "brand", "theme", "features", "history", "deviceTypes", "deviceProfiles"],
+  "properties": {
+    "isCloud": { "type": "boolean" },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["appName", "logo", "initials"],
+      "properties": {
+        "appName": { "type": "string", "minLength": 1 },
+        "logo": { "type": "string", "minLength": 1 },
+        "initials": { "type": "string", "minLength": 1, "maxLength": 2 },
+        "tagline": { "type": "string" }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "accent", "font", "cornerRadius", "cornerRadiusSmall", "mode"],
+      "properties": {
+        "primary": { "$ref": "#/definitions/hexColor" },
+        "accent": { "$ref": "#/definitions/hexColor" },
+        "font": { "type": "string", "minLength": 1 },
+        "cornerRadius": { "type": "number", "minimum": 0, "maximum": 40 },
+        "cornerRadiusSmall": { "type": "number", "minimum": 0, "maximum": 40 },
+        "mode": { "enum": ["light", "dark", "system"] }
+      }
+    },
+    "features": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registration", "faceIdLogin", "history", "export", "alerts"],
+      "properties": {
+        "registration": { "type": "boolean" },
+        "faceIdLogin": { "type": "boolean" },
+        "history": { "type": "boolean" },
+        "export": { "type": "boolean" },
+        "alerts": { "type": "boolean" }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["daysOnPhone"],
+      "properties": {
+        "daysOnPhone": { "type": "integer", "minimum": 1, "maximum": 7 }
+      }
+    },
+    "cloud": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseUrl", "environment", "uploader", "autoSyncDefault"],
+      "properties": {
+        "baseUrl": { "type": "string", "pattern": "^https://" },
+        "environment": { "enum": ["dev", "staging", "prod"] },
+        "uploader": { "enum": ["cppLibrary", "flutterModule"] },
+        "autoSyncDefault": { "enum": ["15m", "30m", "45m", "1h", "2h", "4h", "5h", "8h", "24h"] }
+      }
+    },
+    "deviceTypes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9_]+$" }
+    },
+    "deviceProfiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": { "id": { "type": "string" } }
+      }
+    }
+  },
+  "if": { "properties": { "isCloud": { "const": true } } },
+  "then": { "required": ["cloud"] },
+  "definitions": {
+    "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+  }
+}

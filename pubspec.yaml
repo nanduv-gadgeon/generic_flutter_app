@@ -92,8 +92,21 @@ flutter:
 
   # One folder per customer; only the customer being built needs to be listed.
   assets:
+    - assets/config/
     - assets/config/vitacare/
     - assets/brand/vitacare/
+
+  # Customer fonts are bundled, never downloaded, so Phase 1 makes no network calls.
+  # Flutter fails the build if a listed file is missing: add the .ttf files to
+  # assets/brand/vitacare/fonts/ (Nunito, OFL licence, from Google Fonts), then uncomment.
+  # fonts:
+  #   - family: Nunito
+  #     fonts:
+  #       - asset: assets/brand/vitacare/fonts/Nunito-Regular.ttf
+  #       - asset: assets/brand/vitacare/fonts/Nunito-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/brand/vitacare/fonts/Nunito-Bold.ttf
+  #         weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

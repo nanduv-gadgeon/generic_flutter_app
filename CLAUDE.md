@@ -9,7 +9,8 @@ Rules for AI assistants working in this repository.
 
 ## Architecture
 
-- Layers: presentation → application (Riverpod) → domain → data. `core` wires them together.
+- Layers: presentation → application (Riverpod) → domain ← data. `core` wires them together.
+- Service interfaces live in `lib/domain/services/`; implementations live in `lib/data/` and implement them. Only `core/di` creates implementations.
 - `lib/domain` is pure Dart: no Flutter imports.
 - Screens talk only to service interfaces (`AuthService`, `DeviceService`, `ReadingRepository`, `ExportService`, `AlertEngine`, `Uploader`). They never talk to BLE, the DB or HTTP directly.
 - `isCloud` is read once. Branch on it only in `core/di`. Phase 2 code is empty hooks marked `// TODO(phase2)`.

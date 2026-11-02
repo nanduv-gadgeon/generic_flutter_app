@@ -48,10 +48,11 @@ CI (`.github/workflows/ci.yml`) runs the same checks on every pull request, plus
 | Folder | Holds |
 | --- | --- |
 | `lib/core` | Config loader, dependency wiring by `isCloud`, theme, router, background jobs |
-| `lib/domain` | Models, packet decoder, alert engine, heartbeat monitor (pure Dart) |
-| `lib/data` | BLE / Wi‑Fi transports, local DB, auth, repositories, export, uploader |
+| `lib/domain` | Service interfaces (`services/`), models, packet decoder, alert engine, heartbeat monitor (pure Dart) |
+| `lib/data` | Implementations of the domain interfaces: BLE / Wi‑Fi transports, local DB, auth, repositories, export, uploader, cloud |
 | `lib/application` | Riverpod controllers and providers |
 | `lib/presentation` | Screens and shared widgets |
+| `assets/config/` | `app_config.schema.json`, checked on start-up and by `flutter test` |
 | `assets/config/<customer>` | The customer's `app_config.json` |
 | `assets/brand/<customer>` | Logo and brand images |
 | `docs/tasks` | One brief per plan task (copy `_template.md`) |

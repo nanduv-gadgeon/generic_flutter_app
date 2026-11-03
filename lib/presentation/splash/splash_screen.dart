@@ -1,13 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../application/app_config_provider.dart';
 import '../../application/startup_provider.dart';
+import '../../core/config/app_config.dart';
 import '../../core/config/config_loader.dart';
+import '../../core/theme/app_theme.dart';
+import '../widgets/brand_header.dart';
 
-/// Shows a spinner while the config loads, the local database opens and the backend is checked,
+/// Shows the brand and a spinner while the local database opens and the backend is checked,
 /// then goes to login.
+///
+/// Until the config has loaded there is no brand to show, so the first frame is a plain spinner.
+/// Errors also show on the plain background, where their text and Retry button stay readable.
 class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
@@ -17,6 +25,8 @@ class SplashScreen extends ConsumerWidget {
       if (next.value == StartupResult.ready) context.go('/login');
     });
     final startup = ref.watch(startupProvider);
+    final config = ref.watch(appConfigProvider).value;
+    if (startup.isLoading && config != null) return _BrandedSplash(config: config);
 
     final Widget body = switch (startup) {
       AsyncError(:final error) => _StartupError(error: error),
@@ -29,6 +39,49 @@ class SplashScreen extends ConsumerWidget {
     return Scaffold(
       body: Center(
         child: Padding(padding: const EdgeInsets.all(24), child: body),
+      ),
+    );
+  }
+}
+
+/// The mockup's launch screen: the splash logo and app name on the config's primary colour.
+class _BrandedSplash extends StatelessWidget {
+  const _BrandedSplash({required this.config});
+
+  final AppConfig config;
+
+  @override
+  Widget build(BuildContext context) {
+    // Primary in both modes: the splash logo is drawn for it. White is the mockup's fixed
+    // on-splash colour, not a theme colour.
+    final background = parseHex(config.theme.primary);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: background,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                BrandHeader.splash(brand: config.brand, background: background),
+                const SizedBox(height: 70),
+                Semantics(
+                  label: 'Loading',
+                  child: const SizedBox.square(
+                    dimension: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      color: Colors.white,
+                      backgroundColor: Color(0x59FFFFFF),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -7,7 +7,12 @@ import 'package:flutter/services.dart';
 /// A valid config with fake values only. Each test gets a fresh copy it can change.
 Map<String, dynamic> validConfigJson({bool isCloud = false}) => {
   'isCloud': isCloud,
-  'brand': {'appName': 'TestCo', 'logo': 'assets/brand/test/logo.svg', 'initials': 'T'},
+  'brand': {
+    'appName': 'TestCo',
+    'logoMark': 'assets/brand/test/logo_mark.svg',
+    'logoSplash': 'assets/brand/test/logo_splash.svg',
+    'initials': 'T',
+  },
   'theme': {
     'primary': '#123456',
     'accent': '#ABCDEF',

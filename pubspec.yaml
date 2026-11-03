@@ -58,6 +58,7 @@ dependencies:
   workmanager: ^0.10.10
   json_schema: ^5.2.2
   intl: ^0.20.3
+  flutter_svg: ^2.3.2
 
 dev_dependencies:
   flutter_test:
@@ -89,24 +90,25 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # One folder per customer; only the customer being built needs to be listed.
+  # assets/ holds only what the app loads at runtime. Icon and splash masters live in branding/.
+  # Only the customer being built is listed (one folder per customer; Flutter does not include
+  # sub-folders of a listed folder).
   assets:
     - assets/config/
     - assets/config/vitacare/
     - assets/brand/vitacare/
 
-  # Customer fonts are bundled, never downloaded, so Phase 1 makes no network calls.
-  # Flutter fails the build if a listed file is missing: add the .ttf files to
-  # assets/brand/vitacare/fonts/ (Nunito, OFL licence, from Google Fonts), then uncomment.
+  # Fonts are shared, one folder per family under assets/fonts/; the config's theme.font picks
+  # the family. Bundled, never downloaded, so Phase 1 makes no network calls.
   fonts:
     - family: Nunito
       fonts:
-        - asset: assets/brand/vitacare/fonts/Nunito-Regular.ttf
-        - asset: assets/brand/vitacare/fonts/Nunito-SemiBold.ttf
+        - asset: assets/fonts/Nunito/Nunito-Regular.ttf
+        - asset: assets/fonts/Nunito/Nunito-SemiBold.ttf
           weight: 600
-        - asset: assets/brand/vitacare/fonts/Nunito-Bold.ttf
+        - asset: assets/fonts/Nunito/Nunito-Bold.ttf
           weight: 700
-        - asset: assets/brand/vitacare/fonts/Nunito-ExtraBold.ttf
+        - asset: assets/fonts/Nunito/Nunito-ExtraBold.ttf
           weight: 800
 
   # An image asset can refer to one or more resolution-specific "variants", see

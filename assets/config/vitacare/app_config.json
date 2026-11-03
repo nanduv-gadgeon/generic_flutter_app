@@ -2,7 +2,8 @@
   "isCloud": false,
   "brand": {
     "appName": "VitaCare",
-    "logo": "assets/brand/vitacare/logo.svg",
+    "logoMark": "assets/brand/vitacare/logo_mark.svg",
+    "logoSplash": "assets/brand/vitacare/logo_splash.svg",
     "initials": "V",
     "tagline": "Care that stays connected"
   },

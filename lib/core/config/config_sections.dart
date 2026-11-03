@@ -8,7 +8,12 @@ part 'config_sections.g.dart';
 abstract class BrandConfig with _$BrandConfig {
   const factory BrandConfig({
     required String appName,
-    required String logo,
+
+    /// Coloured logo tile shown on login and profile.
+    required String logoMark,
+
+    /// Logo for the splash screen (drawn on the primary colour).
+    required String logoSplash,
     required String initials,
     String? tagline,
   }) = _BrandConfig;

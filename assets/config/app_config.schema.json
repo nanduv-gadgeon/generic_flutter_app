@@ -10,10 +10,11 @@
     "brand": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["appName", "logo", "initials"],
+      "required": ["appName", "logoMark", "logoSplash", "initials"],
       "properties": {
         "appName": { "type": "string", "minLength": 1 },
-        "logo": { "type": "string", "minLength": 1 },
+        "logoMark": { "$ref": "#/definitions/brandAsset" },
+        "logoSplash": { "$ref": "#/definitions/brandAsset" },
         "initials": { "type": "string", "minLength": 1, "maxLength": 2 },
         "tagline": { "type": "string" }
       }
@@ -80,6 +81,7 @@
   "if": { "properties": { "isCloud": { "const": true } } },
   "then": { "required": ["cloud"] },
   "definitions": {
-    "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" }
+    "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "brandAsset": { "type": "string", "pattern": "^assets/brand/[a-z0-9_]+/[a-z0-9_]+\\.(svg|png)$" }
   }
 }

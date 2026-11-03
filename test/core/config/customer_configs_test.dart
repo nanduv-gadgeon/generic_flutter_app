@@ -26,5 +26,17 @@ void main() {
       expect(validateConfig(json, jsonDecode(schemaSource()) as Object), isEmpty);
       expect(() => AppConfig.fromJson(json as Map<String, dynamic>), returnsNormally);
     });
+
+    test('${file.path} only names brand files that exist and are bundled', () {
+      final brand = AppConfig.fromJson(jsonDecode(file.readAsStringSync()) as Map<String, dynamic>)
+          .brand;
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+
+      for (final path in [brand.logoMark, brand.logoSplash]) {
+        expect(File(path).existsSync(), isTrue, reason: '$path is missing');
+        final folder = path.substring(0, path.lastIndexOf('/') + 1);
+        expect(pubspec, contains('- $folder'), reason: '$folder is not listed in pubspec.yaml');
+      }
+    });
   }
 }

@@ -64,9 +64,19 @@ CI (`.github/workflows/ci.yml`) runs the same checks on every pull request, plus
 | `lib/presentation` | Screens and shared widgets |
 | `assets/config/` | `app_config.schema.json`, checked on start-up and by `flutter test` |
 | `assets/config/<customer>` | The customer's `app_config.json` |
-| `assets/brand/<customer>` | Logo and brand images |
+| `assets/brand/<customer>` | In-app logos: `logo_mark.svg`, `logo_splash.svg`, `logo_letter.svg` (same names for every customer) |
+| `assets/fonts/<Family>` | Bundled font files and their licence (`OFL.txt`), shared by customers |
+| `branding/<customer>` | Source art that is not bundled in the app: app icon master (`app_icon.svg`) |
 | `docs/tasks` | One brief per plan task (copy `_template.md`) |
 | `docs/protocols` | One protocol description per device type |
+
+## Adding a customer
+
+1. `assets/config/<customer>/app_config.json`: copy an existing one and change the brand, theme and device types. `flutter test` checks it against the schema.
+2. `assets/brand/<customer>/`: add `logo_mark.svg`, `logo_splash.svg` and `logo_letter.svg`, using these exact names.
+3. `assets/fonts/<Family>/`: if the customer uses a new font, add only the weights the app uses (Regular, SemiBold, Bold, ExtraBold) plus the licence. Then add the family under `fonts:` in `pubspec.yaml`.
+4. `branding/<customer>/app_icon.svg`: the app icon master.
+5. In `pubspec.yaml`, list the customer's `assets/config/<customer>/` and `assets/brand/<customer>/` folders. Until per-customer flavors exist, list only the customer being built, so other customers' files are not shipped in its app.
 
 ## Branches and pull requests
 

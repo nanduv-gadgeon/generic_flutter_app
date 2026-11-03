@@ -11,9 +11,8 @@ import '../../domain/services/biometric_auth.dart';
 import '../widgets/brand_header.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/password_field.dart';
+import 'auth_form.dart';
 import 'biometric_offer_dialog.dart';
-
-final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
 /// Email + password login, optional biometric login, links to register and forgot password.
 class LoginScreen extends ConsumerStatefulWidget {
@@ -103,9 +102,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         BrandHeader(brand: config.brand),
                         const SizedBox(height: 28),
                         ..._fields(),
-                        if (_error case final error?) _ErrorMessage(error),
+                        if (_error case final error?) AuthErrorMessage(error),
                         const SizedBox(height: 14),
-                        _LogInButton(busy: _busy, onPressed: _logIn),
+                        AuthSubmitButton(
+                          label: 'Log in',
+                          busyLabel: 'Signing in',
+                          busy: _busy,
+                          onPressed: _logIn,
+                        ),
                         if (biometric != null) ...[
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
@@ -147,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         textInputAction: TextInputAction.next,
         decoration: const InputDecoration(hintText: 'you@example.com'),
         validator: (v) =>
-            _emailPattern.hasMatch(v?.trim() ?? '') ? null : 'Enter a valid email address.',
+            emailPattern.hasMatch(v?.trim() ?? '') ? null : 'Enter a valid email address.',
       ),
     ),
     const SizedBox(height: 14),
@@ -190,55 +194,6 @@ class _CreateAccountLink extends StatelessWidget {
           child: const Text('Create account'),
         ),
       ],
-    );
-  }
-}
-
-/// The main button. While busy it shows only a spinner (requirement 2.5), labelled for screen
-/// readers.
-class _LogInButton extends StatelessWidget {
-  const _LogInButton({required this.busy, required this.onPressed});
-
-  final bool busy;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: busy ? null : onPressed,
-      child: busy
-          ? Semantics(
-              label: 'Signing in',
-              child: const SizedBox.square(
-                dimension: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.5),
-              ),
-            )
-          : const Text('Log in'),
-    );
-  }
-}
-
-/// Error text with an icon, so colour is not the only signal.
-class _ErrorMessage extends StatelessWidget {
-  const _ErrorMessage(this.message);
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.error;
-    return Semantics(
-      liveRegion: true,
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: color, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(message, style: TextStyle(color: color)),
-          ),
-        ],
-      ),
     );
   }
 }

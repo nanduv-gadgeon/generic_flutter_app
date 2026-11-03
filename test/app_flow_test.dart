@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/app.dart';
@@ -8,6 +9,9 @@ import 'package:generic_flutter_app/core/di/database.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/domain/services/auth_service.dart';
+import 'package:generic_flutter_app/presentation/auth/mobile_number_field.dart';
+import 'package:generic_flutter_app/presentation/widgets/labeled_field.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'fixtures/fake_auth.dart';
@@ -23,11 +27,13 @@ void main() {
     when(() => service.logout()).thenAnswer((_) async {});
   });
 
-  Future<void> pumpApp(WidgetTester tester) async {
+  Future<void> pumpApp(WidgetTester tester, {bool registration = true}) async {
+    final json = validConfigJson();
+    (json['features'] as Map<String, dynamic>)['registration'] = registration;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          appConfigProvider.overrideWith((ref) async => AppConfig.fromJson(validConfigJson())),
+          appConfigProvider.overrideWith((ref) async => AppConfig.fromJson(json)),
           appDatabaseProvider.overrideWith((ref) async {
             final db = AppDatabase(NativeDatabase.memory());
             ref.onDispose(db.close);
@@ -73,5 +79,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Logged in as Test User'), findsOneWidget);
+  });
+
+  testWidgets('registering moves from login to register to home', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390, 1100)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    registerFallbackValue(
+      const RegistrationData(name: '', email: '', mobile: '', password: '', termsAccepted: true),
+    );
+    when(() => service.currentUser()).thenAnswer((_) async => null);
+    when(() => service.register(any())).thenAnswer((_) async => fakeUser);
+    when(() => service.login(any(), any())).thenAnswer((_) async => const LoginSuccess(fakeUser));
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+    final fields = {
+      'Full name': 'Test User',
+      'Email': 'test@example.com',
+      'Password': 'made-up-pw',
+      'Confirm password': 'made-up-pw',
+    };
+    for (final MapEntry(:key, :value) in fields.entries) {
+      await tester.enterText(find.widgetWithText(LabeledField, key), value);
+    }
+    await tester.enterText(
+      find.descendant(of: find.byType(MobileNumberField), matching: find.byType(TextFormField)),
+      '0000000000',
+    );
+    await tester.tap(find.byType(Checkbox));
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Logged in as Test User'), findsOneWidget);
+  });
+
+  testWidgets('with registration off, /register goes to login', (tester) async {
+    when(() => service.currentUser()).thenAnswer((_) async => null);
+    await pumpApp(tester, registration: false);
+
+    final context = tester.element(find.text('Log in'));
+    GoRouter.of(context).go('/register');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Full name'), findsNothing);
   });
 }

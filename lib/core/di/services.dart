@@ -1,0 +1,57 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../application/app_config_provider.dart';
+import '../../data/auth/argon2id_password_hasher.dart';
+import '../../data/auth/biometric_user_store.dart';
+import '../../data/auth/cloud_auth_service.dart';
+import '../../data/auth/local_auth_service.dart';
+import '../../data/auth/local_biometric_auth.dart';
+import '../../data/cloud/cloud_backend_health.dart';
+import '../../data/cloud/local_backend_health.dart';
+import '../../data/upload/cloud_uploader.dart';
+import '../../data/upload/no_uploader.dart';
+import '../../domain/services/auth_service.dart';
+import '../../domain/services/backend_health.dart';
+import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/password_hasher.dart';
+import '../../domain/services/uploader.dart';
+import 'database.dart';
+
+part 'services.g.dart';
+
+// The only place in the app that branches on isCloud. Screens and controllers read these
+// providers and never check isCloud themselves.
+//
+// `requireValue` is safe: the splash screen waits for the config before anything else runs.
+
+@Riverpod(keepAlive: true)
+Uploader uploader(Ref ref) {
+  final config = ref.watch(appConfigProvider).requireValue;
+  return config.isCloud ? CloudUploader(config.cloud!) : const NoUploader();
+}
+
+@Riverpod(keepAlive: true)
+BackendHealth backendHealth(Ref ref) {
+  final config = ref.watch(appConfigProvider).requireValue;
+  return config.isCloud ? CloudBackendHealth(config.cloud!) : const LocalBackendHealth();
+}
+
+@Riverpod(keepAlive: true)
+PasswordHasher passwordHasher(Ref ref) => const Argon2idPasswordHasher();
+
+@Riverpod(keepAlive: true)
+BiometricAuth biometricAuth(Ref ref) => LocalBiometricAuth();
+
+/// `requireValue` on the database is safe for the same reason: the splash opens it first.
+@Riverpod(keepAlive: true)
+AuthService authService(Ref ref) {
+  final config = ref.watch(appConfigProvider).requireValue;
+  if (config.isCloud) return CloudAuthService(config.cloud!);
+  return LocalAuthService(
+    db: ref.watch(appDatabaseProvider).requireValue,
+    hasher: ref.watch(passwordHasherProvider),
+    biometrics: ref.watch(biometricAuthProvider),
+    biometricUser: BiometricUserStore(const FlutterSecureStorage()),
+  );
+}

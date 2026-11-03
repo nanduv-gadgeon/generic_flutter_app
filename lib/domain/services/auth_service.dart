@@ -1,0 +1,26 @@
+import '../models/auth_user.dart';
+import '../models/login_result.dart';
+
+export '../models/auth_user.dart';
+export '../models/login_result.dart';
+
+/// Accounts and the login session. Phase 1: on the phone; Phase 2: cloud API.
+abstract interface class AuthService {
+  /// The logged-in user, restored from the saved session, or null.
+  Future<AuthUser?> currentUser();
+
+  Future<LoginResult> login(String email, String password);
+
+  Future<LoginResult> loginWithBiometrics();
+
+  /// True when some user has turned on biometric login and the phone can do it now.
+  Future<bool> canLoginWithBiometrics();
+
+  /// Turns biometric login on or off for the logged-in user.
+  Future<void> setBiometricLogin({required bool enabled});
+
+  /// Creates an account. Throws [EmailAlreadyUsedException]. Does not log in.
+  Future<AuthUser> register(RegistrationData data);
+
+  Future<void> logout();
+}

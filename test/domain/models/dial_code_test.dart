@@ -47,6 +47,31 @@ void main() {
     expect(dialCodeFor(null), isNull);
   });
 
+  test('defaultDialCode uses the region, else India', () {
+    expect(defaultDialCode('GB').iso, 'GB');
+    expect(defaultDialCode('ZZ').iso, 'IN');
+    expect(defaultDialCode(null).iso, 'IN');
+  });
+
+  // query -> ISO codes found
+  final searches = <String, Set<String>>{
+    'ind': {'IN', 'ID', 'IO'}, // India, Indonesia, British Indian Ocean Territory
+    'UNITED KINGDOM': {'GB'},
+    'gb': {'GB'},
+    '44': {'GB', 'GG', 'IM', 'JE'},
+    '+1 876': {'JM'},
+    'zzz': {},
+  };
+  for (final MapEntry(key: query, value: isos) in searches.entries) {
+    test('filterDialCodes("$query")', () {
+      expect({for (final c in filterDialCodes(query)) c.iso}, isos);
+    });
+  }
+
+  test('filterDialCodes with an empty query returns every code', () {
+    expect(filterDialCodes('  '), dialCodes);
+  });
+
   test('digitCount counts only digits', () {
     expect(dialCodeFor('IN')!.digitCount, 2);
     expect(dialCodeFor('JM')!.digitCount, 4);

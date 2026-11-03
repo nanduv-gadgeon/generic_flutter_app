@@ -10,8 +10,11 @@ import '../../domain/services/auth_service.dart';
 import '../../domain/services/biometric_auth.dart';
 import '../widgets/brand_header.dart';
 import '../widgets/labeled_field.dart';
+import '../strings/auth_strings.dart';
+import '../strings/common_strings.dart';
 import '../widgets/password_field.dart';
 import 'auth_form.dart';
+import 'auth_validators.dart';
 import 'biometric_offer_dialog.dart';
 
 /// Email + password login, optional biometric login, links to register and forgot password.
@@ -43,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final auth = ref.read(authControllerProvider.notifier);
       final result = await auth.login(_email.text, _password.text);
       if (result is! LoginSuccess) {
-        _showError('Email or password is incorrect.');
+        _showError(AuthStrings.wrongCredentials);
         return;
       }
       var enable = false;
@@ -60,7 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await _run(() async {
       final result = await ref.read(authControllerProvider.notifier).loginWithBiometrics();
       if (result is! LoginSuccess) {
-        _showError('${_capitalised(biometricName(kind))} login did not work. Use your password.');
+        _showError(AuthStrings.biometricFailed(biometricName(kind)));
       }
     });
   }
@@ -105,8 +108,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (_error case final error?) AuthErrorMessage(error),
                         const SizedBox(height: 14),
                         AuthSubmitButton(
-                          label: 'Log in',
-                          busyLabel: 'Signing in',
+                          label: AuthStrings.logIn,
+                          busyLabel: AuthStrings.signingIn,
                           busy: _busy,
                           onPressed: _logIn,
                         ),
@@ -119,7 +122,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ? Icons.face_outlined
                                   : Icons.fingerprint,
                             ),
-                            label: Text('Log in with ${biometricName(biometric)}'),
+                            label: Text(AuthStrings.logInWith(biometricName(biometric))),
                           ),
                         ],
                         const Spacer(),
@@ -141,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   List<Widget> _fields() => [
     LabeledField(
-      label: 'Email',
+      label: CommonStrings.email,
       child: TextFormField(
         controller: _email,
         enabled: !_busy,
@@ -149,23 +152,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         autofillHints: const [AutofillHints.email],
         autocorrect: false,
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: 'you@example.com'),
-        validator: (v) =>
-            emailPattern.hasMatch(v?.trim() ?? '') ? null : 'Enter a valid email address.',
+        decoration: const InputDecoration(hintText: CommonStrings.emailHint),
+        validator: AuthValidators.email,
       ),
     ),
     const SizedBox(height: 14),
     PasswordField(
       controller: _password,
       enabled: !_busy,
-      validator: (v) => (v ?? '').isEmpty ? 'Enter your password.' : null,
+      validator: AuthValidators.loginPassword,
       onSubmitted: (_) => _logIn(),
     ),
     Align(
       alignment: Alignment.centerRight,
       child: TextButton(
         onPressed: _busy ? null : () => context.push('/forgot'),
-        child: const Text('Forgot password?'),
+        child: const Text(AuthStrings.forgotPassword),
       ),
     ),
   ];
@@ -184,18 +186,16 @@ class _CreateAccountLink extends StatelessWidget {
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text('New here?', style: TextStyle(fontSize: 15, color: muted)),
+        Text(AuthStrings.newHere, style: TextStyle(fontSize: 15, color: muted)),
         TextButton(
           onPressed: enabled ? () => context.push('/register') : null,
           style: TextButton.styleFrom(
             textStyle: Theme.of(context).textTheme.labelLarge
                 ?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
           ),
-          child: const Text('Create account'),
+          child: const Text(AuthStrings.createAccount),
         ),
       ],
     );
   }
 }
-
-String _capitalised(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

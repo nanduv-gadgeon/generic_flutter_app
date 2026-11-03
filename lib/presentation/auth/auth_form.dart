@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 
 /// Pieces shared by the account screens (login, register, forgot password).
 
-/// A simple shape check; the real check is whether the account exists.
-final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
 /// The screen's main button. While busy it shows only a spinner (requirement 2.5), labelled
 /// [busyLabel] for screen readers.
 class AuthSubmitButton extends StatelessWidget {

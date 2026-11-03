@@ -130,58 +130,6 @@ void main() {
     });
   }
 
-  test('isValidNationalNumber', () {
-    final india = dialCodeFor('IN')!; // 2 digits
-    final jamaica = dialCodeFor('JM')!; // 4 digits
-    // (number, dial code) -> valid
-    final cases = {
-      ('00000 00000', india): true,
-      ('000-000-0000', india): true,
-      ('0000', india): true, // 4 digits, the minimum
-      ('000', india): false,
-      ('0000000000000', india): true, // 13 + 2 = 15, the E.164 maximum
-      ('00000000000000', india): false, // 14 + 2 = 16
-      ('00000000000', jamaica): true, // 11 + 4 = 15
-      ('000000000000', jamaica): false, // 12 + 4 = 16
-      ('+91 0000000000', india): false,
-      ('00000 abcde', india): false,
-      ('', india): false,
-    };
-    for (final MapEntry(key: (number, code), :value) in cases.entries) {
-      expect(isValidNationalNumber(number, code), value, reason: '$number $code');
-    }
-  });
-
-  test('fullMobileNumber keeps the dial code and only the digits', () {
-    expect(fullMobileNumber(dialCodeFor('IN')!, ' 00000-000 00 '), '+91 0000000000');
-    expect(fullMobileNumber(dialCodeFor('JM')!, '000 0000'), '+1 876 0000000');
-  });
-
-  test('defaultDialCode uses the region, else India', () {
-    expect(defaultDialCode(const Locale('en', 'GB')).iso, 'GB');
-    expect(defaultDialCode(const Locale('en', 'ZZ')).iso, 'IN');
-    expect(defaultDialCode(const Locale('en')).iso, 'IN');
-  });
-
-  // query -> ISO codes found
-  final searches = <String, Set<String>>{
-    'ind': {'IN', 'ID', 'IO'}, // India, Indonesia, British Indian Ocean Territory
-    'UNITED KINGDOM': {'GB'},
-    'gb': {'GB'},
-    '44': {'GB', 'GG', 'IM', 'JE'},
-    '+1 876': {'JM'},
-    'zzz': {},
-  };
-  for (final MapEntry(key: query, value: isos) in searches.entries) {
-    test('filterDialCodes("$query")', () {
-      expect({for (final c in filterDialCodes(query)) c.iso}, isos);
-    });
-  }
-
-  test('filterDialCodes with an empty query returns every code', () {
-    expect(filterDialCodes('  '), dialCodes);
-  });
-
   testWidgets('the country code starts on the phone region', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pumpRegister(tester, locale: const Locale('en', 'GB'));

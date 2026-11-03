@@ -6,12 +6,14 @@ import '../../application/auth_controller.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/models/dial_code.dart';
 import '../../domain/services/auth_service.dart';
+import '../../domain/validation/auth_rules.dart';
+import '../strings/auth_strings.dart';
+import '../strings/common_strings.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/password_field.dart';
 import 'auth_form.dart';
+import 'auth_validators.dart';
 import 'mobile_number_field.dart';
-
-const minPasswordLength = 8;
 
 /// Creates a local account; on success the user is logged in and the router goes home.
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -29,7 +31,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   // Starts on the phone's region; the user can pick another.
-  DialCode _dialCode = defaultDialCode(WidgetsBinding.instance.platformDispatcher.locale);
+  DialCode _dialCode = defaultDialCode(
+    WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+  );
   bool _busy = false;
   String? _error;
 
@@ -59,11 +63,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               termsAccepted: true,
             ),
           );
-      messenger.showSnackBar(const SnackBar(content: Text('Account created')));
+      messenger.showSnackBar(const SnackBar(content: Text(AuthStrings.accountCreated)));
     } on EmailAlreadyUsedException {
-      _showError('An account with this email already exists.');
+      _showError(AuthStrings.emailInUse);
     } catch (_) {
-      _showError('Could not create your account. Try again.');
+      _showError(AuthStrings.registerFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -96,7 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Semantics(
                     header: true,
                     child: Text(
-                      'Create account',
+                      AuthStrings.createAccount,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -105,10 +109,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    'Register to add and monitor your devices.',
-                    style: TextStyle(fontSize: 15, color: muted),
-                  ),
+                  Text(AuthStrings.registerSubtitle, style: TextStyle(fontSize: 15, color: muted)),
                   const SizedBox(height: 20),
                   ..._fields(),
                   const SizedBox(height: 14),
@@ -119,8 +120,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                   const SizedBox(height: 20),
                   AuthSubmitButton(
-                    label: 'Create account',
-                    busyLabel: 'Creating account',
+                    label: AuthStrings.createAccount,
+                    busyLabel: AuthStrings.creatingAccount,
                     busy: _busy,
                     onPressed: _register,
                   ),
@@ -135,20 +136,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   List<Widget> _fields() => [
     LabeledField(
-      label: 'Full name',
+      label: AuthStrings.fullName,
       child: TextFormField(
         controller: _name,
         enabled: !_busy,
         textCapitalization: TextCapitalization.words,
         autofillHints: const [AutofillHints.name],
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: 'Your name'),
-        validator: (v) => (v ?? '').trim().isEmpty ? 'Enter your name.' : null,
+        decoration: const InputDecoration(hintText: AuthStrings.fullNameHint),
+        validator: AuthValidators.name,
       ),
     ),
     const SizedBox(height: 14),
     LabeledField(
-      label: 'Email',
+      label: CommonStrings.email,
       child: TextFormField(
         controller: _email,
         enabled: !_busy,
@@ -156,9 +157,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         autofillHints: const [AutofillHints.email],
         autocorrect: false,
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: 'you@example.com'),
-        validator: (v) =>
-            emailPattern.hasMatch(v?.trim() ?? '') ? null : 'Enter a valid email address.',
+        decoration: const InputDecoration(hintText: CommonStrings.emailHint),
+        validator: AuthValidators.email,
       ),
     ),
     const SizedBox(height: 14),
@@ -172,20 +172,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     PasswordField(
       controller: _password,
       enabled: !_busy,
-      hint: 'At least $minPasswordLength characters',
+      hint: AuthStrings.newPasswordHint(minPasswordLength),
       autofillHints: const [AutofillHints.newPassword],
-      validator: (v) => (v ?? '').length < minPasswordLength
-          ? 'Use at least $minPasswordLength characters.'
-          : null,
+      validator: AuthValidators.newPassword,
     ),
     const SizedBox(height: 14),
     PasswordField(
       controller: _confirm,
       enabled: !_busy,
-      label: 'Confirm password',
-      hint: 'Re-enter password',
+      label: AuthStrings.confirmPassword,
+      hint: AuthStrings.confirmPasswordHint,
       autofillHints: const [AutofillHints.newPassword],
-      validator: (v) => v == _password.text ? null : 'Passwords do not match.',
+      validator: AuthValidators.confirmPassword(() => _password.text),
       onSubmitted: (_) => _register(),
     ),
   ];
@@ -201,7 +199,7 @@ class _BackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppTokens>();
     return IconButton(
-      tooltip: 'Back',
+      tooltip: CommonStrings.back,
       onPressed: onPressed,
       icon: const Icon(Icons.chevron_left, size: 24),
       style: IconButton.styleFrom(
@@ -214,7 +212,7 @@ class _BackButton extends StatelessWidget {
   }
 }
 
-/// "I agree to the Terms and Privacy Policy" (plain text until the links exist), required.
+/// The required terms checkbox (plain text until the Terms and Privacy links exist).
 class _TermsField extends StatelessWidget {
   const _TermsField({required this.enabled});
 
@@ -225,7 +223,7 @@ class _TermsField extends StatelessWidget {
     final muted = Theme.of(context).extension<AppTokens>()?.muted;
     return FormField<bool>(
       initialValue: false,
-      validator: (v) => v == true ? null : 'Accept the terms to continue.',
+      validator: AuthValidators.terms,
       builder: (field) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -236,10 +234,7 @@ class _TermsField extends StatelessWidget {
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
-            title: Text(
-              'I agree to the Terms and Privacy Policy',
-              style: TextStyle(fontSize: 14, color: muted),
-            ),
+            title: Text(AuthStrings.acceptTerms, style: TextStyle(fontSize: 14, color: muted)),
           ),
           if (field.errorText case final error?) AuthErrorMessage(error),
         ],

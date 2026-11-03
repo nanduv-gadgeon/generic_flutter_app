@@ -1,24 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/dial_code.dart';
-
-final _separators = RegExp(r'[ \-]');
-final _nationalPattern = RegExp(r'^[0-9][0-9 \-]*$');
-
-/// The dial code for the phone's region (e.g. `en_GB` -> +44), or [fallbackDialCode].
-DialCode defaultDialCode(Locale locale) => dialCodeFor(locale.countryCode) ?? fallbackDialCode;
-
-/// 4–14 digits (spaces and dashes allowed), and at most 15 digits with the dial code (E.164).
-bool isValidNationalNumber(String number, DialCode dialCode) {
-  final v = number.trim();
-  if (!_nationalPattern.hasMatch(v)) return false;
-  final digits = v.replaceAll(_separators, '').length;
-  return digits >= 4 && digits <= 14 && digits + dialCode.digitCount <= 15;
-}
-
-/// What is stored, e.g. `+91 9876543210`: the dial code, a space and the digits only.
-String fullMobileNumber(DialCode dialCode, String number) =>
-    '${dialCode.dial} ${number.trim().replaceAll(_separators, '')}';
+import '../strings/auth_strings.dart';
+import 'auth_validators.dart';
 
 /// "Mobile number": a country-code picker next to the number field.
 class MobileNumberField extends StatelessWidget {
@@ -35,7 +19,7 @@ class MobileNumberField extends StatelessWidget {
   final ValueChanged<DialCode> onDialCodeChanged;
   final bool enabled;
 
-  static const label = 'Mobile number';
+  static const label = AuthStrings.mobileNumber;
   static const _codeWidth = 132.0;
 
   @override
@@ -54,9 +38,8 @@ class MobileNumberField extends StatelessWidget {
         keyboardType: TextInputType.phone,
         autofillHints: const [AutofillHints.telephoneNumberNational],
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: '98765 43210'),
-        validator: (v) =>
-            isValidNationalNumber(v ?? '', dialCode) ? null : 'Enter a valid mobile number.',
+        decoration: const InputDecoration(hintText: AuthStrings.mobileHint),
+        validator: AuthValidators.mobile(dialCode),
       ),
     );
 
@@ -89,21 +72,6 @@ class MobileNumberField extends StatelessWidget {
   }
 }
 
-/// The codes matching [query]: part of the country name, the exact ISO code, or the start of
-/// the dial code (`44` or `+44`). Case and spaces are ignored; an empty query matches all.
-List<DialCode> filterDialCodes(String query) {
-  final q = query.trim().toLowerCase();
-  if (q.isEmpty) return dialCodes;
-  final digits = q.replaceAll(RegExp(r'[^0-9]'), '');
-  return [
-    for (final c in dialCodes)
-      if (c.name.toLowerCase().contains(q) ||
-          c.iso.toLowerCase() == q ||
-          (digits.isNotEmpty && c.dial.replaceAll(' ', '').startsWith('+$digits')))
-        c,
-  ];
-}
-
 /// Looks like a dropdown (code, arrow); opens the country picker.
 class _CodeButton extends StatelessWidget {
   const _CodeButton({
@@ -133,7 +101,7 @@ class _CodeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Country code, ${selected.name} ${selected.dial}',
+      label: AuthStrings.countryCode(selected.name, selected.dial),
       excludeSemantics: true,
       child: SizedBox(
         width: width,
@@ -182,7 +150,7 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
                 autocorrect: false,
                 textInputAction: TextInputAction.search,
                 decoration: const InputDecoration(
-                  hintText: 'Search country or code',
+                  hintText: AuthStrings.searchCountry,
                   prefixIcon: Icon(Icons.search),
                 ),
                 onChanged: (q) => setState(() => _results = filterDialCodes(q)),
@@ -190,7 +158,7 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
             ),
             Expanded(
               child: _results.isEmpty
-                  ? const Center(child: Text('No matching country'))
+                  ? const Center(child: Text(AuthStrings.noCountry))
                   : ListView.builder(
                       itemCount: _results.length,
                       prototypeItem: _row(dialCodes.first),

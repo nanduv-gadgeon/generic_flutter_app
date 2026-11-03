@@ -33,6 +33,17 @@ class AuthController extends _$AuthController {
     state = AsyncData(enableBiometrics ? user.copyWith(biometricEnabled: true) : user);
   }
 
+  /// Creates the account, logs it in and switches screens (to home). No biometric offer here:
+  /// that comes with the first password login.
+  ///
+  /// Throws [EmailAlreadyUsedException]; nobody is logged in then.
+  Future<void> register(RegistrationData data) async {
+    await _service.register(data);
+    final result = await _service.login(data.email, data.password);
+    if (result is! LoginSuccess) throw StateError('New account could not log in');
+    state = AsyncData(result.user);
+  }
+
   Future<void> logout() async {
     await _service.logout();
     state = const AsyncData(null);

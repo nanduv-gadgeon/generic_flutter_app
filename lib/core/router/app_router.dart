@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../application/app_config_provider.dart';
 import '../../application/auth_controller.dart';
 import '../../presentation/auth/login_screen.dart';
+import '../../presentation/auth/register_screen.dart';
 import '../../presentation/devices/home_placeholder_screen.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../presentation/widgets/placeholder_screen.dart';
@@ -48,7 +50,10 @@ GoRouter goRouter(Ref ref) {
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: Routes.register,
-        builder: (_, _) => const PlaceholderScreen(title: 'Create account (task 1.1.8)'),
+        // Registration can be turned off per customer; then the route goes to login too.
+        redirect: (_, _) =>
+            ref.read(appConfigProvider).value?.features.registration == false ? Routes.login : null,
+        builder: (_, _) => const RegisterScreen(),
       ),
       GoRoute(
         path: Routes.forgot,

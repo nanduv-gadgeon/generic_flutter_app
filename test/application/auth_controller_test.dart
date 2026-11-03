@@ -76,6 +76,38 @@ void main() {
     expect(container.read(authControllerProvider).value, isNull);
   });
 
+  group('register', () {
+    const data = RegistrationData(
+      name: 'Test User',
+      email: 'test@example.com',
+      mobile: '+10000000000',
+      password: 'made-up-pw',
+      termsAccepted: true,
+    );
+
+    test('creates the account, then logs it in', () async {
+      await container.read(authControllerProvider.future);
+      when(() => service.register(data)).thenAnswer((_) async => fakeUser);
+      when(() => service.login(data.email, data.password))
+          .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
+
+      await controller().register(data);
+
+      expect(container.read(authControllerProvider).value, fakeUser);
+      verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+    });
+
+    test('an email already in use throws and keeps nobody logged in', () async {
+      await container.read(authControllerProvider.future);
+      when(() => service.register(data)).thenThrow(const EmailAlreadyUsedException());
+
+      await expectLater(controller().register(data), throwsA(isA<EmailAlreadyUsedException>()));
+
+      expect(container.read(authControllerProvider).value, isNull);
+      verifyNever(() => service.login(any(), any()));
+    });
+  });
+
   test('logout clears the user', () async {
     when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
     when(() => service.logout()).thenAnswer((_) async {});

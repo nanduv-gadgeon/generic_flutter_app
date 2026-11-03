@@ -36,7 +36,31 @@ Map<String, dynamic> validConfigJson({bool isCloud = false}) => {
     'autoSyncDefault': '15m',
   },
   'deviceTypes': ['test_device_v1'],
-  'deviceProfiles': <Object>[],
+  'deviceProfiles': [validProfileJson()],
+};
+
+/// A small device profile with made-up readings and limits.
+Map<String, dynamic> validProfileJson({String id = 'test_device_v1'}) => {
+  'id': id,
+  'label': 'Test device',
+  'summary': 'Level, count',
+  'icon': 'chip',
+  'transports': ['ble'],
+  'readings': [
+    {
+      'key': 'level',
+      'label': 'Level',
+      'unit': 'u',
+      'icon': 'gauge',
+      'decimals': 1,
+      'normal': [10, 20],
+    },
+    {'key': 'count', 'label': 'Count', 'unit': 'n', 'icon': 'trend', 'goal': 100},
+  ],
+  'alerts': [
+    {'key': 'level', 'above': 25},
+    {'key': 'battery', 'below': 15},
+  ],
 };
 
 /// The real schema, read from disk so tests always check against the shipped file.

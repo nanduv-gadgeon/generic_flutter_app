@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/config/config_loader.dart';
+import 'package:generic_flutter_app/core/config/device_profile_registry.dart';
 
 import '../../fixtures/test_config.dart';
 
@@ -25,6 +26,15 @@ void main() {
 
       expect(validateConfig(json, jsonDecode(schemaSource()) as Object), isEmpty);
       expect(() => AppConfig.fromJson(json as Map<String, dynamic>), returnsNormally);
+    });
+
+    test('${file.path} has a valid device profile for every device type', () {
+      final config = AppConfig.fromJson(
+        jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+      );
+
+      expect(checkDeviceProfiles(config), isEmpty);
+      expect(DeviceProfileRegistry(config).offered, hasLength(config.deviceTypes.length));
     });
 
     test('${file.path} only names brand files that exist and are bundled', () {

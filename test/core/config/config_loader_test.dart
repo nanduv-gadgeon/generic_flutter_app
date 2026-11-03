@@ -17,6 +17,15 @@ Map<String, dynamic> _edit(void Function(Map<String, dynamic> json) change) {
   return json;
 }
 
+Map<String, dynamic> _profile(Map<String, dynamic> json) =>
+    (json['deviceProfiles'] as List).first as Map<String, dynamic>;
+
+Map<String, dynamic> _reading(Map<String, dynamic> json) =>
+    (_profile(json)['readings'] as List).first as Map<String, dynamic>;
+
+Map<String, dynamic> _alert(Map<String, dynamic> json) =>
+    (_profile(json)['alerts'] as List).first as Map<String, dynamic>;
+
 void main() {
   test('loads a valid config', () async {
     final config = await _loaderFor(jsonEncode(validConfigJson())).load();
@@ -48,6 +57,31 @@ void main() {
     ),
     'missing brand': (_edit((j) => j.remove('brand')), '# (root)'),
     'isCloud not a bool': (_edit((j) => j['isCloud'] = 'no'), '/isCloud'),
+    'unknown profile key': (_edit((j) => _profile(j)['colour'] = 'red'), '/deviceProfiles/0'),
+    'unknown transport': (_edit((j) => _profile(j)['transports'] = ['zigbee']), '/transports/0'),
+    'unknown device icon': (_edit((j) => _profile(j)['icon'] = 'rocket'), '/deviceProfiles/0/icon'),
+    'no readings': (
+      _edit((j) => _profile(j)['readings'] = <Object>[]),
+      '/deviceProfiles/0/readings',
+    ),
+    'normal and goal together': (
+      _edit((j) => _reading(j)['goal'] = 5),
+      '/deviceProfiles/0/readings/0',
+    ),
+    'normal with one value': (
+      _edit((j) => _reading(j)['normal'] = [10]),
+      '/deviceProfiles/0/readings/0/normal',
+    ),
+    'alert with above and below': (
+      _edit((j) => _alert(j)['below'] = 5),
+      '/deviceProfiles/0/alerts/0',
+    ),
+    'alert with no limit': (_edit((j) => _alert(j).remove('above')), '/deviceProfiles/0/alerts/0'),
+    // Passes the schema; caught by checkDeviceProfiles.
+    'device type with no profile': (
+      _edit((j) => (j['deviceTypes'] as List).add('missing_v1')),
+      '/deviceTypes/1: no device profile',
+    ),
   };
   for (final MapEntry(key: name, value: (json, path)) in invalid.entries) {
     test('rejects $name', () async {

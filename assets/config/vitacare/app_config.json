@@ -15,20 +15,83 @@
     "cornerRadiusSmall": 16,
     "mode": "system"
   },
-  "features": {
-    "registration": true,
-    "faceIdLogin": true,
-    "history": true,
-    "export": true,
-    "alerts": true
-  },
+  "features": { "registration": true, "faceIdLogin": true, "history": true, "export": true, "alerts": true },
   "history": { "daysOnPhone": 7 },
-  "cloud": {
-    "baseUrl": "https://api.example",
-    "environment": "dev",
-    "uploader": "flutterModule",
-    "autoSyncDefault": "15m"
-  },
-  "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1"],
-  "deviceProfiles": []
+  "cloud": { "baseUrl": "https://api.example", "environment": "dev", "uploader": "flutterModule", "autoSyncDefault": "15m" },
+  "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1", "ief_device_v1"],
+  "deviceProfiles": [
+    {
+      "id": "smart_band_v1",
+      "label": "Smart band",
+      "summary": "Heart rate, SpO₂, BP, steps, sleep",
+      "icon": "watch",
+      "transports": ["ble"],
+      "readings": [
+        { "key": "hr", "label": "Heart rate", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
+        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100] },
+        { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120] },
+        { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2] },
+        { "key": "steps", "label": "Steps", "unit": "steps", "icon": "trend", "goal": 10000 },
+        { "key": "sleep", "label": "Sleep", "unit": "h", "icon": "moon", "decimals": 1, "goal": 8 },
+        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20] }
+      ],
+      "alerts": [{ "key": "hr", "above": 110 }, { "key": "spo2", "below": 92 }, { "key": "battery", "below": 15 }]
+    },
+    {
+      "id": "env_sensor_v1",
+      "label": "Environment sensor",
+      "summary": "Temperature, humidity, CO₂, PM2.5",
+      "icon": "chip",
+      "transports": ["wifi", "ble"],
+      "readings": [
+        { "key": "temp", "label": "Temperature", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [20, 26] },
+        { "key": "co2", "label": "CO₂", "unit": "ppm", "icon": "cloud", "normal": [400, 1000] },
+        { "key": "hum", "label": "Humidity", "unit": "%", "icon": "drop", "normal": [40, 60] },
+        { "key": "pm25", "label": "PM2.5", "unit": "µg/m³", "icon": "dots", "normal": [0, 15] },
+        { "key": "press", "label": "Pressure", "unit": "hPa", "icon": "gauge", "normal": [1000, 1025] },
+        { "key": "light", "label": "Light", "unit": "lux", "icon": "sun", "normal": [300, 500] },
+        { "key": "tvoc", "label": "TVOC", "unit": "mg/m³", "icon": "flask", "decimals": 2, "normal": [0, 0.3] }
+      ],
+      "alerts": [{ "key": "temp", "above": 30 }, { "key": "co2", "above": 1000 }, { "key": "battery", "below": 15 }]
+    },
+    {
+      "id": "wearable_patch_v1",
+      "label": "Wearable patch",
+      "summary": "Continuous heart rate, skin temp, breathing",
+      "icon": "patch",
+      "transports": ["ble"],
+      "readings": [
+        { "key": "hr", "label": "Heart rate", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
+        { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2] },
+        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20] },
+        { "key": "hrv", "label": "HRV", "unit": "ms", "icon": "trend", "normal": [20, 70] },
+        { "key": "active", "label": "Active time", "unit": "min", "icon": "bolt", "goal": 150 }
+      ],
+      "alerts": [{ "key": "hr", "above": 120 }, { "key": "temp", "above": 37.8 }, { "key": "battery", "below": 15 }]
+    },
+    {
+      "id": "health_kit_v1",
+      "label": "Health kit",
+      "summary": "BP monitor, glucometer, scale, oximeter",
+      "icon": "kit",
+      "transports": ["ble"],
+      "readings": [
+        { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120] },
+        { "key": "glucose", "label": "Glucose", "unit": "mg/dL", "icon": "drop", "normal": [70, 140] },
+        { "key": "weight", "label": "Weight", "unit": "kg", "icon": "scale", "decimals": 1, "normal": [60, 80] },
+        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100] },
+        { "key": "pulse", "label": "Pulse", "unit": "bpm", "icon": "pulse", "normal": [60, 100] }
+      ],
+      "alerts": [{ "key": "bp", "above": 130 }, { "key": "glucose", "above": 180 }, { "key": "battery", "below": 15 }]
+    },
+    {
+      "id": "ief_device_v1",
+      "label": "IEF wearable patch",
+      "summary": "Current, battery",
+      "icon": "patch",
+      "transports": ["ble"],
+      "readings": [{ "key": "current", "label": "Current", "unit": "mA", "icon": "bolt", "decimals": 2 }],
+      "alerts": [{ "key": "battery", "below": 15 }]
+    }
+  ]
 }

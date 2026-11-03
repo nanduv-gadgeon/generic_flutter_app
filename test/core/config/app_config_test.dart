@@ -17,6 +17,7 @@ void main() {
       expect(config.features.faceIdLogin, isFalse);
       expect(config.history.daysOnPhone, 7);
       expect(config.deviceTypes, ['test_device_v1']);
+      expect(config.deviceProfiles.single.id, 'test_device_v1');
     });
 
     test('drops the cloud block when isCloud is false', () {

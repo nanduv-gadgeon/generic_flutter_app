@@ -14,3 +14,6 @@ Open decisions from [architecture.md](architecture.md) ("Risks and decisions nee
 | 2026-11-02 | Failed-login lock-out (Phase 1 local accounts) | None: wrong passwords do not lock the account. Departs from the architecture Security design ("failed-login lock-out"); the pre-release security review must accept this. `failedLoginCount` / `lockedUntil` columns stay unused | Nandu Viswanathan |
 | 2026-11-02 | How long a local session lasts | Until the user logs out; survives app restarts | Nandu Viswanathan |
 | 2026-11-02 | Turning on Face ID login | Offered once after the first password login (if `features.faceIdLogin` and biometrics are enrolled); one Face ID user per phone, the latest to turn it on | Nandu Viswanathan |
+| 2026-11-03 | Device profile shape | Minimal in 1.2.3 (identity, transports, readings, alerts); `ble`, `packet`, `wifi`, `heartbeat`, `commands` and `dashboard` are added by the task that first needs them | Nandu Viswanathan |
+| 2026-11-03 | IEF wearable patch (`ief_device_v1`) | A 5th VitaCare device type next to the mockup's wearable patch; readings come from its protocol doc only (current, battery) | Nandu Viswanathan |
+| 2026-11-03 | Unit of the IEF `current` reading | mA, assumed; open until confirmed against firmware | Nandu Viswanathan |

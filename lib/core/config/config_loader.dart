@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:json_schema/json_schema.dart';
 
 import 'app_config.dart';
+import 'device_profile_registry.dart';
 
 const configSchemaPath = 'assets/config/app_config.schema.json';
 
@@ -27,7 +28,8 @@ List<String> validateConfig(Object? json, Object schemaJson) {
   return [for (final e in result.errors) e.toString()];
 }
 
-/// Reads the customer config bundled in the app and checks it against the schema.
+/// Reads the customer config bundled in the app and checks it against the schema and the
+/// device profile rules ([checkDeviceProfiles]).
 class ConfigLoader {
   ConfigLoader({AssetBundle? bundle, this.customerFolder = customer})
     : _bundle = bundle ?? rootBundle;
@@ -44,7 +46,10 @@ class ConfigLoader {
     final errors = validateConfig(json, schema!);
     if (errors.isNotEmpty) throw ConfigException(errors);
 
-    return AppConfig.fromJson(json as Map<String, dynamic>);
+    final config = AppConfig.fromJson(json as Map<String, dynamic>);
+    final profileErrors = checkDeviceProfiles(config);
+    if (profileErrors.isNotEmpty) throw ConfigException(profileErrors);
+    return config;
   }
 
   Future<Object?> _readJson(String path) async {

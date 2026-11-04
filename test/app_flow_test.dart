@@ -9,6 +9,7 @@ import 'package:generic_flutter_app/core/di/database.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/domain/services/auth_service.dart';
+import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/presentation/auth/mobile_number_field.dart';
 import 'package:generic_flutter_app/presentation/widgets/labeled_field.dart';
 import 'package:go_router/go_router.dart';
@@ -16,6 +17,11 @@ import 'package:mocktail/mocktail.dart';
 
 import 'fixtures/fake_auth.dart';
 import 'fixtures/test_config.dart';
+
+class _NoDevices implements DeviceService {
+  @override
+  Stream<List<UserDevice>> watchDevices(int userId) => Stream.value(const []);
+}
 
 /// The whole app with the real router: splash -> login or home, and the auth guard.
 void main() {
@@ -40,6 +46,8 @@ void main() {
             return db;
           }),
           authServiceProvider.overrideWithValue(service),
+          // These tests are about navigation; the device list has its own tests.
+          deviceServiceProvider.overrideWithValue(_NoDevices()),
         ],
         child: const GenericApp(),
       ),
@@ -55,12 +63,24 @@ void main() {
     expect(find.text('Log in'), findsOneWidget);
   });
 
+  /// On the home screen: the user's first name and the "My devices" heading.
+  void expectHome() {
+    expect(find.text('Test'), findsOneWidget);
+    expect(find.text('My devices'), findsOneWidget);
+  }
+
+  Future<void> openProfile(WidgetTester tester) async {
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('a saved session opens home, and log out returns to login', (tester) async {
     when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
 
     await pumpApp(tester);
-    expect(find.text('Logged in as Test User'), findsOneWidget);
+    expectHome();
 
+    await openProfile(tester);
     await tester.tap(find.text('Log out'));
     await tester.pumpAndSettle();
     expect(find.text('Log out?'), findsOneWidget);
@@ -71,10 +91,11 @@ void main() {
     verify(() => service.logout()).called(1);
   });
 
-  testWidgets('cancelling log out stays on home', (tester) async {
+  testWidgets('cancelling log out stays logged in', (tester) async {
     when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
     await pumpApp(tester);
 
+    await openProfile(tester);
     await tester.tap(find.text('Log out'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
@@ -82,6 +103,23 @@ void main() {
 
     expect(find.text('Logged in as Test User'), findsOneWidget);
     verifyNever(() => service.logout());
+  });
+
+  testWidgets('the tabs switch screens and Add device opens without the tab bar', (tester) async {
+    when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
+    await pumpApp(tester);
+
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsOneWidget);
+    await tester.tap(find.text('Devices'));
+    await tester.pumpAndSettle();
+    expectHome();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add device'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add device (task 1.2.7)'), findsWidgets);
+    expect(find.byType(NavigationBar), findsNothing);
   });
 
   testWidgets('forgot password goes from login to reset and back to login', (tester) async {
@@ -126,7 +164,7 @@ void main() {
     await tester.tap(find.text('Log in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Logged in as Test User'), findsOneWidget);
+    expectHome();
   });
 
   testWidgets('registering moves from login to register to home', (tester) async {
@@ -161,7 +199,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Logged in as Test User'), findsOneWidget);
+    expectHome();
   });
 
   testWidgets('with registration off, /register goes to login', (tester) async {

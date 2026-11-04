@@ -14,6 +14,17 @@ abstract final class AuthStrings {
   static String biometricFailed(String method) =>
       '${_capitalised(method)} login did not work. Use your password.';
 
+  // Face ID offer, after the first password login
+  static String biometricOfferTitle(String method) => 'Use $method to log in next time?';
+  static const biometricOfferBody = 'You can turn this off later in your profile.';
+  static const notNow = 'Not now';
+  static const turnOn = 'Turn on';
+
+  /// What the phone calls its biometric login, used inside the texts above.
+  static const faceId = 'Face ID';
+  static const fingerprint = 'fingerprint';
+  static const biometrics = 'biometrics';
+
   // Register
   static const createAccount = 'Create account';
   static const creatingAccount = 'Creating account';

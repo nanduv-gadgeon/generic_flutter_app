@@ -9,11 +9,13 @@ import '../../data/auth/local_auth_service.dart';
 import '../../data/auth/local_biometric_auth.dart';
 import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
+import '../../data/devices/local_device_service.dart';
 import '../../data/upload/cloud_uploader.dart';
 import '../../data/upload/no_uploader.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/device_service.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/uploader.dart';
 import 'database.dart';
@@ -42,6 +44,12 @@ PasswordHasher passwordHasher(Ref ref) => const Argon2idPasswordHasher();
 
 @Riverpod(keepAlive: true)
 BiometricAuth biometricAuth(Ref ref) => LocalBiometricAuth();
+
+/// Both phases list devices from the local DB (Phase 2 only adds cloud registration, task 1.2.7),
+/// so there is no isCloud branch here yet.
+@Riverpod(keepAlive: true)
+DeviceService deviceService(Ref ref) =>
+    LocalDeviceService(ref.watch(appDatabaseProvider).requireValue);
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.
 @Riverpod(keepAlive: true)

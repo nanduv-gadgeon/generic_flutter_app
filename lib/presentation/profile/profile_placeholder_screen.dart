@@ -5,11 +5,12 @@ import '../../application/auth_controller.dart';
 import '../auth/logout_dialog.dart';
 import '../strings/common_strings.dart';
 import '../strings/devices_strings.dart';
+import '../strings/shell_strings.dart';
 import '../widgets/placeholder_screen.dart';
 
-/// Temporary home so sessions can be tested. Replaced by the landing screen in task 1.1.10.
-class HomePlaceholderScreen extends ConsumerWidget {
-  const HomePlaceholderScreen({super.key});
+/// Temporary Profile tab with the Log out button. Replaced by the Profile screen in task 1.1.11.
+class ProfilePlaceholderScreen extends ConsumerWidget {
+  const ProfilePlaceholderScreen({super.key});
 
   Future<void> _logOut(BuildContext context, WidgetRef ref) async {
     if (await confirmLogout(context)) {
@@ -21,7 +22,7 @@ class HomePlaceholderScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final name = ref.watch(authControllerProvider).value?.name ?? '';
     return PlaceholderScreen(
-      title: DevicesStrings.homePlaceholder,
+      title: ShellStrings.profilePlaceholder,
       child: Column(
         children: [
           Text(DevicesStrings.loggedInAs(name)),

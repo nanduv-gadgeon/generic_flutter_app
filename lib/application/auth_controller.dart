@@ -20,9 +20,10 @@ class AuthController extends _$AuthController {
   /// [LoginSuccess] the screen may first offer biometrics, then must call [completeLogin].
   Future<LoginResult> login(String email, String password) => _service.login(email, password);
 
-  /// Logs in with Face ID / fingerprint and switches screens on success.
-  Future<LoginResult> loginWithBiometrics() async {
-    final result = await _service.loginWithBiometrics();
+  /// Logs in with Face ID / fingerprint and switches screens on success. [reason] is shown in the
+  /// phone's prompt.
+  Future<LoginResult> loginWithBiometrics({required String reason}) async {
+    final result = await _service.loginWithBiometrics(reason: reason);
     if (result is LoginSuccess) state = AsyncData(result.user);
     return result;
   }
@@ -46,8 +47,8 @@ class AuthController extends _$AuthController {
 
   /// Forgot password: confirms the phone's owner, then saves the new password. Nobody is logged
   /// in afterwards; the screen goes back to login.
-  Future<ResetResult> resetPassword(String email, String newPassword) =>
-      _service.resetPassword(email: email, newPassword: newPassword);
+  Future<ResetResult> resetPassword(String email, String newPassword, {required String reason}) =>
+      _service.resetPassword(email: email, newPassword: newPassword, reason: reason);
 
   Future<void> logout() async {
     await _service.logout();

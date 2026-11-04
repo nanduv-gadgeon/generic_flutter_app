@@ -61,7 +61,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _logInWithBiometrics(BiometricKind kind) async {
     setState(() => _error = null);
     await _run(() async {
-      final result = await ref.read(authControllerProvider.notifier).loginWithBiometrics();
+      final result = await ref
+          .read(authControllerProvider.notifier)
+          .loginWithBiometrics(reason: AuthStrings.biometricLoginReason);
       if (result is! LoginSuccess) {
         _showError(AuthStrings.biometricFailed(biometricName(kind)));
       }

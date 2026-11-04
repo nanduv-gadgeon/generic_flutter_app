@@ -64,6 +64,7 @@ void _answer(ResetResult result) {
     () => service.resetPassword(
       email: any(named: 'email'),
       newPassword: any(named: 'newPassword'),
+      reason: any(named: 'reason'),
     ),
   ).thenAnswer((_) async => result);
 }
@@ -101,6 +102,7 @@ void main() {
         () => service.resetPassword(
           email: any(named: 'email'),
           newPassword: any(named: 'newPassword'),
+          reason: any(named: 'reason'),
         ),
       );
     });
@@ -113,8 +115,14 @@ void main() {
     await _fillAndSubmit(tester, {..._valid, 'Email': ' test@example.com '});
     await tester.pumpAndSettle();
 
-    verify(() => service.resetPassword(email: 'test@example.com', newPassword: 'new-made-up'))
-        .called(1);
+    // The prompt text comes from AuthStrings, not from the data layer.
+    verify(
+      () => service.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: "Confirm it's you to reset your password",
+      ),
+    ).called(1);
     expect(find.text('login page'), findsOneWidget);
     expect(find.text('Password changed. Log in with your new password.'), findsOneWidget);
   });
@@ -148,6 +156,7 @@ void main() {
       () => service.resetPassword(
         email: any(named: 'email'),
         newPassword: any(named: 'newPassword'),
+        reason: any(named: 'reason'),
       ),
     ).thenAnswer((_) => pending.future);
     final semantics = tester.ensureSemantics();

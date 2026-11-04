@@ -19,7 +19,7 @@ class CloudAuthService implements AuthService {
       throw UnimplementedError('Phase 2: cloud login');
 
   @override
-  Future<LoginResult> loginWithBiometrics() =>
+  Future<LoginResult> loginWithBiometrics({required String reason}) =>
       // TODO(phase2): unlock the stored refresh token with biometrics.
       throw UnimplementedError('Phase 2: cloud biometric login');
 
@@ -40,7 +40,11 @@ class CloudAuthService implements AuthService {
       throw UnimplementedError('Phase 2: cloud registration');
 
   @override
-  Future<ResetResult> resetPassword({required String email, required String newPassword}) =>
+  Future<ResetResult> resetPassword({
+    required String email,
+    required String newPassword,
+    required String reason,
+  }) =>
       // TODO(phase2): POST /auth/forgot-password; the cloud emails a reset link instead, so the
       // forgot-password screen will need a "link sent" variant.
       throw UnimplementedError('Phase 2: cloud password reset');

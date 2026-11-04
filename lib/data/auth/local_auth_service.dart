@@ -20,9 +20,6 @@ class LocalAuthService implements AuthService {
   final BiometricAuth _biometrics;
   final BiometricUserStore _biometricUser;
 
-  static const biometricReason = 'Log in to your account';
-  static const resetReason = 'Confirm it is you to reset your password';
-
   /// Checked when the email is unknown, so a reply takes as long as for a real account.
   PasswordHash? _dummyHash;
 
@@ -61,9 +58,9 @@ class LocalAuthService implements AuthService {
   }
 
   @override
-  Future<LoginResult> loginWithBiometrics() async {
+  Future<LoginResult> loginWithBiometrics({required String reason}) async {
     final user = await _biometricLoginUser();
-    if (user == null || !await _biometrics.authenticate(biometricReason)) {
+    if (user == null || !await _biometrics.authenticate(reason)) {
       return const BiometricFailed();
     }
     await _db.sessionDao.start(user.id);
@@ -113,9 +110,13 @@ class LocalAuthService implements AuthService {
   }
 
   @override
-  Future<ResetResult> resetPassword({required String email, required String newPassword}) async {
+  Future<ResetResult> resetPassword({
+    required String email,
+    required String newPassword,
+    required String reason,
+  }) async {
     if (!await _biometrics.canVerifyOwner()) return const NoScreenLock();
-    if (!await _biometrics.authenticate(resetReason)) return const OwnerNotVerified();
+    if (!await _biometrics.authenticate(reason)) return const OwnerNotVerified();
     // Looked up only after the owner is verified, so emails cannot be probed without unlocking.
     final user = await _db.usersDao.findByEmail(email);
     if (user == null) return const NoAccountForEmail();

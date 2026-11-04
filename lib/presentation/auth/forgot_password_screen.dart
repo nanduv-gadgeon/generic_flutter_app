@@ -46,7 +46,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     try {
       final result = await ref
           .read(authControllerProvider.notifier)
-          .resetPassword(_email.text.trim(), _password.text);
+          .resetPassword(_email.text.trim(), _password.text, reason: AuthStrings.resetReason);
       switch (result) {
         case ResetSuccess():
           messenger.showSnackBar(const SnackBar(content: Text(AuthStrings.passwordChanged)));

@@ -15,6 +15,9 @@ const _registration = RegistrationData(
   termsAccepted: true,
 );
 
+/// Prompt text; the screens pass the real one from AuthStrings.
+const _reason = 'test reason';
+
 void main() {
   late AppDatabase db;
   late FakePasswordHasher hasher;
@@ -143,7 +146,11 @@ void main() {
         when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => lock);
         when(() => biometrics.authenticate(any())).thenAnswer((_) async => passes);
 
-        final result = await auth.resetPassword(email: email, newPassword: 'new-made-up');
+        final result = await auth.resetPassword(
+          email: email,
+          newPassword: 'new-made-up',
+          reason: _reason,
+        );
 
         expect(result.runtimeType, type);
         final changed = type == ResetSuccess;
@@ -156,15 +163,23 @@ void main() {
     test('does not show the prompt when the phone has no screen lock', () async {
       when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => false);
 
-      await auth.resetPassword(email: 'test@example.com', newPassword: 'new-made-up');
+      await auth.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: _reason,
+      );
 
       verifyNever(() => biometrics.authenticate(any()));
     });
 
-    test('asks with the reset reason and does not log in', () async {
-      await auth.resetPassword(email: 'test@example.com', newPassword: 'new-made-up');
+    test('shows the given reason in the prompt and does not log in', () async {
+      await auth.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: _reason,
+      );
 
-      verify(() => biometrics.authenticate(LocalAuthService.resetReason)).called(1);
+      verify(() => biometrics.authenticate(_reason)).called(1);
       expect(await auth.currentUser(), isNull);
     });
 
@@ -173,7 +188,11 @@ void main() {
       await auth.setBiometricLogin(enabled: true);
       await auth.logout();
 
-      await auth.resetPassword(email: 'test@example.com', newPassword: 'new-made-up');
+      await auth.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: _reason,
+      );
 
       expect(await auth.canLoginWithBiometrics(), isTrue);
     });
@@ -190,7 +209,7 @@ void main() {
 
     test('is not possible until a user turns it on', () async {
       expect(await auth.canLoginWithBiometrics(), isFalse);
-      expect(await auth.loginWithBiometrics(), isA<BiometricFailed>());
+      expect(await auth.loginWithBiometrics(reason: _reason), isA<BiometricFailed>());
       verifyNever(() => biometrics.authenticate(any()));
     });
 
@@ -198,7 +217,7 @@ void main() {
       await loginAndEnable();
 
       expect(await auth.canLoginWithBiometrics(), isTrue);
-      final result = await auth.loginWithBiometrics();
+      final result = await auth.loginWithBiometrics(reason: _reason);
 
       expect(result, isA<LoginSuccess>());
       expect((await auth.currentUser())?.email, 'test@example.com');
@@ -209,7 +228,7 @@ void main() {
       await loginAndEnable();
       when(() => biometrics.authenticate(any())).thenAnswer((_) async => false);
 
-      expect(await auth.loginWithBiometrics(), isA<BiometricFailed>());
+      expect(await auth.loginWithBiometrics(reason: _reason), isA<BiometricFailed>());
       expect(await auth.currentUser(), isNull);
     });
 
@@ -239,7 +258,7 @@ void main() {
       await auth.logout();
 
       expect((await db.usersDao.findByEmail('test@example.com'))!.biometricEnabled, isFalse);
-      await auth.loginWithBiometrics();
+      await auth.loginWithBiometrics(reason: _reason);
       expect((await auth.currentUser())?.email, 'second@example.com');
     });
 

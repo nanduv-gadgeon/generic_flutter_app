@@ -177,7 +177,8 @@ void main() {
 
   testWidgets('a cancelled Face ID login shows a message', (tester) async {
     when(() => service.canLoginWithBiometrics()).thenAnswer((_) async => true);
-    when(() => service.loginWithBiometrics()).thenAnswer((_) async => const BiometricFailed());
+    when(() => service.loginWithBiometrics(reason: 'Log in to your account'))
+        .thenAnswer((_) async => const BiometricFailed());
     await _pumpLogin(tester);
 
     await tester.tap(find.text('Log in with Face ID'));

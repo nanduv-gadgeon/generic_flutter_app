@@ -6,6 +6,9 @@ abstract final class AuthStrings {
   static const enterPassword = 'Enter your password.';
   static const wrongCredentials = 'Email or password is incorrect.';
   static const forgotPassword = 'Forgot password?';
+
+  /// Shown by the phone's own Face ID / fingerprint prompt.
+  static const biometricLoginReason = 'Log in to your account';
   static const newHere = 'New here?';
   static String logInWith(String method) => 'Log in with $method';
   static String biometricFailed(String method) =>
@@ -35,6 +38,9 @@ abstract final class AuthStrings {
   static const resetSubtitle =
       "Confirm it's you with your phone's screen lock, then choose a new password.";
   static const newPassword = 'New password';
+
+  /// Shown by the phone's own screen-lock prompt.
+  static const resetReason = "Confirm it's you to reset your password";
   static const passwordChanged = 'Password changed. Log in with your new password.';
   static const noScreenLock =
       'Set up a screen lock (PIN, pattern, Face ID or fingerprint) on this phone to reset your '

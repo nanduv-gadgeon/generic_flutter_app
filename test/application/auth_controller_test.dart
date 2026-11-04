@@ -60,18 +60,20 @@ void main() {
 
   test('a biometric login switches user straight away', () async {
     await container.read(authControllerProvider.future);
-    when(() => service.loginWithBiometrics()).thenAnswer((_) async => const LoginSuccess(fakeUser));
+    when(() => service.loginWithBiometrics(reason: 'test reason'))
+        .thenAnswer((_) async => const LoginSuccess(fakeUser));
 
-    await controller().loginWithBiometrics();
+    await controller().loginWithBiometrics(reason: 'test reason');
 
     expect(container.read(authControllerProvider).value, fakeUser);
   });
 
   test('a failed biometric login keeps nobody logged in', () async {
     await container.read(authControllerProvider.future);
-    when(() => service.loginWithBiometrics()).thenAnswer((_) async => const BiometricFailed());
+    when(() => service.loginWithBiometrics(reason: 'test reason'))
+        .thenAnswer((_) async => const BiometricFailed());
 
-    await controller().loginWithBiometrics();
+    await controller().loginWithBiometrics(reason: 'test reason');
 
     expect(container.read(authControllerProvider).value, isNull);
   });
@@ -110,10 +112,19 @@ void main() {
 
   test('resetPassword passes through and logs nobody in', () async {
     await container.read(authControllerProvider.future);
-    when(() => service.resetPassword(email: 'test@example.com', newPassword: 'new-made-up'))
-        .thenAnswer((_) async => const ResetSuccess());
+    when(
+      () => service.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: 'test reason',
+      ),
+    ).thenAnswer((_) async => const ResetSuccess());
 
-    final result = await controller().resetPassword('test@example.com', 'new-made-up');
+    final result = await controller().resetPassword(
+      'test@example.com',
+      'new-made-up',
+      reason: 'test reason',
+    );
 
     expect(result, isA<ResetSuccess>());
     expect(container.read(authControllerProvider).value, isNull);

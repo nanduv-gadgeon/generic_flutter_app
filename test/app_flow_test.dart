@@ -90,8 +90,13 @@ void main() {
       ..devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     when(() => service.currentUser()).thenAnswer((_) async => null);
-    when(() => service.resetPassword(email: 'test@example.com', newPassword: 'new-made-up'))
-        .thenAnswer((_) async => const ResetSuccess());
+    when(
+      () => service.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: any(named: 'reason'),
+      ),
+    ).thenAnswer((_) async => const ResetSuccess());
     await pumpApp(tester);
 
     await tester.tap(find.text('Forgot password?'));

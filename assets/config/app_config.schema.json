@@ -93,8 +93,35 @@
           "items": { "enum": ["ble", "wifi"] }
         },
         "readings": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/reading" } },
-        "alerts": { "type": "array", "items": { "$ref": "#/definitions/alertRule" } }
+        "alerts": { "type": "array", "items": { "$ref": "#/definitions/alertRule" } },
+        "ble": { "$ref": "#/definitions/bleSettings" },
+        "commands": { "type": "array", "items": { "$ref": "#/definitions/deviceCommand" } }
       }
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^([0-9A-Fa-f]{4}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$"
+    },
+    "hexBytes": { "type": "string", "pattern": "^[0-9A-Fa-f]{2}( [0-9A-Fa-f]{2})*$" },
+    "bleSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["serviceUuid", "notifyUuid"],
+      "properties": {
+        "serviceUuid": { "$ref": "#/definitions/uuid" },
+        "notifyUuid": { "$ref": "#/definitions/uuid" },
+        "writeUuid": { "$ref": "#/definitions/uuid" },
+        "scanServiceUuid": { "$ref": "#/definitions/uuid" },
+        "scanNamePrefix": { "type": "string", "minLength": 1 },
+        "bond": { "type": "boolean" },
+        "batteryService": { "type": "boolean" }
+      }
+    },
+    "deviceCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "bytes"],
+      "properties": { "id": { "$ref": "#/definitions/key" }, "bytes": { "$ref": "#/definitions/hexBytes" } }
     },
     "reading": {
       "type": "object",

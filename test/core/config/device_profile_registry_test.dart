@@ -52,6 +52,14 @@ void main() {
         (j) => _readings(j)[0]['normal'] = [20, 20],
         '/deviceProfiles/0/readings/0/normal: low must be below high',
       ),
+      'a ble block without the ble transport': (
+        (j) => _profile(j)['transports'] = ['wifi'],
+        '/deviceProfiles/0/ble: set, but "ble" is not in transports',
+      ),
+      'a duplicate command id': (
+        (j) => (_profile(j)['commands'] as List).add({'id': 'ping', 'bytes': '00'}),
+        '/deviceProfiles/0/commands/1/id: duplicate command id',
+      ),
       'a normal range with low > high': (
         (j) => _readings(j)[0]['normal'] = [30, 20],
         '/deviceProfiles/0/readings/0/normal: low must be below high',
@@ -93,5 +101,28 @@ void main() {
         throwsA(isA<UnknownDeviceTypeException>().having((e) => e.id, 'id', 'missing_v1')),
       );
     });
+  });
+
+  group('isConnectable', () {
+    final profile = DeviceProfile.fromJson(validProfileJson());
+    final cases = <String, (DeviceProfile, Transport, bool)>{
+      'BLE with a ble block': (profile, Transport.ble, true),
+      'BLE without a ble block': (profile.copyWith(ble: null), Transport.ble, false),
+      'a transport the profile does not list': (
+        profile.copyWith(transports: [Transport.wifi]),
+        Transport.ble,
+        false,
+      ),
+      'Wi-Fi (until 1.2.6)': (
+        profile.copyWith(transports: [Transport.ble, Transport.wifi]),
+        Transport.wifi,
+        false,
+      ),
+    };
+    for (final MapEntry(key: name, value: (p, transport, expected)) in cases.entries) {
+      test('$name -> $expected', () {
+        expect(isConnectable(p, transport), expected);
+      });
+    }
   });
 }

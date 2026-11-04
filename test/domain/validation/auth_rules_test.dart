@@ -60,4 +60,35 @@ void main() {
     expect(fullMobileNumber(dialCodeFor('IN')!, ' 00000-000 00 '), '+91 0000000000');
     expect(fullMobileNumber(dialCodeFor('JM')!, '000 0000'), '+1 876 0000000');
   });
+
+  test('splitMobileNumber reverses fullMobileNumber', () {
+    // stored -> (ISO code, national number)
+    final cases = {
+      '+91 0000000000': ('IN', '0000000000'),
+      '+1 876 0000000': ('JM', '0000000'), // longest code wins over +1
+      ' +91 0000000000 ': ('IN', '0000000000'),
+      '+999 0000': (fallbackDialCode.iso, '+999 0000'), // unknown code
+      '0000000000': (fallbackDialCode.iso, '0000000000'), // no code
+      '': (fallbackDialCode.iso, ''),
+    };
+    for (final MapEntry(key: stored, value: (iso, number)) in cases.entries) {
+      final (code, national) = splitMobileNumber(stored);
+      expect((code.iso, national), (iso, number), reason: '"$stored"');
+    }
+  });
+
+  test('splitMobileNumber on a shared code prefers the phone region', () {
+    final gb = dialCodeFor('GB')!;
+    // (stored, preferred) -> ISO code
+    final cases = {
+      ('+44 0000000000', gb): 'GB',
+      ('+44 0000000000', dialCodeFor('JE')!): 'JE',
+      ('+44 0000000000', dialCodeFor('IN')!): 'GG', // region has another code: first listed
+      ('+1 0000000000', dialCodeFor('US')!): 'US',
+      ('+999 0000', gb): 'GB', // unknown code: the region
+    };
+    for (final MapEntry(key: (stored, preferred), value: iso) in cases.entries) {
+      expect(splitMobileNumber(stored, preferred: preferred).$1.iso, iso, reason: stored);
+    }
+  });
 }

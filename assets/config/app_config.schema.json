@@ -4,7 +4,7 @@
   "description": "One app_config.json per customer. Holds no secrets. Device profiles are checked in detail from task 1.2.3.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["isCloud", "brand", "theme", "features", "history", "deviceTypes", "deviceProfiles"],
+  "required": ["isCloud", "brand", "theme", "features", "links", "history", "deviceTypes", "deviceProfiles"],
   "properties": {
     "isCloud": { "type": "boolean" },
     "brand": {
@@ -42,6 +42,15 @@
         "history": { "type": "boolean" },
         "export": { "type": "boolean" },
         "alerts": { "type": "boolean" }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["privacyPolicy", "termsOfUse"],
+      "properties": {
+        "privacyPolicy": { "$ref": "#/definitions/httpsUrl" },
+        "termsOfUse": { "$ref": "#/definitions/httpsUrl" }
       }
     },
     "history": {
@@ -82,6 +91,7 @@
   "then": { "required": ["cloud"] },
   "definitions": {
     "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "httpsUrl": { "type": "string", "pattern": "^https://[^\\s]+$" },
     "brandAsset": { "type": "string", "pattern": "^assets/brand/[a-z0-9_]+/[a-z0-9_]+\\.(svg|png)$" }
   }
 }

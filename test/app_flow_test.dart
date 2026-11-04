@@ -8,6 +8,7 @@ import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/di/database.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
+import 'package:generic_flutter_app/domain/services/app_settings_service.dart';
 import 'package:generic_flutter_app/domain/services/auth_service.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/presentation/auth/mobile_number_field.dart';
@@ -21,6 +22,14 @@ import 'fixtures/test_config.dart';
 class _NoDevices implements DeviceService {
   @override
   Stream<List<UserDevice>> watchDevices(int userId) => Stream.value(const []);
+}
+
+class _DefaultSettings implements AppSettingsService {
+  @override
+  Stream<bool> watchNotificationsEnabled(int userId) => Stream.value(true);
+
+  @override
+  Future<void> setNotificationsEnabled(int userId, {required bool enabled}) async {}
 }
 
 /// The whole app with the real router: splash -> login or home, and the auth guard.
@@ -48,6 +57,8 @@ void main() {
           authServiceProvider.overrideWithValue(service),
           // These tests are about navigation; the device list has its own tests.
           deviceServiceProvider.overrideWithValue(_NoDevices()),
+          appSettingsServiceProvider.overrideWithValue(_DefaultSettings()),
+          appVersionProvider.overrideWith((ref) async => ('1.0.0', '1')),
         ],
         child: const GenericApp(),
       ),
@@ -101,8 +112,34 @@ void main() {
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Logged in as Test User'), findsOneWidget);
+    expect(find.text('Test User'), findsOneWidget);
     verifyNever(() => service.logout());
+  });
+
+  testWidgets('a name changed in Edit profile shows on Profile and in the home greeting', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    registerFallbackValue(const ProfileChanges(name: '', mobile: ''));
+    when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
+    when(() => service.updateProfile(any()))
+        .thenAnswer((_) async => fakeUser.copyWith(name: 'Renamed User'));
+    await pumpApp(tester);
+
+    await openProfile(tester);
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(LabeledField, 'Full name'), 'Renamed User');
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Renamed User'), findsOneWidget);
+    await tester.tap(find.text('Devices'));
+    await tester.pumpAndSettle();
+    expect(find.text('Renamed'), findsOneWidget);
   });
 
   testWidgets('the tabs switch screens and Add device opens without the tab bar', (tester) async {

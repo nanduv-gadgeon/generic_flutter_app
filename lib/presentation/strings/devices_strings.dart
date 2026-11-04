@@ -26,6 +26,4 @@ abstract final class DevicesStrings {
   static const myDevices = 'My devices';
   static const noDevices = 'No devices yet';
   static const noDevicesBody = 'Add your first device to start monitoring.';
-
-  static String loggedInAs(String name) => 'Logged in as $name';
 }

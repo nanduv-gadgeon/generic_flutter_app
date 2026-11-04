@@ -40,13 +40,16 @@ class UsersDao extends DatabaseAccessor<AppDatabase> with _$UsersDaoMixin {
     String? email,
     String? mobile,
     String? photoPath,
+
+    /// Sets the photo back to none (initials); [photoPath] is then ignored.
+    bool clearPhoto = false,
   }) => _update(
     id,
     UsersCompanion(
       name: Value.absentIfNull(name),
       email: Value.absentIfNull(email == null ? null : _normalise(email)),
       mobile: Value.absentIfNull(mobile),
-      photoPath: Value.absentIfNull(photoPath),
+      photoPath: clearPhoto ? const Value(null) : Value.absentIfNull(photoPath),
     ),
   );
 

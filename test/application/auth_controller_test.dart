@@ -140,6 +140,43 @@ void main() {
     expect(container.read(authControllerProvider).value, isNull);
   });
 
+  group('profile', () {
+    setUpAll(() => registerFallbackValue(const ProfileChanges(name: '', mobile: '')));
+    setUp(() => when(() => service.currentUser()).thenAnswer((_) async => fakeUser));
+
+    test('updateProfile switches to the saved user', () async {
+      await container.read(authControllerProvider.future);
+      const changes = ProfileChanges(name: 'New Name', mobile: '+91 1');
+      final saved = fakeUser.copyWith(name: 'New Name');
+      when(() => service.updateProfile(changes)).thenAnswer((_) async => saved);
+
+      await controller().updateProfile(changes);
+
+      expect(container.read(authControllerProvider).value, saved);
+    });
+
+    test('updateProfile keeps the old user when saving fails', () async {
+      await container.read(authControllerProvider.future);
+      when(() => service.updateProfile(any())).thenThrow(StateError('save failed'));
+
+      await expectLater(
+        controller().updateProfile(const ProfileChanges(name: 'X', mobile: '')),
+        throwsStateError,
+      );
+      expect(container.read(authControllerProvider).value, fakeUser);
+    });
+
+    test('setBiometricLogin saves it and updates the user', () async {
+      await container.read(authControllerProvider.future);
+      when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async {});
+
+      await controller().setBiometricLogin(enabled: true);
+
+      verify(() => service.setBiometricLogin(enabled: true)).called(1);
+      expect(container.read(authControllerProvider).value?.biometricEnabled, isTrue);
+    });
+  });
+
   group('biometricLogin', () {
     test('is null when no user has turned it on', () async {
       when(() => service.canLoginWithBiometrics()).thenAnswer((_) async => false);

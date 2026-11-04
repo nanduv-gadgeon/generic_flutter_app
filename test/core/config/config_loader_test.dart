@@ -22,6 +22,7 @@ void main() {
     final config = await _loaderFor(jsonEncode(validConfigJson())).load();
 
     expect(config.brand.appName, 'TestCo');
+    expect(config.links.privacyPolicy, 'https://example.com/privacy');
   });
 
   test('loads a valid Phase 2 config', () async {
@@ -47,6 +48,11 @@ void main() {
       '# (root)',
     ),
     'missing brand': (_edit((j) => j.remove('brand')), '# (root)'),
+    'http privacy link': (
+      _edit((j) => j['links']['privacyPolicy'] = 'http://example.com/privacy'),
+      '/links/privacyPolicy',
+    ),
+    'missing terms link': (_edit((j) => j['links'].remove('termsOfUse')), '/links'),
     'isCloud not a bool': (_edit((j) => j['isCloud'] = 'no'), '/isCloud'),
   };
   for (final MapEntry(key: name, value: (json, path)) in invalid.entries) {

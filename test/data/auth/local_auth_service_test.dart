@@ -23,6 +23,7 @@ void main() {
   late FakePasswordHasher hasher;
   late MockBiometricAuth biometrics;
   late FakeBiometricUserStore biometricUser;
+  late MockProfilePhotoStore photos;
   late LocalAuthService auth;
 
   setUp(() {
@@ -30,13 +31,16 @@ void main() {
     hasher = FakePasswordHasher();
     biometrics = MockBiometricAuth();
     biometricUser = FakeBiometricUserStore();
+    photos = MockProfilePhotoStore();
     when(() => biometrics.isAvailable()).thenAnswer((_) async => true);
     when(() => biometrics.authenticate(any())).thenAnswer((_) async => true);
+    when(() => photos.delete(any())).thenAnswer((_) async {});
     auth = LocalAuthService(
       db: db,
       hasher: hasher,
       biometrics: biometrics,
       biometricUser: biometricUser,
+      photos: photos,
     );
   });
 
@@ -264,6 +268,64 @@ void main() {
 
     test('changing the setting needs a logged-in user', () async {
       await expectLater(auth.setBiometricLogin(enabled: true), throwsStateError);
+    });
+  });
+
+  group('updateProfile', () {
+    const changes = ProfileChanges(name: ' New Name ', mobile: '+44 0000000000');
+
+    setUp(() async {
+      await auth.register(_registration);
+      await auth.login('test@example.com', 'correct horse');
+    });
+
+    test('saves the trimmed name and mobile, and keeps the email', () async {
+      final user = await auth.updateProfile(changes);
+
+      expect(
+        (user.name, user.email, user.mobile),
+        ('New Name', 'test@example.com', '+44 0000000000'),
+      );
+      expect(await auth.currentUser(), user);
+    });
+
+    test('a new photo is saved, then the old one deleted', () async {
+      when(() => photos.save('/tmp/a.jpg', userId: any(named: 'userId')))
+          .thenAnswer((_) async => '/photos/a.jpg');
+      when(() => photos.save('/tmp/b.jpg', userId: any(named: 'userId')))
+          .thenAnswer((_) async => '/photos/b.jpg');
+
+      final first = await auth.updateProfile(changes.copyWith(photo: const NewPhoto('/tmp/a.jpg')));
+      final second = await auth.updateProfile(
+        changes.copyWith(photo: const NewPhoto('/tmp/b.jpg')),
+      );
+
+      expect((first.photoPath, second.photoPath), ('/photos/a.jpg', '/photos/b.jpg'));
+      verify(() => photos.delete('/photos/a.jpg')).called(1);
+    });
+
+    test('removing the photo clears it and deletes the file', () async {
+      when(() => photos.save(any(), userId: any(named: 'userId')))
+          .thenAnswer((_) async => '/photos/a.jpg');
+      await auth.updateProfile(changes.copyWith(photo: const NewPhoto('/tmp/a.jpg')));
+
+      final user = await auth.updateProfile(changes.copyWith(photo: const RemovePhoto()));
+
+      expect(user.photoPath, isNull);
+      verify(() => photos.delete('/photos/a.jpg')).called(1);
+    });
+
+    test('keeping the photo touches no files', () async {
+      await auth.updateProfile(changes);
+
+      verifyNever(() => photos.save(any(), userId: any(named: 'userId')));
+      verifyNever(() => photos.delete(any()));
+    });
+
+    test('needs a logged-in user', () async {
+      await auth.logout();
+
+      await expectLater(auth.updateProfile(changes), throwsStateError);
     });
   });
 }

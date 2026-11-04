@@ -31,3 +31,18 @@ bool isValidNationalNumber(String number, DialCode dialCode) {
 /// What is stored, e.g. `+91 9876543210`: the dial code, a space and the digits only.
 String fullMobileNumber(DialCode dialCode, String number) =>
     '${dialCode.dial} ${number.trim().replaceAll(_separators, '')}';
+
+/// The reverse of [fullMobileNumber], for editing a stored number: `+91 9876543210` gives India
+/// and `9876543210`. The longest matching code wins (`+1 876 …` is Jamaica, not the US). A code
+/// shared by several countries (`+44`, `+1`) gives [preferred] (the phone's region) when it has
+/// that code, otherwise the first listed. Unknown or blank: [preferred] and the stored text.
+(DialCode, String) splitMobileNumber(String stored, {DialCode preferred = fallbackDialCode}) {
+  final v = stored.trim();
+  DialCode? best;
+  for (final code in dialCodes) {
+    if (v.startsWith('${code.dial} ') && code.dial.length > (best?.dial.length ?? 0)) best = code;
+  }
+  if (best == null) return (preferred, v);
+  final national = v.substring(best.dial.length).trim();
+  return (preferred.dial == best.dial ? preferred : best, national);
+}

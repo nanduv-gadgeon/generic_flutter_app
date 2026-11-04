@@ -50,6 +50,19 @@ class AuthController extends _$AuthController {
   Future<ResetResult> resetPassword(String email, String newPassword, {required String reason}) =>
       _service.resetPassword(email: email, newPassword: newPassword, reason: reason);
 
+  /// Saves Edit profile; every screen showing the user (profile, home greeting) updates.
+  /// Throws [EmailAlreadyUsedException]; nothing is saved then.
+  Future<void> updateProfile(ProfileChanges changes) async {
+    state = AsyncData(await _service.updateProfile(changes));
+  }
+
+  /// The Profile switch for Face ID / fingerprint login.
+  Future<void> setBiometricLogin({required bool enabled}) async {
+    await _service.setBiometricLogin(enabled: enabled);
+    state = AsyncData(state.value?.copyWith(biometricEnabled: enabled));
+    ref.invalidate(biometricLoginProvider);
+  }
+
   Future<void> logout() async {
     await _service.logout();
     state = const AsyncData(null);

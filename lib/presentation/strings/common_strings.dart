@@ -2,6 +2,8 @@
 abstract final class CommonStrings {
   static const back = 'Back';
   static const loading = 'Loading';
+  static const cancel = 'Cancel';
+  static const logOut = 'Log out';
 
   static const email = 'Email';
   static const emailHint = 'you@example.com';

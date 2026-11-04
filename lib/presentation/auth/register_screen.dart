@@ -94,7 +94,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: _BackButton(onPressed: _back),
+                    child: AuthBackButton(onPressed: _back),
                   ),
                   const SizedBox(height: 20),
                   Semantics(
@@ -187,29 +187,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       onSubmitted: (_) => _register(),
     ),
   ];
-}
-
-/// The 44 px round back button from the mockup.
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppTokens>();
-    return IconButton(
-      tooltip: CommonStrings.back,
-      onPressed: onPressed,
-      icon: const Icon(Icons.chevron_left, size: 24),
-      style: IconButton.styleFrom(
-        fixedSize: const Size.square(44),
-        backgroundColor: tokens?.surface,
-        side: tokens == null ? null : BorderSide(color: tokens.border),
-        shape: const CircleBorder(),
-      ),
-    );
-  }
 }
 
 /// The required terms checkbox (plain text until the Terms and Privacy links exist).

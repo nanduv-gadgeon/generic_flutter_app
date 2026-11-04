@@ -63,9 +63,57 @@ void main() {
 
     await tester.tap(find.text('Log out'));
     await tester.pumpAndSettle();
+    expect(find.text('Log out?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Log out'));
+    await tester.pumpAndSettle();
 
     expect(find.text('Log in'), findsOneWidget);
     verify(() => service.logout()).called(1);
+  });
+
+  testWidgets('cancelling log out stays on home', (tester) async {
+    when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Log out'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Logged in as Test User'), findsOneWidget);
+    verifyNever(() => service.logout());
+  });
+
+  testWidgets('forgot password goes from login to reset and back to login', (tester) async {
+    tester.view
+      ..physicalSize = const Size(390, 900)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(() => service.currentUser()).thenAnswer((_) async => null);
+    when(
+      () => service.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: any(named: 'reason'),
+      ),
+    ).thenAnswer((_) async => const ResetSuccess());
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    final fields = {
+      'Email': 'test@example.com',
+      'New password': 'new-made-up',
+      'Confirm password': 'new-made-up',
+    };
+    for (final MapEntry(:key, :value) in fields.entries) {
+      await tester.enterText(find.widgetWithText(LabeledField, key), value);
+    }
+    await tester.tap(find.widgetWithText(FilledButton, 'Reset password'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Log in'), findsOneWidget);
+    expect(find.text('Password changed. Log in with your new password.'), findsOneWidget);
   });
 
   testWidgets('logging in moves from login to home', (tester) async {

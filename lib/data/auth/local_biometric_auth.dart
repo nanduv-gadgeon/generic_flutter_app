@@ -18,6 +18,16 @@ class LocalBiometricAuth implements BiometricAuth {
   }
 
   @override
+  Future<bool> canVerifyOwner() async {
+    try {
+      // False on Android and iOS when no PIN, pattern, passcode or biometric is set up.
+      return await _auth.isDeviceSupported();
+    } on LocalAuthException {
+      return false;
+    }
+  }
+
+  @override
   Future<BiometricKind> kind() async {
     try {
       final types = await _auth.getAvailableBiometrics();

@@ -1,8 +1,10 @@
 import '../models/auth_user.dart';
 import '../models/login_result.dart';
+import '../models/reset_result.dart';
 
 export '../models/auth_user.dart';
 export '../models/login_result.dart';
+export '../models/reset_result.dart';
 
 /// Accounts and the login session. Phase 1: on the phone; Phase 2: cloud API.
 abstract interface class AuthService {
@@ -11,7 +13,8 @@ abstract interface class AuthService {
 
   Future<LoginResult> login(String email, String password);
 
-  Future<LoginResult> loginWithBiometrics();
+  /// [reason] is shown in the phone's own prompt; the screen passes its text.
+  Future<LoginResult> loginWithBiometrics({required String reason});
 
   /// True when some user has turned on biometric login and the phone can do it now.
   Future<bool> canLoginWithBiometrics();
@@ -21,6 +24,15 @@ abstract interface class AuthService {
 
   /// Creates an account. Throws [EmailAlreadyUsedException]. Does not log in.
   Future<AuthUser> register(RegistrationData data);
+
+  /// Forgot password. Phase 1: confirms the phone's owner with its screen lock, then saves
+  /// [newPassword] for the account with [email]. Does not log in. [reason] is shown in the phone's
+  /// prompt.
+  Future<ResetResult> resetPassword({
+    required String email,
+    required String newPassword,
+    required String reason,
+  });
 
   Future<void> logout();
 }

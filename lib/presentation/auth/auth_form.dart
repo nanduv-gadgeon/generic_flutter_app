@@ -1,6 +1,32 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_tokens.dart';
+import '../strings/common_strings.dart';
+
 /// Pieces shared by the account screens (login, register, forgot password).
+
+/// The 44 px round back button from the mockup.
+class AuthBackButton extends StatelessWidget {
+  const AuthBackButton({super.key, required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppTokens>();
+    return IconButton(
+      tooltip: CommonStrings.back,
+      onPressed: onPressed,
+      icon: const Icon(Icons.chevron_left, size: 24),
+      style: IconButton.styleFrom(
+        fixedSize: const Size.square(44),
+        backgroundColor: tokens?.surface,
+        side: tokens == null ? null : BorderSide(color: tokens.border),
+        shape: const CircleBorder(),
+      ),
+    );
+  }
+}
 
 /// The screen's main button. While busy it shows only a spinner (requirement 2.5), labelled
 /// [busyLabel] for screen readers.

@@ -4,11 +4,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../application/app_config_provider.dart';
 import '../../application/auth_controller.dart';
+import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
 import '../../presentation/devices/home_placeholder_screen.dart';
 import '../../presentation/splash/splash_screen.dart';
-import '../../presentation/widgets/placeholder_screen.dart';
 
 part 'app_router.g.dart';
 
@@ -55,10 +55,7 @@ GoRouter goRouter(Ref ref) {
             ref.read(appConfigProvider).value?.features.registration == false ? Routes.login : null,
         builder: (_, _) => const RegisterScreen(),
       ),
-      GoRoute(
-        path: Routes.forgot,
-        builder: (_, _) => const PlaceholderScreen(title: 'Forgot password (task 1.1.9)'),
-      ),
+      GoRoute(path: Routes.forgot, builder: (_, _) => const ForgotPasswordScreen()),
       GoRoute(path: Routes.home, builder: (_, _) => const HomePlaceholderScreen()),
     ],
   );

@@ -29,6 +29,24 @@ abstract final class AuthStrings {
   static const emailInUse = 'An account with this email already exists.';
   static const registerFailed = 'Could not create your account. Try again.';
 
+  // Forgot password (Phase 1: confirmed with the phone's screen lock)
+  static const resetPassword = 'Reset password';
+  static const resettingPassword = 'Resetting password';
+  static const resetSubtitle =
+      "Confirm it's you with your phone's screen lock, then choose a new password.";
+  static const newPassword = 'New password';
+  static const passwordChanged = 'Password changed. Log in with your new password.';
+  static const noScreenLock =
+      'Set up a screen lock (PIN, pattern, Face ID or fingerprint) on this phone to reset your '
+      'password.';
+  static const ownerNotVerified = "We couldn't confirm it's you. Try again.";
+  static const noAccountForEmail = 'No account with this email on this phone.';
+  static const resetFailed = 'Could not reset your password. Try again.';
+
+  // Log out
+  static const logOutTitle = 'Log out?';
+  static const logOutBody = "You'll need your password or Face ID to log in again.";
+
   // Mobile number and country picker
   static const mobileNumber = 'Mobile number';
   static const mobileHint = '98765 43210';

@@ -40,6 +40,12 @@ class CloudAuthService implements AuthService {
       throw UnimplementedError('Phase 2: cloud registration');
 
   @override
+  Future<ResetResult> resetPassword({required String email, required String newPassword}) =>
+      // TODO(phase2): POST /auth/forgot-password; the cloud emails a reset link instead, so the
+      // forgot-password screen will need a "link sent" variant.
+      throw UnimplementedError('Phase 2: cloud password reset');
+
+  @override
   Future<void> logout() async {
     // TODO(phase2): POST /auth/logout, clear tokens, stop the uploader.
   }

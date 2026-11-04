@@ -1,8 +1,10 @@
 import '../models/auth_user.dart';
 import '../models/login_result.dart';
+import '../models/reset_result.dart';
 
 export '../models/auth_user.dart';
 export '../models/login_result.dart';
+export '../models/reset_result.dart';
 
 /// Accounts and the login session. Phase 1: on the phone; Phase 2: cloud API.
 abstract interface class AuthService {
@@ -21,6 +23,10 @@ abstract interface class AuthService {
 
   /// Creates an account. Throws [EmailAlreadyUsedException]. Does not log in.
   Future<AuthUser> register(RegistrationData data);
+
+  /// Forgot password. Phase 1: confirms the phone's owner with its screen lock, then saves
+  /// [newPassword] for the account with [email]. Does not log in.
+  Future<ResetResult> resetPassword({required String email, required String newPassword});
 
   Future<void> logout();
 }

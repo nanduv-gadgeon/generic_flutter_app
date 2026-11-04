@@ -108,6 +108,17 @@ void main() {
     });
   });
 
+  test('resetPassword passes through and logs nobody in', () async {
+    await container.read(authControllerProvider.future);
+    when(() => service.resetPassword(email: 'test@example.com', newPassword: 'new-made-up'))
+        .thenAnswer((_) async => const ResetSuccess());
+
+    final result = await controller().resetPassword('test@example.com', 'new-made-up');
+
+    expect(result, isA<ResetSuccess>());
+    expect(container.read(authControllerProvider).value, isNull);
+  });
+
   test('logout clears the user', () async {
     when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
     when(() => service.logout()).thenAnswer((_) async {});

@@ -44,6 +44,11 @@ class AuthController extends _$AuthController {
     state = AsyncData(result.user);
   }
 
+  /// Forgot password: confirms the phone's owner, then saves the new password. Nobody is logged
+  /// in afterwards; the screen goes back to login.
+  Future<ResetResult> resetPassword(String email, String newPassword) =>
+      _service.resetPassword(email: email, newPassword: newPassword);
+
   Future<void> logout() async {
     await _service.logout();
     state = const AsyncData(null);

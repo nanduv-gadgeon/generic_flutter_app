@@ -122,6 +122,63 @@ void main() {
     });
   });
 
+  group('resetPassword', () {
+    setUp(() async {
+      await auth.register(_registration);
+      when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => true);
+    });
+
+    // (screen lock, prompt passes, email) -> result
+    final cases = <String, (bool, bool, String, Type)>{
+      'verified, known email': (true, true, 'test@example.com', ResetSuccess),
+      'email in another case': (true, true, ' TEST@example.com ', ResetSuccess),
+      'no screen lock': (false, true, 'test@example.com', NoScreenLock),
+      'prompt cancelled': (true, false, 'test@example.com', OwnerNotVerified),
+      'unknown email': (true, true, 'nobody@example.com', NoAccountForEmail),
+      // The email is only looked up after verification, so it cannot be probed.
+      'unknown email, not verified': (true, false, 'nobody@example.com', OwnerNotVerified),
+    };
+    for (final MapEntry(key: name, value: (lock, passes, email, type)) in cases.entries) {
+      test(name, () async {
+        when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => lock);
+        when(() => biometrics.authenticate(any())).thenAnswer((_) async => passes);
+
+        final result = await auth.resetPassword(email: email, newPassword: 'new-made-up');
+
+        expect(result.runtimeType, type);
+        final changed = type == ResetSuccess;
+        expect((await auth.login('test@example.com', 'new-made-up')) is LoginSuccess, changed);
+        await auth.logout();
+        expect((await auth.login('test@example.com', 'correct horse')) is LoginSuccess, !changed);
+      });
+    }
+
+    test('does not show the prompt when the phone has no screen lock', () async {
+      when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => false);
+
+      await auth.resetPassword(email: 'test@example.com', newPassword: 'new-made-up');
+
+      verifyNever(() => biometrics.authenticate(any()));
+    });
+
+    test('asks with the reset reason and does not log in', () async {
+      await auth.resetPassword(email: 'test@example.com', newPassword: 'new-made-up');
+
+      verify(() => biometrics.authenticate(LocalAuthService.resetReason)).called(1);
+      expect(await auth.currentUser(), isNull);
+    });
+
+    test('keeps Face ID login on', () async {
+      await auth.login('test@example.com', 'correct horse');
+      await auth.setBiometricLogin(enabled: true);
+      await auth.logout();
+
+      await auth.resetPassword(email: 'test@example.com', newPassword: 'new-made-up');
+
+      expect(await auth.canLoginWithBiometrics(), isTrue);
+    });
+  });
+
   group('biometric login', () {
     setUp(() => auth.register(_registration));
 

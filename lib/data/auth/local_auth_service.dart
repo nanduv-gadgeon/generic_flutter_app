@@ -21,6 +21,7 @@ class LocalAuthService implements AuthService {
   final BiometricUserStore _biometricUser;
 
   static const biometricReason = 'Log in to your account';
+  static const resetReason = 'Confirm it is you to reset your password';
 
   /// Checked when the email is unknown, so a reply takes as long as for a real account.
   PasswordHash? _dummyHash;
@@ -109,6 +110,24 @@ class LocalAuthService implements AuthService {
       ),
     );
     return _toAuthUser((await _db.usersDao.findById(id))!);
+  }
+
+  @override
+  Future<ResetResult> resetPassword({required String email, required String newPassword}) async {
+    if (!await _biometrics.canVerifyOwner()) return const NoScreenLock();
+    if (!await _biometrics.authenticate(resetReason)) return const OwnerNotVerified();
+    // Looked up only after the owner is verified, so emails cannot be probed without unlocking.
+    final user = await _db.usersDao.findByEmail(email);
+    if (user == null) return const NoAccountForEmail();
+
+    final hashed = await _hasher.hash(newPassword);
+    await _db.usersDao.updatePassword(
+      user.id,
+      hash: hashed.hash,
+      salt: hashed.salt,
+      params: hashed.params,
+    );
+    return const ResetSuccess();
   }
 
   @override

@@ -54,7 +54,7 @@ Front end is **Flutter**; the cloud backend is chosen by the cloud team; code is
 | --- | --- | --- |
 | Front end | Flutter 3.x (Dart 3), iOS 17+ and Android 14+; Riverpod, go\_router | Both |
 | --- | --- | --- |
-| Devices | flutter\_blue\_plus (BLE); dio, web\_socket\_channel, multicast\_dns (local Wi‑Fi); BLE or SoftAP Wi‑Fi provisioning | Both |
+| Devices | universal\_ble (BLE); dio, web\_socket\_channel, multicast\_dns (local Wi‑Fi); BLE or SoftAP Wi‑Fi provisioning | Both |
 | --- | --- | --- |
 | Local data | Drift (SQLite) + SQLCipher; flutter\_secure\_storage for keys and tokens | Both |
 | --- | --- | --- |

@@ -31,6 +31,15 @@ class DeviceProfileRegistry {
   DeviceProfile byId(String id) => _byId[id] ?? (throw UnknownDeviceTypeException(id));
 }
 
+/// Whether the profile has the connection details [transport] needs. A type whose protocol is
+/// not known yet lists the transport but cannot connect.
+bool isConnectable(DeviceProfile profile, Transport transport) =>
+    profile.transports.contains(transport) &&
+    switch (transport) {
+      Transport.ble => profile.ble != null,
+      Transport.wifi => false, // TODO(1.2.6): Wi-Fi connection details
+    };
+
 /// Profile rules the JSON schema cannot express. Returns one `/path: message` per problem.
 List<String> checkDeviceProfiles(AppConfig config) {
   final errors = <String>[];
@@ -54,6 +63,16 @@ List<String> checkDeviceProfiles(AppConfig config) {
     for (final (j, alert) in profile.alerts.indexed) {
       if (alert.key != batteryKey && !keys.contains(alert.key)) {
         errors.add('$path/alerts/$j/key: "${alert.key}" is not a reading of ${profile.id}');
+      }
+    }
+
+    if (profile.ble != null && !profile.transports.contains(Transport.ble)) {
+      errors.add('$path/ble: set, but "ble" is not in transports');
+    }
+    final commandIds = <String>{};
+    for (final (j, command) in profile.commands.indexed) {
+      if (!commandIds.add(command.id)) {
+        errors.add('$path/commands/$j/id: duplicate command id "${command.id}"');
       }
     }
   }

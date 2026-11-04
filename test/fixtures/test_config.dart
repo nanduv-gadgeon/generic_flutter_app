@@ -39,7 +39,7 @@ Map<String, dynamic> validConfigJson({bool isCloud = false}) => {
   'deviceProfiles': [validProfileJson()],
 };
 
-/// A small device profile with made-up readings and limits.
+/// A small device profile with made-up readings, limits, UUIDs and command bytes.
 Map<String, dynamic> validProfileJson({String id = 'test_device_v1'}) => {
   'id': id,
   'label': 'Test device',
@@ -60,6 +60,15 @@ Map<String, dynamic> validProfileJson({String id = 'test_device_v1'}) => {
   'alerts': [
     {'key': 'level', 'above': 25},
     {'key': 'battery', 'below': 15},
+  ],
+  'ble': {
+    'serviceUuid': '11111111-2222-3333-4444-000000000000',
+    'notifyUuid': '11111111-2222-3333-4444-000000000001',
+    'writeUuid': '11111111-2222-3333-4444-000000000002',
+    'scanNamePrefix': 'TST',
+  },
+  'commands': [
+    {'id': 'ping', 'bytes': 'A5 01'},
   ],
 };
 

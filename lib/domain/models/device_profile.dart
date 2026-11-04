@@ -33,8 +33,7 @@ enum Transport { ble, wifi }
 
 /// One entry of the config file's `deviceProfiles` list: what a device type is and what it measures.
 ///
-/// Connection (`ble`, `wifi`), `packet`, `heartbeat`, `commands` and `dashboard` sections are added
-/// by tasks 1.2.4–1.3.5.
+/// `wifi`, `packet`, `heartbeat` and `dashboard` sections are added by tasks 1.2.5–1.3.5.
 @freezed
 abstract class DeviceProfile with _$DeviceProfile {
   const factory DeviceProfile({
@@ -47,6 +46,13 @@ abstract class DeviceProfile with _$DeviceProfile {
     required List<Transport> transports,
     required List<Reading> readings,
     required List<AlertRule> alerts,
+
+    /// How to reach the device over BLE. Missing until its protocol is known; the type then
+    /// cannot connect over BLE yet.
+    BleSettings? ble,
+
+    /// Fixed byte commands the app can send, e.g. request logs.
+    @Default([]) List<DeviceCommand> commands,
   }) = _DeviceProfile;
 
   factory DeviceProfile.fromJson(Map<String, dynamic> json) => _$DeviceProfileFromJson(json);
@@ -95,4 +101,61 @@ abstract class AlertRule with _$AlertRule {
   const factory AlertRule({required String key, double? above, double? below}) = _AlertRule;
 
   factory AlertRule.fromJson(Map<String, dynamic> json) => _$AlertRuleFromJson(json);
+}
+
+/// `ble` block of a profile. UUIDs are written as in the protocol doc; compare them with
+/// [fullUuid].
+@freezed
+abstract class BleSettings with _$BleSettings {
+  const factory BleSettings({
+    required String serviceUuid,
+
+    /// Characteristic the device sends data on.
+    required String notifyUuid,
+
+    /// Characteristic commands are written to; null when the device takes no commands.
+    String? writeUuid,
+
+    /// Advertised service to scan for, when it differs from [serviceUuid].
+    String? scanServiceUuid,
+
+    /// Also finds devices whose advertised name starts with this.
+    String? scanNamePrefix,
+
+    /// Pair with the device before use (Android; iOS pairs on its own when needed).
+    @Default(false) bool bond,
+
+    /// Read battery from the standard Battery Service (180F / 2A19) when the device has it.
+    @Default(true) bool batteryService,
+  }) = _BleSettings;
+
+  const BleSettings._();
+
+  /// The service a scan looks for.
+  String get scanUuid => scanServiceUuid ?? serviceUuid;
+
+  factory BleSettings.fromJson(Map<String, dynamic> json) => _$BleSettingsFromJson(json);
+}
+
+/// A command written to the device, e.g. `82 00`.
+@freezed
+abstract class DeviceCommand with _$DeviceCommand {
+  const factory DeviceCommand({required String id, required String bytes}) = _DeviceCommand;
+
+  const DeviceCommand._();
+
+  /// [bytes] as numbers; the schema guarantees the `AA BB` format.
+  List<int> get data => [for (final b in bytes.split(' ')) int.parse(b, radix: 16)];
+
+  factory DeviceCommand.fromJson(Map<String, dynamic> json) => _$DeviceCommandFromJson(json);
+}
+
+/// Standard Battery Service and Battery Level characteristic.
+const batteryServiceUuid = '180f';
+const batteryLevelUuid = '2a19';
+
+/// Lower-case 128-bit form of a UUID; expands 16-bit short forms such as `180F`.
+String fullUuid(String uuid) {
+  final lower = uuid.toLowerCase();
+  return lower.length == 4 ? '0000$lower-0000-1000-8000-00805f9b34fb' : lower;
 }

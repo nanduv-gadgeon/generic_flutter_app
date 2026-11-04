@@ -77,6 +77,19 @@ void main() {
       '/deviceProfiles/0/alerts/0',
     ),
     'alert with no limit': (_edit((j) => _alert(j).remove('above')), '/deviceProfiles/0/alerts/0'),
+    'bad UUID': (
+      _edit((j) => _profile(j)['ble']['serviceUuid'] = 'not-a-uuid'),
+      '/deviceProfiles/0/ble/serviceUuid',
+    ),
+    'unknown ble key': (_edit((j) => _profile(j)['ble']['mac'] = 'x'), '/deviceProfiles/0/ble'),
+    'ble without notifyUuid': (
+      _edit((j) => (_profile(j)['ble'] as Map).remove('notifyUuid')),
+      '/deviceProfiles/0/ble',
+    ),
+    'bad command bytes': (
+      _edit((j) => (_profile(j)['commands'] as List).first['bytes'] = '0x8200'),
+      '/deviceProfiles/0/commands/0/bytes',
+    ),
     // Passes the schema; caught by checkDeviceProfiles.
     'device type with no profile': (
       _edit((j) => (j['deviceTypes'] as List).add('missing_v1')),

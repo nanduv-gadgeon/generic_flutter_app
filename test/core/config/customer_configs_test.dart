@@ -37,6 +37,18 @@ void main() {
       expect(DeviceProfileRegistry(config).offered, hasLength(config.deviceTypes.length));
     });
 
+    test('${file.path} only names valid BLE UUIDs', () {
+      final config = AppConfig.fromJson(
+        jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+      );
+      for (final ble in config.deviceProfiles.map((p) => p.ble).nonNulls) {
+        final uuids = [ble.serviceUuid, ble.notifyUuid, ble.scanUuid, ?ble.writeUuid];
+        for (final uuid in uuids) {
+          expect(fullUuid(uuid), hasLength(36), reason: uuid);
+        }
+      }
+    });
+
     test('${file.path} only names brand files that exist and are bundled', () {
       final brand = AppConfig.fromJson(jsonDecode(file.readAsStringSync()) as Map<String, dynamic>)
           .brand;
@@ -49,4 +61,17 @@ void main() {
       }
     });
   }
+
+  test('VitaCare: only the IEF patch can connect over BLE until the other protocols arrive', () {
+    final config = AppConfig.fromJson(
+      jsonDecode(File('assets/config/vitacare/app_config.json').readAsStringSync())
+          as Map<String, dynamic>,
+    );
+    final connectable = [
+      for (final p in DeviceProfileRegistry(config).offered)
+        if (isConnectable(p, Transport.ble)) p.id,
+    ];
+
+    expect(connectable, ['ief_device_v1']);
+  });
 }

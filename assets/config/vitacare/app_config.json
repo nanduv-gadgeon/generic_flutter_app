@@ -91,7 +91,16 @@
       "icon": "patch",
       "transports": ["ble"],
       "readings": [{ "key": "current", "label": "Current", "unit": "mA", "icon": "bolt", "decimals": 2 }],
-      "alerts": [{ "key": "battery", "below": 15 }]
+      "alerts": [{ "key": "battery", "below": 15 }],
+      "ble": {
+        "serviceUuid": "1257dd10-6f99-498f-b4a6-04dc1e3591f6",
+        "writeUuid": "1257dd11-6f99-498f-b4a6-04dc1e3591f6",
+        "notifyUuid": "1257dd12-6f99-498f-b4a6-04dc1e3591f6",
+        "scanServiceUuid": "00001257-dd10-6f99-498f-b4a604dc91f6",
+        "bond": false,
+        "batteryService": true
+      },
+      "commands": [{ "id": "request_logs", "bytes": "82 00" }]
     }
   ]
 }

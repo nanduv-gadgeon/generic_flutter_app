@@ -17,3 +17,6 @@ Open decisions from [architecture.md](architecture.md) ("Risks and decisions nee
 | 2026-11-03 | Device profile shape | Minimal in 1.2.3 (identity, transports, readings, alerts); `ble`, `packet`, `wifi`, `heartbeat`, `commands` and `dashboard` are added by the task that first needs them | Nandu Viswanathan |
 | 2026-11-03 | IEF wearable patch (`ief_device_v1`) | A 5th VitaCare device type next to the mockup's wearable patch; readings come from its protocol doc only (current, battery) | Nandu Viswanathan |
 | 2026-11-03 | Unit of the IEF `current` reading | mA, assumed; open until confirmed against firmware | Nandu Viswanathan |
+| 2026-11-04 | BLE package | `universal_ble` (BSD‑3) instead of `flutter_blue_plus` 2.x, which needs a paid commercial licence for for-profit use and sends a licence ping from the Android build. Only `universal_ble_adapter.dart` imports it | Nandu Viswanathan |
+| 2026-11-04 | IEF scan UUID mismatch | Profile `ble` block gets an optional `scanServiceUuid` (default `serviceUuid`); IEF keeps both values from the old app until checked on a real device | Nandu Viswanathan |
+| 2026-11-04 | Device types without a protocol document | `ble` block optional; such types cannot connect yet (`isConnectable` false). No invented UUIDs | Nandu Viswanathan |

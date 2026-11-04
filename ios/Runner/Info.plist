@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Connect to your health devices</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Log in with Face ID</string>
 	<key>UIApplicationSceneManifest</key>

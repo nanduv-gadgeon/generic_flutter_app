@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../strings/common_strings.dart';
 import 'labeled_field.dart';
 
 /// Password input with its label above and a show / hide button.
@@ -7,8 +8,8 @@ class PasswordField extends StatefulWidget {
   const PasswordField({
     super.key,
     required this.controller,
-    this.label = 'Password',
-    this.hint = 'Enter password',
+    this.label = CommonStrings.password,
+    this.hint = CommonStrings.passwordHint,
     this.enabled = true,
     this.validator,
     this.autofillHints = const [AutofillHints.password],
@@ -46,7 +47,7 @@ class _PasswordFieldState extends State<PasswordField> {
         decoration: InputDecoration(
           hintText: widget.hint,
           suffixIcon: IconButton(
-            tooltip: _obscured ? 'Show password' : 'Hide password',
+            tooltip: _obscured ? CommonStrings.showPassword : CommonStrings.hidePassword,
             icon: Icon(_obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined),
             onPressed: () => setState(() => _obscured = !_obscured),
           ),

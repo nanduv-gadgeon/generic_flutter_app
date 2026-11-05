@@ -29,6 +29,21 @@ void main() {
     });
   }
 
+  for (final supported in [true, false]) {
+    test('canVerifyOwner: screen lock set up $supported', () async {
+      when(() => plugin.isDeviceSupported()).thenAnswer((_) async => supported);
+
+      expect(await auth.canVerifyOwner(), supported);
+    });
+  }
+
+  test('canVerifyOwner returns false instead of throwing', () async {
+    when(() => plugin.isDeviceSupported())
+        .thenThrow(const LocalAuthException(code: LocalAuthExceptionCode.noCredentialsSet));
+
+    expect(await auth.canVerifyOwner(), isFalse);
+  });
+
   final kinds = <List<BiometricType>, BiometricKind>{
     [BiometricType.face, BiometricType.fingerprint]: BiometricKind.face,
     [BiometricType.fingerprint]: BiometricKind.fingerprint,

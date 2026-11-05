@@ -2,6 +2,7 @@ import '../../domain/services/auth_service.dart';
 import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/password_hasher.dart';
 import '../db/app_database.dart';
+import '../profile/profile_photo_store.dart';
 import 'biometric_user_store.dart';
 
 /// Phase 1 accounts, kept in the encrypted local database.
@@ -13,14 +14,14 @@ class LocalAuthService implements AuthService {
     required this._hasher,
     required this._biometrics,
     required this._biometricUser,
+    required this._photos,
   });
 
   final AppDatabase _db;
   final PasswordHasher _hasher;
   final BiometricAuth _biometrics;
   final BiometricUserStore _biometricUser;
-
-  static const biometricReason = 'Log in to your account';
+  final ProfilePhotoStore _photos;
 
   /// Checked when the email is unknown, so a reply takes as long as for a real account.
   PasswordHash? _dummyHash;
@@ -60,9 +61,9 @@ class LocalAuthService implements AuthService {
   }
 
   @override
-  Future<LoginResult> loginWithBiometrics() async {
+  Future<LoginResult> loginWithBiometrics({required String reason}) async {
     final user = await _biometricLoginUser();
-    if (user == null || !await _biometrics.authenticate(biometricReason)) {
+    if (user == null || !await _biometrics.authenticate(reason)) {
       return const BiometricFailed();
     }
     await _db.sessionDao.start(user.id);
@@ -112,6 +113,50 @@ class LocalAuthService implements AuthService {
   }
 
   @override
+  Future<ResetResult> resetPassword({
+    required String email,
+    required String newPassword,
+    required String reason,
+  }) async {
+    if (!await _biometrics.canVerifyOwner()) return const NoScreenLock();
+    if (!await _biometrics.authenticate(reason)) return const OwnerNotVerified();
+    // Looked up only after the owner is verified, so emails cannot be probed without unlocking.
+    final user = await _db.usersDao.findByEmail(email);
+    if (user == null) return const NoAccountForEmail();
+
+    final hashed = await _hasher.hash(newPassword);
+    await _db.usersDao.updatePassword(
+      user.id,
+      hash: hashed.hash,
+      salt: hashed.salt,
+      params: hashed.params,
+    );
+    return const ResetSuccess();
+  }
+
+  @override
+  Future<AuthUser> updateProfile(ProfileChanges changes) async {
+    final session = await _db.sessionDao.current();
+    if (session == null) throw StateError('No user is logged in');
+    final id = session.userId;
+    final oldPhoto = (await _db.usersDao.findById(id))!.photoPath;
+    final newPhoto = switch (changes.photo) {
+      NewPhoto(:final pickedPath) => await _photos.save(pickedPath, userId: id),
+      KeepPhoto() || RemovePhoto() => null,
+    };
+    await _db.usersDao.updateProfile(
+      id,
+      name: changes.name.trim(),
+      mobile: changes.mobile.trim(),
+      photoPath: newPhoto,
+      clearPhoto: changes.photo is RemovePhoto,
+    );
+    // The old file goes only once the new path is saved.
+    if (changes.photo is! KeepPhoto) await _photos.delete(oldPhoto);
+    return _toAuthUser((await _db.usersDao.findById(id))!);
+  }
+
+  @override
   Future<void> logout() => _db.sessionDao.end();
 
   /// The user who turned on biometric login, if they still exist and still have it on.
@@ -129,6 +174,8 @@ class LocalAuthService implements AuthService {
     id: user.id,
     name: user.name,
     email: user.email,
+    mobile: user.mobile,
     biometricEnabled: user.biometricEnabled,
+    photoPath: user.photoPath,
   );
 }

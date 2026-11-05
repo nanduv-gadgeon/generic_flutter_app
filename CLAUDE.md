@@ -19,6 +19,8 @@ Rules for AI assistants working in this repository.
 - With `isCloud: false` the app makes zero network calls.
 - Nothing device-specific in Dart code; devices come from the config profile.
 - Use Riverpod with code generation, go_router and freezed.
+- No hard-coded user-facing text in widgets. Labels, hints, messages, tooltips and Semantics labels live in `lib/presentation/strings/`, one `abstract final class` of constants per feature (e.g. `AuthStrings`); text with a value in it is a small function.
+- No validation logic in widgets. Rules are pure functions in `lib/domain/validation/`; widgets use field validators (e.g. `AuthValidators`) that pair a rule with its message from the strings files.
 - Keep files under 300 lines.
 - Generated files (`*.g.dart`, `*.freezed.dart`) come from `dart run build_runner build --delete-conflicting-outputs`. They are not committed.
 - Add packages only with `flutter pub add`; never type versions by hand.

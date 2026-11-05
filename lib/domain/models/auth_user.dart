@@ -9,7 +9,13 @@ abstract class AuthUser with _$AuthUser {
     required int id,
     required String name,
     required String email,
+
+    /// As stored, e.g. `+91 9876543210` (see `fullMobileNumber`).
+    required String mobile,
     required bool biometricEnabled,
+
+    /// The profile photo on the phone; null shows initials.
+    String? photoPath,
   }) = _AuthUser;
 }
 

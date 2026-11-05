@@ -4,7 +4,7 @@
   "description": "One app_config.json per customer. Holds no secrets.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["isCloud", "brand", "theme", "features", "history", "deviceTypes", "deviceProfiles"],
+  "required": ["isCloud", "brand", "theme", "features", "links", "history", "deviceTypes", "deviceProfiles"],
   "properties": {
     "isCloud": { "type": "boolean" },
     "brand": {
@@ -44,6 +44,15 @@
         "alerts": { "type": "boolean" }
       }
     },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["privacyPolicy", "termsOfUse"],
+      "properties": {
+        "privacyPolicy": { "$ref": "#/definitions/httpsUrl" },
+        "termsOfUse": { "$ref": "#/definitions/httpsUrl" }
+      }
+    },
     "history": {
       "type": "object",
       "additionalProperties": false,
@@ -75,6 +84,7 @@
   "then": { "required": ["cloud"] },
   "definitions": {
     "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "httpsUrl": { "type": "string", "pattern": "^https://[^\\s]+$" },
     "brandAsset": { "type": "string", "pattern": "^assets/brand/[a-z0-9_]+/[a-z0-9_]+\\.(svg|png)$" },
     "key": { "type": "string", "pattern": "^[a-z0-9_]+$" },
     "deviceProfile": {

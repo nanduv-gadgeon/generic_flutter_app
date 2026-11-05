@@ -66,3 +66,12 @@ class Devices extends Table {
     {userId, address},
   ];
 }
+
+/// Each user's app settings (added in schema v2). No row yet means every setting is at its default.
+class AppSettings extends Table {
+  IntColumn get userId => integer().references(Users, #id, onDelete: KeyAction.cascade)();
+  BoolColumn get notificationsEnabled => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {userId};
+}

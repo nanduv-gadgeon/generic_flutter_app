@@ -52,6 +52,15 @@ abstract class FeaturesConfig with _$FeaturesConfig {
   factory FeaturesConfig.fromJson(Map<String, dynamic> json) => _$FeaturesConfigFromJson(json);
 }
 
+/// `links` block: the customer's web pages opened from Profile. https only (checked by the schema).
+@freezed
+abstract class LinksConfig with _$LinksConfig {
+  const factory LinksConfig({required String privacyPolicy, required String termsOfUse}) =
+      _LinksConfig;
+
+  factory LinksConfig.fromJson(Map<String, dynamic> json) => _$LinksConfigFromJson(json);
+}
+
 /// `history` block.
 @freezed
 abstract class HistoryConfig with _$HistoryConfig {

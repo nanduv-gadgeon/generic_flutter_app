@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:generic_flutter_app/data/auth/biometric_user_store.dart';
+import 'package:generic_flutter_app/data/profile/profile_photo_store.dart';
 import 'package:generic_flutter_app/domain/services/auth_service.dart';
 import 'package:generic_flutter_app/domain/services/biometric_auth.dart';
 import 'package:generic_flutter_app/domain/services/password_hasher.dart';
@@ -49,9 +50,13 @@ class FakeBiometricUserStore implements BiometricUserStore {
 
 class MockAuthService extends Mock implements AuthService {}
 
+/// No real files: tests check which paths are saved and deleted.
+class MockProfilePhotoStore extends Mock implements ProfilePhotoStore {}
+
 const fakeUser = AuthUser(
   id: 1,
   name: 'Test User',
   email: 'test@example.com',
+  mobile: '+91 0000000000',
   biometricEnabled: false,
 );

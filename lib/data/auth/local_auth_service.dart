@@ -2,6 +2,7 @@ import '../../domain/services/auth_service.dart';
 import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/password_hasher.dart';
 import '../db/app_database.dart';
+import '../profile/profile_photo_store.dart';
 import 'biometric_user_store.dart';
 
 /// Phase 1 accounts, kept in the encrypted local database.
@@ -13,12 +14,14 @@ class LocalAuthService implements AuthService {
     required this._hasher,
     required this._biometrics,
     required this._biometricUser,
+    required this._photos,
   });
 
   final AppDatabase _db;
   final PasswordHasher _hasher;
   final BiometricAuth _biometrics;
   final BiometricUserStore _biometricUser;
+  final ProfilePhotoStore _photos;
 
   /// Checked when the email is unknown, so a reply takes as long as for a real account.
   PasswordHash? _dummyHash;
@@ -132,6 +135,28 @@ class LocalAuthService implements AuthService {
   }
 
   @override
+  Future<AuthUser> updateProfile(ProfileChanges changes) async {
+    final session = await _db.sessionDao.current();
+    if (session == null) throw StateError('No user is logged in');
+    final id = session.userId;
+    final oldPhoto = (await _db.usersDao.findById(id))!.photoPath;
+    final newPhoto = switch (changes.photo) {
+      NewPhoto(:final pickedPath) => await _photos.save(pickedPath, userId: id),
+      KeepPhoto() || RemovePhoto() => null,
+    };
+    await _db.usersDao.updateProfile(
+      id,
+      name: changes.name.trim(),
+      mobile: changes.mobile.trim(),
+      photoPath: newPhoto,
+      clearPhoto: changes.photo is RemovePhoto,
+    );
+    // The old file goes only once the new path is saved.
+    if (changes.photo is! KeepPhoto) await _photos.delete(oldPhoto);
+    return _toAuthUser((await _db.usersDao.findById(id))!);
+  }
+
+  @override
   Future<void> logout() => _db.sessionDao.end();
 
   /// The user who turned on biometric login, if they still exist and still have it on.
@@ -149,6 +174,8 @@ class LocalAuthService implements AuthService {
     id: user.id,
     name: user.name,
     email: user.email,
+    mobile: user.mobile,
     biometricEnabled: user.biometricEnabled,
+    photoPath: user.photoPath,
   );
 }

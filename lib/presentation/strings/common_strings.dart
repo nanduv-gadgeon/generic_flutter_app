@@ -3,6 +3,7 @@ abstract final class CommonStrings {
   static const back = 'Back';
   static const loading = 'Loading';
   static const cancel = 'Cancel';
+  static const close = 'Close';
   static const logOut = 'Log out';
 
   /// App title until the customer config (with its app name) has loaded.

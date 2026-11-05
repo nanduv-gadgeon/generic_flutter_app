@@ -72,6 +72,20 @@ void main() {
     expect(user.biometricEnabled, isTrue);
   });
 
+  test('sets and clears the photo path', () async {
+    final db = memoryDatabase();
+    final id = await db.usersDao.insertUser(fakeUser());
+
+    await db.usersDao.updateProfile(id, photoPath: '/fake/photo.jpg');
+    expect((await db.usersDao.findById(id))!.photoPath, '/fake/photo.jpg');
+
+    await db.usersDao.updateProfile(id, name: 'Test User');
+    expect((await db.usersDao.findById(id))!.photoPath, '/fake/photo.jpg');
+
+    await db.usersDao.updateProfile(id, clearPhoto: true);
+    expect((await db.usersDao.findById(id))!.photoPath, isNull);
+  });
+
   test('deleting a user also deletes their session and devices', () async {
     final db = memoryDatabase();
     final id = await db.usersDao.insertUser(fakeUser());

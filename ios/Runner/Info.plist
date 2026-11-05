@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Confirm it's you with Face ID</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a profile photo</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a profile photo</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

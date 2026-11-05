@@ -28,6 +28,10 @@ Map<String, dynamic> validConfigJson({bool isCloud = false}) => {
     'export': true,
     'alerts': true,
   },
+  'links': {
+    'privacyPolicy': 'https://example.com/privacy',
+    'termsOfUse': 'https://example.com/terms',
+  },
   'history': {'daysOnPhone': 7},
   'cloud': {
     'baseUrl': 'https://api.example',

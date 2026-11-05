@@ -50,6 +50,11 @@ class CloudAuthService implements AuthService {
       throw UnimplementedError('Phase 2: cloud password reset');
 
   @override
+  Future<AuthUser> updateProfile(ProfileChanges changes) =>
+      // TODO(phase2): PUT /me, and upload a new photo.
+      throw UnimplementedError('Phase 2: cloud profile update');
+
+  @override
   Future<void> logout() async {
     // TODO(phase2): POST /auth/logout, clear tokens, stop the uploader.
   }

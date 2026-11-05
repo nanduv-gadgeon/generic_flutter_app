@@ -19,10 +19,12 @@ void main() {
     (Routes.alerts, false): Routes.login,
     (Routes.profile, false): Routes.login,
     (Routes.addDevice, false): Routes.login,
+    (Routes.editProfile, false): Routes.login,
     (Routes.history, true): null,
     (Routes.alerts, true): null,
     (Routes.profile, true): null,
     (Routes.addDevice, true): null,
+    (Routes.editProfile, true): null,
   };
 
   for (final MapEntry(key: (location, loggedIn), value: expected) in cases.entries) {

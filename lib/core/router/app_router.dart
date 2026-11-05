@@ -9,7 +9,8 @@ import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
 import '../../presentation/devices/home_screen.dart';
-import '../../presentation/profile/profile_placeholder_screen.dart';
+import '../../presentation/profile/edit_profile_screen.dart';
+import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../presentation/strings/shell_strings.dart';
@@ -27,6 +28,7 @@ abstract final class Routes {
   static const alerts = '/alerts';
   static const profile = '/profile';
   static const addDevice = HomeScreen.addDeviceRoute;
+  static const editProfile = EditProfileScreen.route;
 
   /// Screens for people who are not logged in; a logged-in user is sent home from these.
   static const loggedOutOnly = {login, register, forgot};
@@ -91,9 +93,7 @@ GoRouter goRouter(Ref ref) {
             ],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(path: Routes.profile, builder: (_, _) => const ProfilePlaceholderScreen()),
-            ],
+            routes: [GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen())],
           ),
         ],
       ),
@@ -102,6 +102,8 @@ GoRouter goRouter(Ref ref) {
         path: Routes.addDevice,
         builder: (_, _) => const PlaceholderScreen(title: ShellStrings.addDevicePlaceholder),
       ),
+      // Full screen, without the tab bar, like the mockup.
+      GoRoute(path: Routes.editProfile, builder: (_, _) => const EditProfileScreen()),
     ],
   );
   ref.onDispose(router.dispose);

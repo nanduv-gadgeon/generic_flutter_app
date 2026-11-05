@@ -1,9 +1,11 @@
 import '../models/auth_user.dart';
 import '../models/login_result.dart';
+import '../models/profile_changes.dart';
 import '../models/reset_result.dart';
 
 export '../models/auth_user.dart';
 export '../models/login_result.dart';
+export '../models/profile_changes.dart';
 export '../models/reset_result.dart';
 
 /// Accounts and the login session. Phase 1: on the phone; Phase 2: cloud API.
@@ -33,6 +35,9 @@ abstract interface class AuthService {
     required String newPassword,
     required String reason,
   });
+
+  /// Saves the logged-in user's profile (name, mobile, photo) and returns it as stored.
+  Future<AuthUser> updateProfile(ProfileChanges changes);
 
   Future<void> logout();
 }

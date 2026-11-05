@@ -98,6 +98,26 @@ Map<String, dynamic> validProfileJson({String id = 'test_device_v1'}) => {
   ],
 };
 
+/// A made-up `wifi` block (both setup methods, WebSocket stream). Add it with the `wifi` transport.
+Map<String, dynamic> wifiBlockJson() => {
+  'setup': ['ble', 'softap'],
+  'bleSetup': {
+    'serviceUuid': '11111111-2222-3333-4444-000000000010',
+    'credentialsUuid': '11111111-2222-3333-4444-000000000011',
+    'resultUuid': '11111111-2222-3333-4444-000000000012',
+    'scanNamePrefix': 'TST-SETUP',
+  },
+  'softApSetup': {'ssidPrefix': 'TST-', 'address': '192.168.4.1', 'path': '/setup'},
+  'mdnsService': '_fake._tcp',
+  'stream': <String, dynamic>{'type': 'websocket', 'path': '/ws'},
+};
+
+/// [validProfileJson] that also connects over Wi‑Fi.
+Map<String, dynamic> validWifiProfileJson({String id = 'test_device_v1'}) =>
+    validProfileJson(id: id)
+      ..['transports'] = ['ble', 'wifi']
+      ..['wifi'] = wifiBlockJson();
+
 /// The real schema, read from disk so tests always check against the shipped file.
 String schemaSource() => File('assets/config/app_config.schema.json').readAsStringSync();
 

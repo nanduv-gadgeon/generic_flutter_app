@@ -1,8 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-    <!-- Off: with isCloud false the app makes no network calls. Uncomment to let release builds
-         load the Privacy policy / Terms of use web pages (task 1.1.11). -->
-    <!-- <uses-permission android:name="android.permission.INTERNET"/> -->
+    <!-- Local Wi-Fi devices (task 1.2.6) need sockets; Dart device code only connects to
+         local-network hosts (isLanHost). This also lets release builds open the Privacy policy and
+         Terms of use pages (task 1.1.11) when the user taps them. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- mDNS discovery of Wi-Fi devices. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
     <!-- BLE devices (task 1.2.4). minSdk is 34, so no legacy or location permissions. -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>

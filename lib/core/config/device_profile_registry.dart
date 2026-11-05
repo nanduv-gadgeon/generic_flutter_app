@@ -1,3 +1,4 @@
+import '../../domain/transport/lan_address.dart';
 import 'app_config.dart';
 
 /// No profile in the config has this id.
@@ -39,7 +40,7 @@ bool isConnectable(DeviceProfile profile, Transport transport) =>
     profile.packet != null &&
     switch (transport) {
       Transport.ble => profile.ble != null,
-      Transport.wifi => false, // TODO(1.2.6): Wi-Fi connection details
+      Transport.wifi => profile.wifi != null,
     };
 
 /// Profile rules the JSON schema cannot express. Returns one `/path: message` per problem.
@@ -72,6 +73,7 @@ List<String> checkDeviceProfiles(AppConfig config) {
       errors.add('$path/ble: set, but "ble" is not in transports');
     }
     errors.addAll(_checkPacket(profile, path));
+    errors.addAll(_checkWifi(profile, path));
     final commandIds = <String>{};
     for (final (j, command) in profile.commands.indexed) {
       if (!commandIds.add(command.id)) {
@@ -86,10 +88,32 @@ List<String> checkDeviceProfiles(AppConfig config) {
   return errors;
 }
 
+List<String> _checkWifi(DeviceProfile profile, String path) {
+  final wifi = profile.wifi;
+  if (wifi == null) return const [];
+  final stream = wifi.stream;
+  final softAp = wifi.softApSetup;
+  return [
+    if (!profile.transports.contains(Transport.wifi))
+      '$path/wifi: set, but "wifi" is not in transports',
+    if (wifi.setup.contains(WifiSetupMethod.ble) && wifi.bleSetup == null)
+      '$path/wifi/bleSetup: needed for setup over BLE',
+    if (wifi.setup.contains(WifiSetupMethod.softap) && softAp == null)
+      '$path/wifi/softApSetup: needed for setup over the device hotspot',
+    if (softAp != null && !isLanHost(softAp.address))
+      '$path/wifi/softApSetup/address: must be a local network address',
+    if (stream.type == WifiStreamType.http && (stream.pollSeconds ?? 0) < 1)
+      '$path/wifi/stream/pollSeconds: needed for an HTTP stream',
+  ];
+}
+
 List<String> _checkPacket(DeviceProfile profile, String path) {
   final packet = profile.packet;
   if (packet == null) {
-    return [if (profile.ble != null) '$path/packet: needed to read data from a BLE device'];
+    return [
+      if (profile.ble != null) '$path/packet: needed to read data from a BLE device',
+      if (profile.wifi != null) '$path/packet: needed to read data from a Wi‑Fi device',
+    ];
   }
   final errors = <String>[];
   final codes = <int>{};

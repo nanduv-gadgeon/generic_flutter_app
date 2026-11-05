@@ -1,8 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'packet_layout.dart';
+import 'wifi_settings.dart';
 
 export 'packet_layout.dart';
+export 'wifi_settings.dart';
 
 part 'device_profile.freezed.dart';
 part 'device_profile.g.dart';
@@ -37,7 +39,7 @@ enum Transport { ble, wifi }
 
 /// One entry of the config file's `deviceProfiles` list: what a device type is and what it measures.
 ///
-/// `wifi`, `heartbeat` and `dashboard` sections are added by tasks 1.2.6–1.3.5.
+/// `heartbeat` and `dashboard` sections are added by tasks 1.2.8–1.3.5.
 @freezed
 abstract class DeviceProfile with _$DeviceProfile {
   const factory DeviceProfile({
@@ -57,6 +59,10 @@ abstract class DeviceProfile with _$DeviceProfile {
 
     /// How to read the device's data. Missing until the device's protocol is known.
     PacketLayout? packet,
+
+    /// How to set up and reach the device on the local network. Missing until its protocol is
+    /// known; the type then cannot connect over Wi‑Fi yet.
+    WifiSettings? wifi,
 
     /// Fixed byte commands the app can send, e.g. request logs.
     @Default([]) List<DeviceCommand> commands,

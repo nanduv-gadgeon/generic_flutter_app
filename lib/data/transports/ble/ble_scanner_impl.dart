@@ -5,7 +5,7 @@ import '../../../domain/transport/ble_scanner.dart';
 import '../../../domain/transport/device_link.dart';
 import 'ble_adapter.dart';
 
-/// [BleScanner] that only looks for devices matching the profile's `ble` block.
+/// [BleScanner] that only looks for devices matching the profile's `ble` (or `wifi.bleSetup`) block.
 class BleScannerImpl implements BleScanner {
   BleScannerImpl(this._adapter);
 
@@ -21,6 +21,20 @@ class BleScannerImpl implements BleScanner {
     Duration timeout = const Duration(seconds: 15),
   }) {
     final ble = profile.ble ?? (throw NotConnectableException(profile.id));
+    return _scan(ble.scanUuid, ble.scanNamePrefix, timeout);
+  }
+
+  /// Throws [NotConnectableException] when the profile cannot be set up over BLE.
+  @override
+  Stream<List<FoundDevice>> scanForSetup(
+    DeviceProfile profile, {
+    Duration timeout = const Duration(seconds: 15),
+  }) {
+    final setup = profile.wifi?.bleSetup ?? (throw NotConnectableException(profile.id));
+    return _scan(setup.serviceUuid, setup.scanNamePrefix, timeout);
+  }
+
+  Stream<List<FoundDevice>> _scan(String service, String? namePrefix, Duration timeout) {
     final found = <String, FoundDevice>{};
     StreamSubscription<FoundDevice>? results;
     Timer? timer;
@@ -34,10 +48,7 @@ class BleScannerImpl implements BleScanner {
         });
         timer = Timer(timeout, controller.close);
         try {
-          await _adapter.startScan(
-            services: [fullUuid(ble.scanUuid)],
-            namePrefixes: [?ble.scanNamePrefix],
-          );
+          await _adapter.startScan(services: [fullUuid(service)], namePrefixes: [?namePrefix]);
         } catch (e) {
           controller.addError(LinkException('scan failed: ${e.runtimeType}'));
           await controller.close();

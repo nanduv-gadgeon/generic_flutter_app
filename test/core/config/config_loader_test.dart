@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/core/config/config_loader.dart';
+import 'package:generic_flutter_app/domain/models/device_profile.dart';
 
 import '../../fixtures/test_config.dart';
 
@@ -29,12 +30,30 @@ Map<String, dynamic> _frame(Map<String, dynamic> json) =>
 Map<String, dynamic> _alert(Map<String, dynamic> json) =>
     (_profile(json)['alerts'] as List).first as Map<String, dynamic>;
 
+/// Gives the first profile the `wifi` transport and block, and returns the block.
+Map<String, dynamic> _wifiBlock(Map<String, dynamic> json) {
+  _profile(json)
+    ..['transports'] = ['ble', 'wifi']
+    ..['wifi'] ??= wifiBlockJson();
+  return _profile(json)['wifi'] as Map<String, dynamic>;
+}
+
 void main() {
   test('loads a valid config', () async {
     final config = await _loaderFor(jsonEncode(validConfigJson())).load();
 
     expect(config.brand.appName, 'TestCo');
     expect(config.links.privacyPolicy, 'https://example.com/privacy');
+  });
+
+  test('loads a profile with a wifi block', () async {
+    final json = validConfigJson()..['deviceProfiles'] = [validWifiProfileJson()];
+
+    final wifi = (await _loaderFor(jsonEncode(json)).load()).deviceProfiles.single.wifi!;
+
+    expect(wifi.setup, [WifiSetupMethod.ble, WifiSetupMethod.softap]);
+    expect(wifi.stream.type, WifiStreamType.websocket);
+    expect(wifi.setupTimeout, const Duration(seconds: 60));
   });
 
   test('loads a valid Phase 2 config', () async {
@@ -124,7 +143,32 @@ void main() {
       ),
       '/packet/frames/0/events/types',
     ),
+    'unknown wifi setup method': (
+      _edit((j) => _wifiBlock(j)['setup'] = ['wps']),
+      '/deviceProfiles/0/wifi/setup/0',
+    ),
+    'bad mDNS service type': (
+      _edit((j) => _wifiBlock(j)['mdnsService'] = 'fake.local'),
+      '/deviceProfiles/0/wifi/mdnsService',
+    ),
+    'stream path without a slash': (
+      _edit((j) => _wifiBlock(j)['stream']['path'] = 'ws'),
+      '/deviceProfiles/0/wifi/stream/path',
+    ),
+    'pollSeconds on a WebSocket stream': (
+      _edit((j) => _wifiBlock(j)['stream']['pollSeconds'] = 5),
+      '/deviceProfiles/0/wifi/stream',
+    ),
+    'HTTP stream without pollSeconds': (
+      _edit((j) => _wifiBlock(j)['stream'] = {'type': 'http', 'path': '/data'}),
+      '/deviceProfiles/0/wifi/stream',
+    ),
+    'unknown wifi key': (_edit((j) => _wifiBlock(j)['password'] = 'x'), '/deviceProfiles/0/wifi'),
     // Passes the schema; caught by checkDeviceProfiles.
+    'SoftAP address on the internet': (
+      _edit((j) => _wifiBlock(j)['softApSetup']['address'] = '8.8.8.8'),
+      '/deviceProfiles/0/wifi/softApSetup/address: must be a local network address',
+    ),
     'device type with no profile': (
       _edit((j) => (j['deviceTypes'] as List).add('missing_v1')),
       '/deviceTypes/1: no device profile',

@@ -30,5 +30,9 @@ abstract interface class BleScanner {
   /// Stops after [timeout] or when the listener cancels. The profile must have a `ble` block.
   Stream<List<FoundDevice>> scan(DeviceProfile profile, {Duration timeout});
 
+  /// Devices of type [profile] in Wi‑Fi setup mode, found by its `wifi.bleSetup` service or name
+  /// prefix; otherwise like [scan].
+  Stream<List<FoundDevice>> scanForSetup(DeviceProfile profile, {Duration timeout});
+
   Future<void> stop();
 }

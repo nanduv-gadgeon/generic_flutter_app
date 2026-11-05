@@ -47,6 +47,9 @@ class UniversalBleAdapter implements BleAdapter {
   Future<void> pair(String deviceId) => UniversalBle.pair(deviceId);
 
   @override
+  Future<int> requestMtu(String deviceId, int mtu) => UniversalBle.requestMtu(deviceId, mtu);
+
+  @override
   Future<Map<String, Set<String>>> discover(String deviceId) async => {
     for (final service in await UniversalBle.discoverServices(deviceId))
       service.uuid: {for (final c in service.characteristics) c.uuid},

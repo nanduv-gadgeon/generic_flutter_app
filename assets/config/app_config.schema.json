@@ -95,6 +95,7 @@
         "readings": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/reading" } },
         "alerts": { "type": "array", "items": { "$ref": "#/definitions/alertRule" } },
         "ble": { "$ref": "#/definitions/bleSettings" },
+        "packet": { "$ref": "#/definitions/packet" },
         "commands": { "type": "array", "items": { "$ref": "#/definitions/deviceCommand" } }
       }
     },
@@ -102,7 +103,120 @@
       "type": "string",
       "pattern": "^([0-9A-Fa-f]{4}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$"
     },
+    "hexByte": { "type": "string", "pattern": "^[0-9A-Fa-f]{2}$" },
     "hexBytes": { "type": "string", "pattern": "^[0-9A-Fa-f]{2}( [0-9A-Fa-f]{2})*$" },
+    "byteOrder": { "enum": ["little", "big"] },
+    "fieldType": { "enum": ["uint8", "uint16", "uint32", "uint64", "int8", "int16", "int32", "float32"] },
+    "deviceCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "bytes"],
+      "properties": { "id": { "$ref": "#/definitions/key" }, "bytes": { "$ref": "#/definitions/hexBytes" } }
+    },
+    "packet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["frames"],
+      "properties": {
+        "byteOrder": { "$ref": "#/definitions/byteOrder" },
+        "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/frame" } }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "kind"],
+      "properties": {
+        "code": { "$ref": "#/definitions/hexByte" },
+        "kind": { "enum": ["data", "batchEnd", "noData"] },
+        "minLength": { "type": "integer", "minimum": 1 },
+        "checksum": { "$ref": "#/definitions/checksum" },
+        "records": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end", "size"],
+          "properties": {
+            "start": { "type": "integer" },
+            "end": { "type": "integer" },
+            "size": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "time": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["offset", "type", "unit"],
+          "properties": {
+            "offset": { "type": "integer", "minimum": 0 },
+            "type": { "enum": ["uint32", "uint64"] },
+            "unit": { "enum": ["s", "ms"] },
+            "byteOrder": { "$ref": "#/definitions/byteOrder" }
+          }
+        },
+        "fields": { "type": "array", "items": { "$ref": "#/definitions/field" } },
+        "events": { "$ref": "#/definitions/events" }
+      },
+      "if": { "properties": { "kind": { "const": "data" } } },
+      "then": { "required": ["fields"], "properties": { "fields": { "minItems": 1 } } }
+    },
+    "checksum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "storedAt", "accept"],
+      "properties": {
+        "type": { "enum": ["crc32", "xor8", "sum8"] },
+        "storedAt": { "type": "integer" },
+        "accept": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to"],
+            "properties": {
+              "from": { "type": "integer" },
+              "to": { "type": "integer" },
+              "byteOrder": { "$ref": "#/definitions/byteOrder" }
+            }
+          }
+        }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "offset", "type"],
+      "properties": {
+        "key": { "$ref": "#/definitions/key" },
+        "offset": { "type": "integer", "minimum": 0 },
+        "type": { "$ref": "#/definitions/fieldType" },
+        "scale": { "type": "number", "not": { "const": 0 } },
+        "byteOrder": { "$ref": "#/definitions/byteOrder" },
+        "when": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["offset", "equals"],
+          "properties": {
+            "offset": { "type": "integer", "minimum": 0 },
+            "equals": { "$ref": "#/definitions/hexByte" }
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["typeOffset", "codeOffset", "types"],
+      "properties": {
+        "typeOffset": { "type": "integer", "minimum": 0 },
+        "codeOffset": { "type": "integer", "minimum": 0 },
+        "dataTypes": { "type": "array", "items": { "$ref": "#/definitions/hexByte" } },
+        "types": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[0-9A-Fa-f]{2}$" },
+          "additionalProperties": { "enum": ["start", "stop", "error"] }
+        }
+      }
+    },
     "bleSettings": {
       "type": "object",
       "additionalProperties": false,
@@ -116,12 +230,6 @@
         "bond": { "type": "boolean" },
         "batteryService": { "type": "boolean" }
       }
-    },
-    "deviceCommand": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "bytes"],
-      "properties": { "id": { "$ref": "#/definitions/key" }, "bytes": { "$ref": "#/definitions/hexBytes" } }
     },
     "reading": {
       "type": "object",

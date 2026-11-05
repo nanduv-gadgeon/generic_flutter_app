@@ -26,6 +26,10 @@ class BleDeviceLink implements DeviceLink {
   /// Wait before the one retry of a failed write (as in the IEF protocol).
   static const writeRetryDelay = Duration(milliseconds: 100);
 
+  /// Asked for after connecting, so a whole data frame fits in one notification. 517 is the
+  /// Android maximum; the device may agree to less. iOS negotiates by itself.
+  static const preferredMtu = 517;
+
   final BleAdapter _adapter;
   final String deviceId;
   final BleSettings _settings;
@@ -120,6 +124,7 @@ class BleDeviceLink implements DeviceLink {
       await _adapter.connect(deviceId);
       if (_settings.bond) await _adapter.pair(deviceId);
       final services = await _adapter.discover(deviceId);
+      await _requestMtu();
       await _subscribe(services);
     } catch (e) {
       try {
@@ -130,6 +135,14 @@ class BleDeviceLink implements DeviceLink {
       throw e is LinkException ? e : LinkException('connect failed: ${e.runtimeType}');
     }
     _setState(LinkState.connected);
+  }
+
+  Future<void> _requestMtu() async {
+    try {
+      await _adapter.requestMtu(deviceId, preferredMtu);
+    } catch (_) {
+      // Best effort: the default size still works for short frames.
+    }
   }
 
   Future<void> _subscribe(Map<String, Set<String>> services) async {

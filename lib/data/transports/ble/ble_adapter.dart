@@ -27,6 +27,9 @@ abstract interface class BleAdapter {
   /// Pairs (bonds) with the device; throws if pairing fails.
   Future<void> pair(String deviceId);
 
+  /// Asks for a larger packet size; returns the size agreed.
+  Future<int> requestMtu(String deviceId, int mtu);
+
   /// Service UUID -> its characteristic UUIDs.
   Future<Map<String, Set<String>>> discover(String deviceId);
 

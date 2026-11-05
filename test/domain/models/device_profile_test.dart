@@ -18,27 +18,35 @@ void main() {
     expect(profile.readings.last.decimals, 0, reason: 'decimals defaults to 0');
     expect(profile.readings.last.normal, isNull);
     expect(profile.readings.last.goal, 100);
-    expect(profile.alerts.first, const AlertRule(key: 'level', above: 25));
+    expect(profile.alerts.first, const AlertRule(key: 'current', above: 25));
     expect(profile.alerts.last.below, 15);
   });
 
-  test('parses the ble block and commands', () {
+  test('parses the ble block, packet and commands', () {
     final profile = DeviceProfile.fromJson(validProfileJson());
 
     expect(profile.ble!.writeUuid, '11111111-2222-3333-4444-000000000002');
     expect(profile.ble!.bond, isFalse, reason: 'bond defaults to false');
     expect(profile.ble!.batteryService, isTrue, reason: 'batteryService defaults to true');
+    final frame = profile.packet!.frames.single;
+    expect(profile.packet!.byteOrder, ByteOrder.little, reason: 'byteOrder defaults to little');
+    expect(frame.kind, FrameKind.data);
+    expect(frame.checksum!.accept.single.to, -1);
+    expect(frame.fields.first.byteOrder, ByteOrder.big);
+    expect(frame.fields.last.scale, 1, reason: 'scale defaults to 1');
     expect(profile.commands.single.data, [0xA5, 0x01]);
   });
 
-  test('ble and commands are optional', () {
+  test('ble, packet and commands are optional', () {
     final profile = DeviceProfile.fromJson(
       validProfileJson()
         ..remove('ble')
+        ..remove('packet')
         ..remove('commands'),
     );
 
     expect(profile.ble, isNull);
+    expect(profile.packet, isNull);
     expect(profile.commands, isEmpty);
   });
 

@@ -23,6 +23,9 @@ Map<String, dynamic> _profile(Map<String, dynamic> json) =>
 Map<String, dynamic> _reading(Map<String, dynamic> json) =>
     (_profile(json)['readings'] as List).first as Map<String, dynamic>;
 
+Map<String, dynamic> _frame(Map<String, dynamic> json) =>
+    ((_profile(json)['packet'] as Map)['frames'] as List).first as Map<String, dynamic>;
+
 Map<String, dynamic> _alert(Map<String, dynamic> json) =>
     (_profile(json)['alerts'] as List).first as Map<String, dynamic>;
 
@@ -89,6 +92,31 @@ void main() {
     'bad command bytes': (
       _edit((j) => (_profile(j)['commands'] as List).first['bytes'] = '0x8200'),
       '/deviceProfiles/0/commands/0/bytes',
+    ),
+    'bad frame code': (_edit((j) => _frame(j)['code'] = '0x90'), '/packet/frames/0/code'),
+    'unknown frame kind': (_edit((j) => _frame(j)['kind'] = 'heartbeat'), '/packet/frames/0/kind'),
+    'data frame without fields': (_edit((j) => _frame(j).remove('fields')), '/packet/frames/0'),
+    'unknown field type': (
+      _edit((j) => (_frame(j)['fields'] as List).first['type'] = 'uint24'),
+      '/packet/frames/0/fields/0/type',
+    ),
+    'zero scale': (
+      _edit((j) => (_frame(j)['fields'] as List).first['scale'] = 0),
+      '/packet/frames/0/fields/0/scale',
+    ),
+    'unknown checksum': (
+      _edit((j) => _frame(j)['checksum']['type'] = 'md5'),
+      '/packet/frames/0/checksum/type',
+    ),
+    'unknown event kind': (
+      _edit(
+        (j) => _frame(j)['events'] = {
+          'typeOffset': 0,
+          'codeOffset': 1,
+          'types': {'01': 'reboot'},
+        },
+      ),
+      '/packet/frames/0/events/types',
     ),
     // Passes the schema; caught by checkDeviceProfiles.
     'device type with no profile': (

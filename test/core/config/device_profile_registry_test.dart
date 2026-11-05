@@ -16,6 +16,11 @@ Map<String, dynamic> _profile(Map<String, dynamic> json, [int i = 0]) =>
 
 List<dynamic> _readings(Map<String, dynamic> json) => _profile(json)['readings'] as List;
 
+List<dynamic> _frames(Map<String, dynamic> json) =>
+    (_profile(json)['packet'] as Map)['frames'] as List;
+
+List<dynamic> _fields(Map<String, dynamic> json) => _frames(json)[0]['fields'] as List;
+
 void main() {
   group('checkDeviceProfiles', () {
     test('accepts a valid config', () {
@@ -41,7 +46,7 @@ void main() {
         '/deviceTypes/1: no device profile for "missing_v1"',
       ),
       'a duplicate reading key': (
-        (j) => _readings(j)[1]['key'] = 'level',
+        (j) => _readings(j)[1]['key'] = 'current',
         '/deviceProfiles/0/readings/1/key: duplicate reading key',
       ),
       'an alert on an unknown reading': (
@@ -55,6 +60,42 @@ void main() {
       'a ble block without the ble transport': (
         (j) => _profile(j)['transports'] = ['wifi'],
         '/deviceProfiles/0/ble: set, but "ble" is not in transports',
+      ),
+      'a ble block without a packet': (
+        (j) => _profile(j).remove('packet'),
+        '/deviceProfiles/0/packet: needed to read data from a BLE device',
+      ),
+      'a reading no packet field gives': (
+        (j) => _readings(j).add({'key': 'pressure', 'label': 'P', 'unit': 'hPa', 'icon': 'gauge'}),
+        '/deviceProfiles/0/readings/2/key: no packet field gives "pressure"',
+      ),
+      'a duplicate frame code': (
+        (j) => _frames(j).add({'code': 'a5', 'kind': 'noData'}),
+        '/deviceProfiles/0/packet/frames/1/code: duplicate frame code',
+      ),
+      'a field past minLength': (
+        (j) => _fields(j)[0]['offset'] = 4,
+        '/deviceProfiles/0/packet/frames/0/fields/0: does not fit in minLength 5',
+      ),
+      'a field past the record size': (
+        (j) => _frames(j)[0]['records'] = {'start': 1, 'end': -1, 'size': 3},
+        '/deviceProfiles/0/packet/frames/0/fields/1: does not fit in a 3-byte record',
+      ),
+      'a condition past the record': (
+        (j) => _fields(j)[1]['when'] = {'offset': 9, 'equals': '01'},
+        '/deviceProfiles/0/packet/frames/0/fields/1/when: does not fit in minLength 5',
+      ),
+      'a time field past the record': (
+        (j) => _frames(j)[0]['time'] = {'offset': 2, 'type': 'uint32', 'unit': 's'},
+        '/deviceProfiles/0/packet/frames/0/time: does not fit in minLength 5',
+      ),
+      'an event offset past the record': (
+        (j) => _frames(j)[0]['events'] = {
+          'typeOffset': 0,
+          'codeOffset': 7,
+          'types': {'01': 'start'},
+        },
+        '/deviceProfiles/0/packet/frames/0/events/codeOffset: does not fit in minLength 5',
       ),
       'a duplicate command id': (
         (j) => (_profile(j)['commands'] as List).add({'id': 'ping', 'bytes': '00'}),
@@ -108,6 +149,7 @@ void main() {
     final cases = <String, (DeviceProfile, Transport, bool)>{
       'BLE with a ble block': (profile, Transport.ble, true),
       'BLE without a ble block': (profile.copyWith(ble: null), Transport.ble, false),
+      'BLE without a packet': (profile.copyWith(packet: null), Transport.ble, false),
       'a transport the profile does not list': (
         profile.copyWith(transports: [Transport.wifi]),
         Transport.ble,

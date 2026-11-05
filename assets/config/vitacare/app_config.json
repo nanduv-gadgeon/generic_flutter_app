@@ -100,6 +100,40 @@
         "bond": false,
         "batteryService": true
       },
+      "packet": {
+        "byteOrder": "little",
+        "frames": [
+          {
+            "code": "90",
+            "kind": "data",
+            "minLength": 6,
+            "checksum": {
+              "type": "crc32",
+              "storedAt": -4,
+              "accept": [
+                { "from": 2, "to": -4, "byteOrder": "little" },
+                { "from": 0, "to": -4, "byteOrder": "little" },
+                { "from": 2, "to": -4, "byteOrder": "big" }
+              ]
+            },
+            "records": { "start": 2, "end": -4, "size": 12 },
+            "time": { "offset": 0, "type": "uint64", "unit": "s" },
+            "fields": [
+              { "key": "battery", "offset": 9, "type": "uint8" },
+              { "key": "current", "offset": 10, "type": "uint8", "when": { "offset": 8, "equals": "03" } },
+              { "key": "current", "offset": 11, "type": "uint8", "scale": 0.01, "when": { "offset": 8, "equals": "03" } }
+            ],
+            "events": {
+              "typeOffset": 8,
+              "codeOffset": 10,
+              "dataTypes": ["03"],
+              "types": { "01": "start", "02": "stop", "04": "error" }
+            }
+          },
+          { "code": "91", "kind": "batchEnd" },
+          { "code": "92", "kind": "noData" }
+        ]
+      },
       "commands": [{ "id": "request_logs", "bytes": "82 00" }]
     }
   ]

@@ -115,7 +115,7 @@ One app\_config.json per customer (or plist on iOS) is bundled into the build an
 }\]  
 }
 
-The cloud block is read only when isCloud is true. The decoder applies the packet.fields rules to every packet (e.g. bytes 01 6E at offset 5 → 36.6 °C), so no code is specific to one device. A device whose packet cannot be described this way (compressed, encrypted) gets a small Dart **decoder plugin** — the 6–7 day case.
+The cloud block is read only when isCloud is true. The decoder applies the packet rules to every packet (e.g. bytes 01 6E at offset 5 → 36.6 °C), so no code is specific to one device. Besides fixed fields, the rules cover frame types picked by their first byte, repeated records, fields read only when another field has a given value, values built from several fields, device events and a list of accepted checksum forms (see decisions.md). A device whose packet cannot be described this way (compressed, encrypted) gets a small Dart **decoder plugin** — the 6–7 day case.
 
 ## Device communication
 

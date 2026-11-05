@@ -39,26 +39,28 @@ Map<String, dynamic> validConfigJson({bool isCloud = false}) => {
   'deviceProfiles': [validProfileJson()],
 };
 
-/// A small device profile with made-up readings, limits, UUIDs and command bytes.
+/// A small device profile with made-up readings, limits, UUIDs, packet layout and command bytes.
+///
+/// Frame `A5 cc cc bb xx`: current (uint16 big-endian ÷ 10), battery, then an XOR of the first 4 bytes.
 Map<String, dynamic> validProfileJson({String id = 'test_device_v1'}) => {
   'id': id,
   'label': 'Test device',
-  'summary': 'Level, count',
+  'summary': 'Current, battery',
   'icon': 'chip',
   'transports': ['ble'],
   'readings': [
     {
-      'key': 'level',
-      'label': 'Level',
+      'key': 'current',
+      'label': 'Current',
       'unit': 'u',
       'icon': 'gauge',
       'decimals': 1,
       'normal': [10, 20],
     },
-    {'key': 'count', 'label': 'Count', 'unit': 'n', 'icon': 'trend', 'goal': 100},
+    {'key': 'battery', 'label': 'Battery', 'unit': '%', 'icon': 'battery', 'goal': 100},
   ],
   'alerts': [
-    {'key': 'level', 'above': 25},
+    {'key': 'current', 'above': 25},
     {'key': 'battery', 'below': 15},
   ],
   'ble': {
@@ -66,6 +68,26 @@ Map<String, dynamic> validProfileJson({String id = 'test_device_v1'}) => {
     'notifyUuid': '11111111-2222-3333-4444-000000000001',
     'writeUuid': '11111111-2222-3333-4444-000000000002',
     'scanNamePrefix': 'TST',
+  },
+  'packet': {
+    'frames': [
+      {
+        'code': 'A5',
+        'kind': 'data',
+        'minLength': 5,
+        'checksum': {
+          'type': 'xor8',
+          'storedAt': -1,
+          'accept': [
+            {'from': 0, 'to': -1},
+          ],
+        },
+        'fields': [
+          {'key': 'current', 'offset': 1, 'type': 'uint16', 'byteOrder': 'big', 'scale': 0.1},
+          {'key': 'battery', 'offset': 3, 'type': 'uint8'},
+        ],
+      },
+    ],
   },
   'commands': [
     {'id': 'ping', 'bytes': 'A5 01'},

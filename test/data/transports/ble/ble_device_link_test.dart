@@ -58,6 +58,7 @@ void main() {
         .thenAnswer((_) async => Uint8List.fromList([80]));
     when(() => adapter.write(_id, any(), any(), any())).thenAnswer((_) async {});
     when(() => adapter.connection(_id)).thenAnswer((_) => connection.stream);
+    when(() => adapter.requestMtu(_id, any())).thenAnswer((_) async => 247);
   });
 
   BleDeviceLink link([BleSettings settings = _settings]) =>
@@ -80,6 +81,25 @@ void main() {
     expect(levels, [80, 79]);
     verify(() => adapter.subscribe(_id, _service, _notify)).called(1);
     verifyNever(() => adapter.pair(any()));
+  });
+
+  test('asks for a larger MTU after discovery, before subscribing', () async {
+    await link().connect();
+
+    verifyInOrder([
+      () => adapter.discover(_id),
+      () => adapter.requestMtu(_id, BleDeviceLink.preferredMtu),
+      () => adapter.subscribe(_id, _service, _notify),
+    ]);
+  });
+
+  test('still connects when the MTU request fails', () async {
+    when(() => adapter.requestMtu(_id, any())).thenThrow(Exception('not supported'));
+    final l = link();
+
+    await l.connect();
+
+    expect(await l.state.first, LinkState.connected);
   });
 
   test('pairs before discovering when the profile asks for bonding', () async {

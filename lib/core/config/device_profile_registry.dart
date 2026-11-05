@@ -31,10 +31,12 @@ class DeviceProfileRegistry {
   DeviceProfile byId(String id) => _byId[id] ?? (throw UnknownDeviceTypeException(id));
 }
 
-/// Whether the profile has the connection details [transport] needs. A type whose protocol is
-/// not known yet lists the transport but cannot connect.
+/// Whether the profile has the connection details [transport] needs and a `packet` block to read
+/// its data.
+/// A type whose protocol is not known yet lists the transport but cannot connect.
 bool isConnectable(DeviceProfile profile, Transport transport) =>
     profile.transports.contains(transport) &&
+    profile.packet != null &&
     switch (transport) {
       Transport.ble => profile.ble != null,
       Transport.wifi => false, // TODO(1.2.6): Wi-Fi connection details
@@ -69,6 +71,7 @@ List<String> checkDeviceProfiles(AppConfig config) {
     if (profile.ble != null && !profile.transports.contains(Transport.ble)) {
       errors.add('$path/ble: set, but "ble" is not in transports');
     }
+    errors.addAll(_checkPacket(profile, path));
     final commandIds = <String>{};
     for (final (j, command) in profile.commands.indexed) {
       if (!commandIds.add(command.id)) {
@@ -79,6 +82,48 @@ List<String> checkDeviceProfiles(AppConfig config) {
 
   for (final (i, id) in config.deviceTypes.indexed) {
     if (!ids.contains(id)) errors.add('/deviceTypes/$i: no device profile for "$id"');
+  }
+  return errors;
+}
+
+List<String> _checkPacket(DeviceProfile profile, String path) {
+  final packet = profile.packet;
+  if (packet == null) {
+    return [if (profile.ble != null) '$path/packet: needed to read data from a BLE device'];
+  }
+  final errors = <String>[];
+  final codes = <int>{};
+  final fieldKeys = <String>{};
+  for (final (f, frame) in packet.frames.indexed) {
+    final framePath = '$path/packet/frames/$f';
+    if (!codes.add(hexByte(frame.code))) errors.add('$framePath/code: duplicate frame code');
+    fieldKeys.addAll(frame.fields.map((field) => field.key));
+
+    // Fields must fit in a record, or in the shortest accepted frame when there are no records.
+    final size = frame.records?.size ?? frame.minLength;
+    final where = frame.records == null ? 'minLength $size' : 'a $size-byte record';
+    void fits(String at, int offset, FieldType type) {
+      if (offset + widthOf(type) > size) errors.add('$framePath/$at: does not fit in $where');
+    }
+
+    for (final (k, field) in frame.fields.indexed) {
+      fits('fields/$k', field.offset, field.type);
+      final when = field.when;
+      if (when != null) fits('fields/$k/when', when.offset, FieldType.uint8);
+    }
+    final time = frame.time;
+    if (time != null) fits('time', time.offset, time.type);
+    final events = frame.events;
+    if (events != null) {
+      fits('events/typeOffset', events.typeOffset, FieldType.uint8);
+      fits('events/codeOffset', events.codeOffset, FieldType.uint8);
+    }
+  }
+
+  for (final (j, reading) in profile.readings.indexed) {
+    if (reading.key != batteryKey && !fieldKeys.contains(reading.key)) {
+      errors.add('$path/readings/$j/key: no packet field gives "${reading.key}"');
+    }
   }
   return errors;
 }

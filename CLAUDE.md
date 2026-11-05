@@ -12,6 +12,7 @@ Rules for AI assistants working in this repository.
 
 - Layers: presentation → application (Riverpod) → domain ← data. `core` wires them together.
 - Service interfaces live in `lib/domain/services/`; implementations live in `lib/data/` and implement them. Only `core/di` creates implementations.
+- Transport interfaces (`DeviceLink`, `BleScanner`) live in `lib/domain/transport/`. Only services use them; screens reach scanning and connecting through `DeviceService`.
 - `lib/domain` is pure Dart: no Flutter imports.
 - Screens talk only to service interfaces (`AuthService`, `DeviceService`, `ReadingRepository`, `ExportService`, `AlertEngine`, `Uploader`). They never talk to BLE, the DB or HTTP directly.
 - `isCloud` is read once. Branch on it only in `core/di`. Phase 2 code is empty hooks marked `// TODO(phase2)`.
@@ -39,7 +40,7 @@ Rules for AI assistants working in this repository.
 ## Tests
 
 - Every change adds unit tests (mocktail).
-- The decoder and alert rules use table-driven tests.
+- The decoder (with the sample packets from each protocol doc) and alert rules use table-driven tests.
 
 ## Way of working
 

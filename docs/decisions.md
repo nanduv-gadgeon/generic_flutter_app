@@ -20,3 +20,6 @@ Open decisions from [architecture.md](architecture.md) ("Risks and decisions nee
 | 2026-11-04 | BLE package | `universal_ble` (BSD‑3) instead of `flutter_blue_plus` 2.x, which needs a paid commercial licence for for-profit use and sends a licence ping from the Android build. Only `universal_ble_adapter.dart` imports it | Nandu Viswanathan |
 | 2026-11-04 | IEF scan UUID mismatch | Profile `ble` block gets an optional `scanServiceUuid` (default `serviceUuid`); IEF keeps both values from the old app until checked on a real device | Nandu Viswanathan |
 | 2026-11-04 | Device types without a protocol document | `ble` block optional; such types cannot connect yet (`isConnectable` false). No invented UUIDs | Nandu Viswanathan |
+| 2026-11-04 | Packet decoding | Generic decoder driven by the profile `packet` block, extended with frame types by first byte, repeated records, `when` conditions, same-key fields added together, device events and accepted checksum forms, so the IEF patch needs no device-specific Dart code. A one-codec-per-device design was tried and dropped | Nandu Viswanathan |
+| 2026-11-04 | IEF CRC32 variants | Accept all 3 the protocol doc lists: entries only (LE), header included (LE), entries only (BE) | Nandu Viswanathan |
+| 2026-11-04 | IEF set clock (RTC) command | Encoded in 1.3.3, with time sync in the reading pipeline | Nandu Viswanathan |

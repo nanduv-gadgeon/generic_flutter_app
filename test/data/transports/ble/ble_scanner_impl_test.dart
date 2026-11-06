@@ -116,4 +116,18 @@ void main() {
       expect(() => scanner.scanForSetup(profile), throwsA(isA<NotConnectableException>()));
     });
   });
+
+  group('requestPermission', () {
+    test('passes on the answer', () async {
+      when(() => adapter.requestPermission()).thenAnswer((_) async => true);
+
+      expect(await scanner.requestPermission(), isTrue);
+    });
+
+    test('is false when the request fails', () async {
+      when(() => adapter.requestPermission()).thenThrow(Exception('unsupported'));
+
+      expect(await scanner.requestPermission(), isFalse);
+    });
+  });
 }

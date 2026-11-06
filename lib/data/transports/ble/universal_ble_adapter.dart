@@ -7,6 +7,10 @@ import 'ble_adapter.dart';
 
 /// [BleAdapter] over the `universal_ble` package. The only file that imports it; no logic here.
 class UniversalBleAdapter implements BleAdapter {
+  /// For the first subscribe or read of an encrypted characteristic. The phone may stop there and
+  /// ask the user for the device's pairing key, which takes longer than the package's 10 s default.
+  static const pairingTimeout = Duration(seconds: 60);
+
   @override
   Stream<BleAvailability> get availability async* {
     yield _map(await UniversalBle.getBluetoothAvailabilityState());
@@ -20,6 +24,13 @@ class UniversalBleAdapter implements BleAdapter {
     AvailabilityState.unsupported => BleAvailability.unsupported,
     AvailabilityState.unknown || AvailabilityState.resetting => BleAvailability.unknown,
   };
+
+  @override
+  Future<bool> requestPermission() async {
+    // minSdk 34: scan and connect permissions only, never location.
+    await UniversalBle.requestPermissions();
+    return UniversalBle.hasPermissions();
+  }
 
   @override
   Stream<FoundDevice> get scanResults =>
@@ -57,7 +68,12 @@ class UniversalBleAdapter implements BleAdapter {
 
   @override
   Future<void> subscribe(String deviceId, String service, String characteristic) =>
-      UniversalBle.subscribeNotifications(deviceId, service, characteristic);
+      UniversalBle.subscribeNotifications(
+        deviceId,
+        service,
+        characteristic,
+        timeout: pairingTimeout,
+      );
 
   @override
   Stream<Uint8List> values(String deviceId, String characteristic) =>
@@ -65,7 +81,7 @@ class UniversalBleAdapter implements BleAdapter {
 
   @override
   Future<Uint8List> read(String deviceId, String service, String characteristic) =>
-      UniversalBle.read(deviceId, service, characteristic);
+      UniversalBle.read(deviceId, service, characteristic, timeout: pairingTimeout);
 
   @override
   Future<void> write(String deviceId, String service, String characteristic, Uint8List value) =>

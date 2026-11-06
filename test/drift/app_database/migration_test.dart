@@ -9,6 +9,7 @@ import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -138,6 +139,67 @@ void main() {
         );
         expect(expectedNewDevicesData, await newDb.select(newDb.devices).get());
         expect(await newDb.select(newDb.appSettings).get(), isEmpty);
+      },
+    );
+  });
+
+  // v3 adds the device_alerts table and devices.ip_address: existing devices
+  // keep their data, with no IP and no alert rows yet.
+  test('migration from v2 to v3 does not corrupt data', () async {
+    final oldUsersData = <v2.UsersData>[
+      v2.UsersData(
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+        mobile: '+91 0000000000',
+        passwordHash: Uint8List.fromList([1, 2, 3]),
+        passwordSalt: Uint8List.fromList([4, 5, 6]),
+        hashParams: 'test;m=1;t=1;p=1',
+        failedLoginCount: 0,
+        biometricEnabled: 0,
+        termsAcceptedAt: 1767225600,
+        createdAt: 1767225600,
+        updatedAt: 1767225600,
+      ),
+    ];
+    final oldDevicesData = <v2.DevicesData>[
+      const v2.DevicesData(
+        id: 1,
+        userId: 1,
+        name: 'Test band',
+        profileId: 'test_device_v1',
+        transport: 'ble',
+        address: 'AA:BB:CC:00:00:01',
+        sortOrder: 0,
+        createdAt: 1767225600,
+      ),
+    ];
+    final expectedNewDevicesData = <v3.DevicesData>[
+      const v3.DevicesData(
+        id: 1,
+        userId: 1,
+        name: 'Test band',
+        profileId: 'test_device_v1',
+        transport: 'ble',
+        address: 'AA:BB:CC:00:00:01',
+        sortOrder: 0,
+        createdAt: 1767225600,
+      ),
+    ];
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 2,
+      newVersion: 3,
+      createOld: v2.DatabaseAtV2.new,
+      createNew: v3.DatabaseAtV3.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) {
+        batch.insertAll(oldDb.users, oldUsersData);
+        batch.insertAll(oldDb.devices, oldDevicesData);
+      },
+      validateItems: (newDb) async {
+        expect(expectedNewDevicesData, await newDb.select(newDb.devices).get());
+        expect(await newDb.select(newDb.deviceAlerts).get(), isEmpty);
       },
     );
   });

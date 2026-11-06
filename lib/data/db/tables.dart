@@ -48,8 +48,12 @@ class Devices extends Table {
   TextColumn get profileId => text()();
   TextColumn get transport => textEnum<DeviceTransport>()();
 
-  /// MAC address, BLE remote id or IP address.
+  /// BLE: MAC address or remote id. Wi‑Fi: the device id it announces by mDNS, which stays the
+  /// same when its IP changes.
   TextColumn get address => text()();
+
+  /// Wi‑Fi: the last IP address, used when mDNS does not find the device (added in schema v3).
+  TextColumn get ipAddress => text().nullable()();
   TextColumn get firmware => text().nullable()();
   IntColumn get batteryPercent =>
       // ignore: recursive_getters
@@ -74,4 +78,19 @@ class AppSettings extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {userId};
+}
+
+/// Alert limits for one reading of one device (added in schema v3). Starts as the device type's
+/// defaults from the config file; Device settings changes them.
+class DeviceAlerts extends Table {
+  IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
+
+  /// A reading key of the device's profile, e.g. `heart_rate`.
+  TextColumn get readingKey => text()();
+  RealColumn get above => real().nullable()();
+  RealColumn get below => real().nullable()();
+  BoolColumn get enabled => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {deviceId, readingKey};
 }

@@ -29,6 +29,22 @@ void main() {
     });
   }
 
+  // (validator, input) -> message; null = allowed
+  final lengthCases = <(String? Function(String?), String), String?>{
+    (AuthValidators.name, 'T'): 'Use at least 2 characters.',
+    (AuthValidators.name, 'Ab'): null,
+    (AuthValidators.name, 'T' * 70): null,
+    (AuthValidators.name, 'T' * 71): 'Use at most 70 characters.',
+    (AuthValidators.email, 'a@b.c'): 'Enter a valid email address.', // 5
+    (AuthValidators.email, '${'a' * 242}@example.com'): null, // 254
+    (AuthValidators.email, '${'a' * 243}@example.com'): 'Enter a valid email address.', // 255
+  };
+  for (final MapEntry(key: (validate, input), value: message) in lengthCases.entries) {
+    test('length limit: ${input.length} characters -> ${message ?? 'allowed'}', () {
+      expect(validate(input), message);
+    });
+  }
+
   test('confirmPassword reads the latest password', () {
     var password = 'made-up-pw';
     final validate = AuthValidators.confirmPassword(() => password);

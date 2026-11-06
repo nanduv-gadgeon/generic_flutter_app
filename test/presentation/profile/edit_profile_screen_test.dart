@@ -132,6 +132,17 @@ void main() {
     verifyNever(() => auth.updateProfile(any()));
   });
 
+  testWidgets('a name over 70 characters is not saved (TC-REG-011)', (tester) async {
+    await pumpEdit(tester);
+
+    await tester.enterText(field('Full name'), 'T' * 300);
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Use at most 70 characters.'), findsOneWidget);
+    verifyNever(() => auth.updateProfile(any()));
+  });
+
   testWidgets('a bad mobile number is not saved', (tester) async {
     await pumpEdit(tester);
 

@@ -9,6 +9,7 @@ import 'generated/schema.dart';
 
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v3.dart' as v3;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -141,4 +142,73 @@ void main() {
       },
     );
   });
+
+  // v3 only adds Dart-side length limits: an account saved before them, with a
+  // name longer than the new 255 limit, must come through unchanged.
+  test(
+    'migration from v2 to v3 keeps existing accounts, even long names',
+    () async {
+      final hash = Uint8List.fromList([1, 2, 3]);
+      final salt = Uint8List.fromList([4, 5, 6]);
+      final longName = 'T' * 300;
+
+      final oldUsersData = <v2.UsersData>[
+        v2.UsersData(
+          id: 1,
+          name: longName,
+          email: 'test@example.com',
+          mobile: '+91 0000000000',
+          passwordHash: hash,
+          passwordSalt: salt,
+          hashParams: 'test;m=1;t=1;p=1',
+          failedLoginCount: 0,
+          biometricEnabled: 0,
+          termsAcceptedAt: 1767225600,
+          createdAt: 1767225600,
+          updatedAt: 1767225600,
+        ),
+      ];
+      final expectedNewUsersData = <v3.UsersData>[
+        v3.UsersData(
+          id: 1,
+          name: longName,
+          email: 'test@example.com',
+          mobile: '+91 0000000000',
+          passwordHash: hash,
+          passwordSalt: salt,
+          hashParams: 'test;m=1;t=1;p=1',
+          failedLoginCount: 0,
+          biometricEnabled: 0,
+          termsAcceptedAt: 1767225600,
+          createdAt: 1767225600,
+          updatedAt: 1767225600,
+        ),
+      ];
+      final oldSettingsData = <v2.AppSettingsData>[
+        const v2.AppSettingsData(userId: 1, notificationsEnabled: 0),
+      ];
+      final expectedNewSettingsData = <v3.AppSettingsData>[
+        const v3.AppSettingsData(userId: 1, notificationsEnabled: 0),
+      ];
+
+      await verifier.testWithDataIntegrity(
+        oldVersion: 2,
+        newVersion: 3,
+        createOld: v2.DatabaseAtV2.new,
+        createNew: v3.DatabaseAtV3.new,
+        openTestedDatabase: AppDatabase.new,
+        createItems: (batch, oldDb) {
+          batch.insertAll(oldDb.users, oldUsersData);
+          batch.insertAll(oldDb.appSettings, oldSettingsData);
+        },
+        validateItems: (newDb) async {
+          expect(expectedNewUsersData, await newDb.select(newDb.users).get());
+          expect(
+            expectedNewSettingsData,
+            await newDb.select(newDb.appSettings).get(),
+          );
+        },
+      );
+    },
+  );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/auth_controller.dart';
@@ -6,6 +7,7 @@ import 'package:generic_flutter_app/application/devices_provider.dart';
 import 'package:generic_flutter_app/core/config/config_sections.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
+import 'package:generic_flutter_app/domain/services/auth_service.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/presentation/devices/home_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +32,7 @@ Future<void> _pumpHome(
   DateTime? now,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
+  AuthUser user = fakeUser,
 }) async {
   tester.view
     ..physicalSize = size
@@ -38,7 +41,7 @@ Future<void> _pumpHome(
 
   final auth = MockAuthService();
   final deviceService = MockDeviceService();
-  when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
+  when(() => auth.currentUser()).thenAnswer((_) async => user);
   when(() => deviceService.watchDevices(any())).thenAnswer((_) => Stream.value(devices));
 
   final router = GoRouter(
@@ -76,6 +79,15 @@ void main() {
 
     expect(find.text('Good evening,'), findsOneWidget);
     expect(find.text('Test'), findsOneWidget);
+  });
+
+  testWidgets('a very long first name stays on one line (TC-REG-011)', (tester) async {
+    final longName = 'T' * 300; // one word, so all of it is the "first name"
+    await _pumpHome(tester, user: fakeUser.copyWith(name: longName));
+
+    expect(tester.takeException(), isNull);
+    final name = tester.renderObject<RenderParagraph>(find.text(longName));
+    expect(name.didExceedMaxLines, isTrue); // ends with an ellipsis
   });
 
   testWidgets('with no devices shows zero totals and the empty card', (tester) async {

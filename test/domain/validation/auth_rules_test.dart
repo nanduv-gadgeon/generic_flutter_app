@@ -3,24 +3,45 @@ import 'package:generic_flutter_app/domain/models/dial_code.dart';
 import 'package:generic_flutter_app/domain/validation/auth_rules.dart';
 
 void main() {
-  test('isValidName', () {
-    final cases = {'Test User': true, ' T ': true, '': false, '   ': false};
+  test('nameProblem: $minNameLength–$maxNameLength characters once trimmed', () {
+    final cases = <String, NameProblem?>{
+      'Test User': null,
+      'Ab': null, // 2: the minimum
+      ' Ab ': null, // trimmed to 2
+      'T' * 70: null, // the maximum
+      ' ${'T' * 70} ': null, // trimmed to 70
+      '': NameProblem.blank,
+      '   ': NameProblem.blank,
+      'T': NameProblem.tooShort,
+      ' T ': NameProblem.tooShort,
+      'T' * 71: NameProblem.tooLong,
+      'T' * 300: NameProblem.tooLong, // TC-REG-011
+    };
     for (final MapEntry(:key, :value) in cases.entries) {
-      expect(isValidName(key), value, reason: '"$key"');
+      expect(nameProblem(key), value, reason: '"$key" (${key.length})');
+      expect(isValidName(key), value == null, reason: '"$key" (${key.length})');
     }
   });
 
-  test('isValidEmail', () {
+  test('isValidEmail: shape and $minEmailLength–$maxEmailLength characters', () {
+    // local part + '@example.com' (12 characters)
+    String emailOfLength(int n) => '${'a' * (n - 12)}@example.com';
     final cases = {
       'test@example.com': true,
       ' test@example.com ': true, // trimmed
+      'a@b.co': true, // 6: the minimum
+      'a@b.c': false, // 5
+      emailOfLength(254): true, // the maximum
+      ' ${emailOfLength(254)} ': true, // trimmed to 254
+      emailOfLength(255): false,
+      emailOfLength(320): false, // TC-REG-011
       'test@example': false,
       'test.example.com': false,
       'te st@example.com': false,
       '': false,
     };
     for (final MapEntry(:key, :value) in cases.entries) {
-      expect(isValidEmail(key), value, reason: '"$key"');
+      expect(isValidEmail(key), value, reason: '"$key" (${key.length})');
     }
   });
 

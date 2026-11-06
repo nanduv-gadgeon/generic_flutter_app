@@ -8,7 +8,12 @@ import '../strings/common_strings.dart';
 /// Form field validators for the account screens: each pairs a rule from `auth_rules.dart` with
 /// its message. Return null when the value is valid.
 abstract final class AuthValidators {
-  static String? name(String? v) => isValidName(v ?? '') ? null : AuthStrings.enterName;
+  static String? name(String? v) => switch (nameProblem(v ?? '')) {
+    null => null,
+    NameProblem.blank => AuthStrings.enterName,
+    NameProblem.tooShort => AuthStrings.nameTooShort(minNameLength),
+    NameProblem.tooLong => AuthStrings.nameTooLong(maxNameLength),
+  };
 
   static String? email(String? v) => isValidEmail(v ?? '') ? null : CommonStrings.invalidEmail;
 

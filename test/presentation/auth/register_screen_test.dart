@@ -109,6 +109,10 @@ void main() {
   // field changed from a valid form (null = terms left unticked) -> message shown
   final invalid = <String, (String?, String, String)>{
     'blank name': ('Full name', '  ', 'Enter your name.'),
+    'one-letter name': ('Full name', 'T', 'Use at least 2 characters.'),
+    // TC-REG-011: very long values
+    '300-character name': ('Full name', 'T' * 300, 'Use at most 70 characters.'),
+    '320-character email': ('Email', '${'a' * 308}@example.com', 'Enter a valid email address.'),
     'bad email': ('Email', 'not-an-email', 'Enter a valid email address.'),
     'letters in mobile': ('Mobile number', '00000 abcde', 'Enter a valid mobile number.'),
     '+ in mobile': ('Mobile number', '+91 00000 00000', 'Enter a valid mobile number.'),

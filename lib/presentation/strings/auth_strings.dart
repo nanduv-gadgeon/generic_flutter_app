@@ -32,6 +32,8 @@ abstract final class AuthStrings {
   static const fullName = 'Full name';
   static const fullNameHint = 'Your name';
   static const enterName = 'Enter your name.';
+  static String nameTooShort(int min) => 'Use at least $min characters.';
+  static String nameTooLong(int max) => 'Use at most $max characters.';
   static String newPasswordHint(int min) => 'At least $min characters';
   static String passwordTooShort(int min) => 'Use at least $min characters.';
   static const confirmPassword = 'Confirm password';

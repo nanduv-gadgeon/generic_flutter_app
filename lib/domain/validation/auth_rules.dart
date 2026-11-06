@@ -4,16 +4,37 @@ import '../models/dial_code.dart';
 /// `AuthValidators` (see CLAUDE.md).
 
 const minPasswordLength = 8;
+const minNameLength = 2;
+const maxNameLength = 70;
+const minEmailLength = 6;
+
+/// The longest address email allows (RFC 5321).
+const maxEmailLength = 254;
 
 final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 final _nationalPattern = RegExp(r'^[0-9][0-9 \-]*$');
 final _separators = RegExp(r'[ \-]');
 
-/// Not blank once spaces are trimmed.
-bool isValidName(String name) => name.trim().isNotEmpty;
+/// Why a name is not allowed.
+enum NameProblem { blank, tooShort, tooLong }
 
-/// A simple shape check (`a@b.c`); whether the account exists is checked elsewhere.
-bool isValidEmail(String email) => _emailPattern.hasMatch(email.trim());
+/// [minNameLength]–[maxNameLength] characters once spaces are trimmed; null when allowed.
+NameProblem? nameProblem(String name) {
+  final length = name.trim().length;
+  if (length == 0) return NameProblem.blank;
+  if (length < minNameLength) return NameProblem.tooShort;
+  if (length > maxNameLength) return NameProblem.tooLong;
+  return null;
+}
+
+bool isValidName(String name) => nameProblem(name) == null;
+
+/// A simple shape check (`a@b.c`) and [minEmailLength]–[maxEmailLength] characters once spaces
+/// are trimmed; whether the account exists is checked elsewhere.
+bool isValidEmail(String email) {
+  final v = email.trim();
+  return v.length >= minEmailLength && v.length <= maxEmailLength && _emailPattern.hasMatch(v);
+}
 
 /// A new password: at least [minPasswordLength] characters.
 bool isValidNewPassword(String password) => password.length >= minPasswordLength;

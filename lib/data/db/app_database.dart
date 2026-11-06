@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -32,6 +32,10 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: stepByStep(
       // v2 (task 1.1.11): per-user settings, starting with the notifications switch.
       from1To2: (m, schema) => m.createTable(schema.appSettings),
+      // v3 (TC-REG-011): length limits on users.name (255) and users.email (254). Drift checks
+      // them in Dart when rows are written; the SQL is unchanged, so there is nothing to alter
+      // and existing rows are kept as they are.
+      from2To3: (m, schema) async {},
     ),
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),
   );

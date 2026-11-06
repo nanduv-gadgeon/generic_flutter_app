@@ -14,3 +14,4 @@ Open decisions from [architecture.md](architecture.md) ("Risks and decisions nee
 | 2026-11-02 | Failed-login lock-out (Phase 1 local accounts) | None: wrong passwords do not lock the account. Departs from the architecture Security design ("failed-login lock-out"); the pre-release security review must accept this. `failedLoginCount` / `lockedUntil` columns stay unused | Nandu Viswanathan |
 | 2026-11-02 | How long a local session lasts | Until the user logs out; survives app restarts | Nandu Viswanathan |
 | 2026-11-02 | Turning on Face ID login | Offered once after the first password login (if `features.faceIdLogin` and biometrics are enrolled); one Face ID user per phone, the latest to turn it on | Nandu Viswanathan |
+| 2026-11-06 | Account field length limits (QA TC-REG-011) | Forms: full name 2–70 characters, email 6–254 (RFC 5321). Database (Drift `withLength`, schema v3): name up to 255, email up to 254. Password unchanged (at least 8 characters) | Nitin Sai |

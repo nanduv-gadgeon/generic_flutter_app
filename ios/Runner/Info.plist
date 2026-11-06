@@ -28,8 +28,20 @@
 	<true/>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Connect to your health devices</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Find and connect to your devices on your Wi-Fi network</string>
+	<!-- mDNS service types the app looks for: one per profile `wifi.mdnsService`. Each customer
+	     build lists its own; only the test service is listed until a profile has a `wifi` block. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_fake._tcp</string>
+	</array>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Log in with Face ID</string>
+	<string>Confirm it's you with Face ID</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a profile photo</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a profile photo</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

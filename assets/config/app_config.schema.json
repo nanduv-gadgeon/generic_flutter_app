@@ -4,7 +4,7 @@
   "description": "One app_config.json per customer. Holds no secrets.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["isCloud", "brand", "theme", "features", "history", "deviceTypes", "deviceProfiles"],
+  "required": ["isCloud", "brand", "theme", "features", "links", "history", "deviceTypes", "deviceProfiles"],
   "properties": {
     "isCloud": { "type": "boolean" },
     "brand": {
@@ -44,6 +44,15 @@
         "alerts": { "type": "boolean" }
       }
     },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["privacyPolicy", "termsOfUse"],
+      "properties": {
+        "privacyPolicy": { "$ref": "#/definitions/httpsUrl" },
+        "termsOfUse": { "$ref": "#/definitions/httpsUrl" }
+      }
+    },
     "history": {
       "type": "object",
       "additionalProperties": false,
@@ -75,6 +84,7 @@
   "then": { "required": ["cloud"] },
   "definitions": {
     "hexColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "httpsUrl": { "type": "string", "pattern": "^https://[^\\s]+$" },
     "brandAsset": { "type": "string", "pattern": "^assets/brand/[a-z0-9_]+/[a-z0-9_]+\\.(svg|png)$" },
     "key": { "type": "string", "pattern": "^[a-z0-9_]+$" },
     "deviceProfile": {
@@ -96,6 +106,7 @@
         "alerts": { "type": "array", "items": { "$ref": "#/definitions/alertRule" } },
         "ble": { "$ref": "#/definitions/bleSettings" },
         "packet": { "$ref": "#/definitions/packet" },
+        "wifi": { "$ref": "#/definitions/wifiSettings" },
         "commands": { "type": "array", "items": { "$ref": "#/definitions/deviceCommand" } }
       }
     },
@@ -231,6 +242,58 @@
         "batteryService": { "type": "boolean" }
       }
     },
+    "wifiSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["setup", "mdnsService", "stream"],
+      "properties": {
+        "setup": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["ble", "softap"] }
+        },
+        "bleSetup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["serviceUuid", "credentialsUuid", "resultUuid"],
+          "properties": {
+            "serviceUuid": { "$ref": "#/definitions/uuid" },
+            "credentialsUuid": { "$ref": "#/definitions/uuid" },
+            "resultUuid": { "$ref": "#/definitions/uuid" },
+            "scanNamePrefix": { "type": "string", "minLength": 1 }
+          }
+        },
+        "softApSetup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ssidPrefix", "address", "path"],
+          "properties": {
+            "ssidPrefix": { "type": "string", "minLength": 1 },
+            "address": { "type": "string", "pattern": "^[0-9A-Za-z.:-]+$" },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "path": { "$ref": "#/definitions/urlPath" }
+          }
+        },
+        "mdnsService": { "type": "string", "pattern": "^_[a-z0-9-]+\\._(tcp|udp)$" },
+        "stream": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "path"],
+          "properties": {
+            "type": { "enum": ["websocket", "http"] },
+            "path": { "$ref": "#/definitions/urlPath" },
+            "pollSeconds": { "type": "integer", "minimum": 1 },
+            "commandPath": { "$ref": "#/definitions/urlPath" }
+          },
+          "if": { "properties": { "type": { "const": "http" } } },
+          "then": { "required": ["pollSeconds"] },
+          "else": { "not": { "anyOf": [{ "required": ["pollSeconds"] }, { "required": ["commandPath"] }] } }
+        },
+        "setupTimeoutSeconds": { "type": "integer", "minimum": 5, "maximum": 300 }
+      }
+    },
+    "urlPath": { "type": "string", "pattern": "^/[A-Za-z0-9._~/-]*$" },
     "reading": {
       "type": "object",
       "additionalProperties": false,

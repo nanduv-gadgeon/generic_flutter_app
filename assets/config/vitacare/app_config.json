@@ -16,6 +16,10 @@
     "mode": "system"
   },
   "features": { "registration": true, "faceIdLogin": true, "history": true, "export": true, "alerts": true },
+  "links": {
+    "privacyPolicy": "https://example.com/privacy",
+    "termsOfUse": "https://example.com/terms"
+  },
   "history": { "daysOnPhone": 7 },
   "cloud": { "baseUrl": "https://api.example", "environment": "dev", "uploader": "flutterModule", "autoSyncDefault": "15m" },
   "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1", "ief_device_v1"],

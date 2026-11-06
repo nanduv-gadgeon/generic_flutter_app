@@ -2,10 +2,18 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../application/app_config_provider.dart';
 import '../../application/auth_controller.dart';
+import '../config/config_sections.dart';
+import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
-import '../../presentation/devices/home_placeholder_screen.dart';
+import '../../presentation/auth/register_screen.dart';
+import '../../presentation/devices/home_screen.dart';
+import '../../presentation/profile/edit_profile_screen.dart';
+import '../../presentation/profile/profile_screen.dart';
+import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
+import '../../presentation/strings/shell_strings.dart';
 import '../../presentation/widgets/placeholder_screen.dart';
 
 part 'app_router.g.dart';
@@ -16,6 +24,11 @@ abstract final class Routes {
   static const register = '/register';
   static const forgot = '/forgot';
   static const home = '/home';
+  static const history = '/history';
+  static const alerts = '/alerts';
+  static const profile = '/profile';
+  static const addDevice = HomeScreen.addDeviceRoute;
+  static const editProfile = EditProfileScreen.route;
 
   /// Screens for people who are not logged in; a logged-in user is sent home from these.
   static const loggedOutOnly = {login, register, forgot};
@@ -48,15 +61,57 @@ GoRouter goRouter(Ref ref) {
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: Routes.register,
-        builder: (_, _) => const PlaceholderScreen(title: 'Create account (task 1.1.8)'),
+        // Registration can be turned off per customer; then the route goes to login too.
+        redirect: (_, _) =>
+            ref.read(appConfigProvider).value?.features.registration == false ? Routes.login : null,
+        builder: (_, _) => const RegisterScreen(),
       ),
+      GoRoute(path: Routes.forgot, builder: (_, _) => const ForgotPasswordScreen()),
+      // The logged-in screens with the bottom tab bar; branch order matches AppShell's indexes.
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, shell) => AppShell(shell: shell),
+        branches: [
+          StatefulShellBranch(
+            routes: [GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.history,
+                redirect: (_, _) => _featureOff(ref, (f) => f.history) ? Routes.home : null,
+                builder: (_, _) => const PlaceholderScreen(title: ShellStrings.historyPlaceholder),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.alerts,
+                redirect: (_, _) => _featureOff(ref, (f) => f.alerts) ? Routes.home : null,
+                builder: (_, _) => const PlaceholderScreen(title: ShellStrings.alertsPlaceholder),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen())],
+          ),
+        ],
+      ),
+      // Full screen, without the tab bar (task 1.2.7).
       GoRoute(
-        path: Routes.forgot,
-        builder: (_, _) => const PlaceholderScreen(title: 'Forgot password (task 1.1.9)'),
+        path: Routes.addDevice,
+        builder: (_, _) => const PlaceholderScreen(title: ShellStrings.addDevicePlaceholder),
       ),
-      GoRoute(path: Routes.home, builder: (_, _) => const HomePlaceholderScreen()),
+      // Full screen, without the tab bar, like the mockup.
+      GoRoute(path: Routes.editProfile, builder: (_, _) => const EditProfileScreen()),
     ],
   );
   ref.onDispose(router.dispose);
   return router;
+}
+
+/// True when the config turns this feature off (History, Alerts).
+bool _featureOff(Ref ref, bool Function(FeaturesConfig) isOn) {
+  final features = ref.read(appConfigProvider).value?.features;
+  return features != null && !isOn(features);
 }

@@ -20,6 +20,7 @@ abstract class AppConfig with _$AppConfig {
     required BrandConfig brand,
     required ThemeConfig theme,
     required FeaturesConfig features,
+    required LinksConfig links,
     required HistoryConfig history,
 
     /// Device types offered in Add device, in this order. Each has a profile in [deviceProfiles].

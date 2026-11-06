@@ -4,12 +4,10 @@ import 'dart:typed_data';
 import '../../../domain/models/device_profile.dart';
 import '../../../domain/transport/device_link.dart';
 import '../../../domain/transport/reconnect_backoff.dart';
+import '../link_support.dart';
 import 'ble_adapter.dart';
 
-/// Waits for [duration]; replaced in tests so they run without real timers.
-typedef Delay = Future<void> Function(Duration duration);
-
-Future<void> _wait(Duration duration) => Future<void>.delayed(duration);
+export '../link_support.dart' show Delay;
 
 /// [DeviceLink] over BLE, set up from a profile's `ble` block.
 ///
@@ -20,7 +18,7 @@ class BleDeviceLink implements DeviceLink {
     this.deviceId,
     this._settings, {
     this._backoff = const ReconnectBackoff(),
-    this._delay = _wait,
+    this._delay = realDelay,
   });
 
   /// Wait before the one retry of a failed write (as in the IEF protocol).
@@ -36,34 +34,19 @@ class BleDeviceLink implements DeviceLink {
   final ReconnectBackoff _backoff;
   final Delay _delay;
 
-  final _states = StreamController<LinkState>.broadcast();
+  final _states = LinkStates();
   final _packets = StreamController<Uint8List>.broadcast();
   final _battery = StreamController<int>.broadcast();
   final _valueSubs = <StreamSubscription<Uint8List>>[];
   StreamSubscription<bool>? _connectionSub;
-
-  LinkState _state = LinkState.disconnected;
 
   /// False once [disconnect] is called; stops the reconnect loop.
   bool _wanted = false;
 
   String get _service => fullUuid(_settings.serviceUuid);
 
-  /// Takes the current state and the change stream together when listened to, so no change is
-  /// lost in between.
   @override
-  Stream<LinkState> get state {
-    StreamSubscription<LinkState>? changes;
-    late final StreamController<LinkState> controller;
-    controller = StreamController(
-      onListen: () {
-        controller.add(_state);
-        changes = _states.stream.listen(controller.add);
-      },
-      onCancel: () => changes?.cancel(),
-    );
-    return controller.stream;
-  }
+  Stream<LinkState> get state => _states.stream;
 
   @override
   Stream<Uint8List> get packets => _packets.stream;
@@ -89,7 +72,7 @@ class BleDeviceLink implements DeviceLink {
   Future<void> send(List<int> bytes) async {
     final write = _settings.writeUuid;
     if (write == null) throw const LinkException('device takes no commands');
-    if (_state != LinkState.connected) throw const LinkException('not connected');
+    if (_states.value != LinkState.connected) throw const LinkException('not connected');
 
     final data = Uint8List.fromList(bytes);
     try {
@@ -179,7 +162,7 @@ class BleDeviceLink implements DeviceLink {
   }
 
   void _onConnection(bool connected) {
-    if (!connected && _wanted && _state == LinkState.connected) unawaited(_reconnect());
+    if (!connected && _wanted && _states.value == LinkState.connected) unawaited(_reconnect());
   }
 
   Future<void> _reconnect() async {
@@ -203,9 +186,5 @@ class BleDeviceLink implements DeviceLink {
     _valueSubs.clear();
   }
 
-  void _setState(LinkState state) {
-    if (state == _state) return;
-    _state = state;
-    _states.add(state);
-  }
+  void _setState(LinkState state) => _states.value = state;
 }

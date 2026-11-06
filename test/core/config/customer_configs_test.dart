@@ -74,4 +74,16 @@ void main() {
 
     expect(connectable, ['ief_device_v1']);
   });
+
+  test('VitaCare: no type connects over Wi‑Fi until the env sensor protocol arrives', () {
+    final config = AppConfig.fromJson(
+      jsonDecode(File('assets/config/vitacare/app_config.json').readAsStringSync())
+          as Map<String, dynamic>,
+    );
+
+    expect(
+      DeviceProfileRegistry(config).offered.where((p) => isConnectable(p, Transport.wifi)),
+      isEmpty,
+    );
+  });
 }

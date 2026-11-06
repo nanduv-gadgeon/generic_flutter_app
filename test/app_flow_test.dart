@@ -230,7 +230,7 @@ void main() {
     }
     await tester.enterText(
       find.descendant(of: find.byType(MobileNumberField), matching: find.byType(TextFormField)),
-      '0000000000',
+      '2015550123', // libphonenumber's example US number; tests run with the en_US region
     );
     await tester.tap(find.byType(Checkbox));
     await tester.tap(find.widgetWithText(FilledButton, 'Create account'));

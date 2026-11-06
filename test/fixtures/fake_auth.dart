@@ -64,6 +64,6 @@ const fakeUser = AuthUser(
   id: 1,
   name: 'Test User',
   email: 'test@example.com',
-  mobile: '+91 0000000000',
+  mobile: '+91 8123456789', // libphonenumber's example Indian mobile, not a real one
   biometricEnabled: false,
 );

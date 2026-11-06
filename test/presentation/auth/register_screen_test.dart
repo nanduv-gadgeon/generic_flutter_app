@@ -21,7 +21,7 @@ late ProviderContainer container;
 const _valid = {
   'Full name': 'Test User',
   'Email': 'test@example.com',
-  'Mobile number': '00000 00000',
+  'Mobile number': '81234 56789', // libphonenumber's example Indian mobile
   'Password': 'made-up-pw',
   'Confirm password': 'made-up-pw',
 };
@@ -114,10 +114,12 @@ void main() {
     '300-character name': ('Full name', 'T' * 300, 'Use at most 70 characters.'),
     '320-character email': ('Email', '${'a' * 308}@example.com', 'Enter a valid email address.'),
     'bad email': ('Email', 'not-an-email', 'Enter a valid email address.'),
-    'letters in mobile': ('Mobile number', '00000 abcde', 'Enter a valid mobile number.'),
-    '+ in mobile': ('Mobile number', '+91 00000 00000', 'Enter a valid mobile number.'),
+    'letters in mobile': ('Mobile number', '81234 abcde', 'Enter a valid mobile number.'),
+    '+ in mobile': ('Mobile number', '+91 81234 56789', 'Enter a valid mobile number.'),
     'short mobile': ('Mobile number', '123', 'Enter a valid mobile number.'),
-    'long mobile': ('Mobile number', '123456789012345', 'Enter a valid mobile number.'),
+    'long mobile': ('Mobile number', '81234 567890', 'Enter a valid mobile number.'),
+    // India: mobiles start with 6-9
+    'not an Indian mobile': ('Mobile number', '51234 56789', 'Enter a valid mobile number.'),
     'short password': ('Password', 'seven77', 'Use at least 8 characters.'),
     'passwords differ': ('Confirm password', 'other-pw-1', 'Passwords do not match.'),
     'terms not ticked': (null, '', 'Accept the terms to continue.'),
@@ -164,12 +166,16 @@ void main() {
     await tester.tap(find.text('United Kingdom'));
     await tester.pumpAndSettle();
     expect(find.descendant(of: _codeButton, matching: find.text('+44')), findsOneWidget);
+    // UK rules now apply: the Indian number is refused, a UK mobile (with trunk 0) is accepted.
     await _fill(tester, _valid);
+    await _submit(tester);
+    expect(find.text('Enter a valid mobile number.'), findsOneWidget);
+    await tester.enterText(_mobileField, '07400 123456');
     await _submit(tester);
     await tester.pumpAndSettle();
 
     final data = verify(() => service.register(captureAny())).captured.single as RegistrationData;
-    expect(data.mobile, '+44 0000000000');
+    expect(data.mobile, '+44 7400123456');
   });
 
   testWidgets('creates the account, logs in and says so', (tester) async {

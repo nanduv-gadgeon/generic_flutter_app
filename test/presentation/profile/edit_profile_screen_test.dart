@@ -95,7 +95,7 @@ void main() {
     expect(textOf(tester, field('Full name')), 'Test User');
     expect(find.text('test@example.com'), findsOneWidget);
     expect(find.text('+91'), findsOneWidget);
-    expect(find.text('0000000000'), findsOneWidget);
+    expect(find.text('8123456789'), findsOneWidget);
     expect(find.text('TU'), findsOneWidget);
   });
 
@@ -116,7 +116,7 @@ void main() {
     await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
 
-    expect(saved(), const ProfileChanges(name: ' New Name ', mobile: '+91 0000000000'));
+    expect(saved(), const ProfileChanges(name: ' New Name ', mobile: '+91 8123456789'));
     expect(find.text('profile page'), findsOneWidget);
     expect(find.text('Profile saved.'), findsOneWidget);
   });

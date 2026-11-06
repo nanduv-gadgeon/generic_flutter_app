@@ -17,7 +17,7 @@ void main() {
     'mobile': (
       AuthValidators.mobile(dialCodeFor('IN')!),
       '123',
-      '00000 00000',
+      '81234 56789',
       'Enter a valid mobile number.',
     ),
   };

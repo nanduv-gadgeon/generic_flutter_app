@@ -1,3 +1,5 @@
+import 'package:phone_numbers_parser/phone_numbers_parser.dart';
+
 import '../models/dial_code.dart';
 
 /// Account form rules: pure functions, no text. Screens pair them with messages through
@@ -14,6 +16,7 @@ const maxEmailLength = 254;
 final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 final _nationalPattern = RegExp(r'^[0-9][0-9 \-]*$');
 final _separators = RegExp(r'[ \-]');
+final _nonDigits = RegExp(r'[^0-9]');
 
 /// Why a name is not allowed.
 enum NameProblem { blank, tooShort, tooLong }
@@ -41,17 +44,40 @@ bool isValidNewPassword(String password) => password.length >= minPasswordLength
 
 bool passwordsMatch(String password, String confirmation) => password == confirmation;
 
-/// 4–14 digits (spaces and dashes allowed), and at most 15 digits with the dial code (E.164).
-bool isValidNationalNumber(String number, DialCode dialCode) {
-  final v = number.trim();
-  if (!_nationalPattern.hasMatch(v)) return false;
-  final digits = v.replaceAll(_separators, '').length;
-  return digits >= 4 && digits <= 14 && digits + dialCode.digitCount <= 15;
+/// A mobile number for [dialCode]'s country, by that country's rules from Google libphonenumber
+/// (length and leading digits; e.g. India: 10 digits starting 6–9). Spaces and dashes are allowed,
+/// and so is a leading trunk `0` (UK `07400 123456`). Where mobile and landline numbers look the
+/// same (US, Canada) both pass.
+bool isValidNationalNumber(String number, DialCode dialCode) =>
+    _parseMobile(number, dialCode) != null;
+
+/// What is stored, e.g. `+91 9876543210`: the dial code, a space and the digits only. A valid
+/// number is stored without its trunk `0` (`+44 7400123456`).
+String fullMobileNumber(DialCode dialCode, String number) {
+  var national = number.trim().replaceAll(_separators, '');
+  final parsed = _parseMobile(number, dialCode);
+  if (parsed != null) {
+    // Digits of the dial code after the country code, e.g. 876 for Jamaica (`+1 876`).
+    final area = _digits(dialCode.dial).substring(parsed.countryCode.length);
+    national = parsed.nsn.startsWith(area) ? parsed.nsn.substring(area.length) : parsed.nsn;
+  }
+  return '${dialCode.dial} $national';
 }
 
-/// What is stored, e.g. `+91 9876543210`: the dial code, a space and the digits only.
-String fullMobileNumber(DialCode dialCode, String number) =>
-    '${dialCode.dial} ${number.trim().replaceAll(_separators, '')}';
+/// The whole international number (dial code + typed digits) checked as a mobile number. The dial
+/// code is included because some carry an area code (Jamaica `+1 876`).
+PhoneNumber? _parseMobile(String number, DialCode dialCode) {
+  final v = number.trim();
+  if (!_nationalPattern.hasMatch(v)) return null;
+  try {
+    final parsed = PhoneNumber.parse('+${_digits(dialCode.dial)}${v.replaceAll(_separators, '')}');
+    return parsed.isValid(type: PhoneNumberType.mobile) ? parsed : null;
+  } on PhoneNumberException {
+    return null;
+  }
+}
+
+String _digits(String s) => s.replaceAll(_nonDigits, '');
 
 /// The reverse of [fullMobileNumber], for editing a stored number: `+91 9876543210` gives India
 /// and `9876543210`. The longest matching code wins (`+1 876 …` is Jamaica, not the US). A code

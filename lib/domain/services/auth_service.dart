@@ -21,8 +21,9 @@ abstract interface class AuthService {
   /// True when some user has turned on biometric login and the phone can do it now.
   Future<bool> canLoginWithBiometrics();
 
-  /// Turns biometric login on or off for the logged-in user.
-  Future<void> setBiometricLogin({required bool enabled});
+  /// Turns biometric login on or off for the logged-in user. Returns whether it is on afterwards:
+  /// false when turning on fails because the phone cannot track enrolment changes.
+  Future<bool> setBiometricLogin({required bool enabled});
 
   /// Creates an account. Throws [EmailAlreadyUsedException]. Does not log in.
   Future<AuthUser> register(RegistrationData data);

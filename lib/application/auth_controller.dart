@@ -30,8 +30,8 @@ class AuthController extends _$AuthController {
 
   /// Finishes a password login; the router then leaves the login screen.
   Future<void> completeLogin(AuthUser user, {bool enableBiometrics = false}) async {
-    if (enableBiometrics) await _service.setBiometricLogin(enabled: true);
-    state = AsyncData(enableBiometrics ? user.copyWith(biometricEnabled: true) : user);
+    final on = enableBiometrics && await _service.setBiometricLogin(enabled: true);
+    state = AsyncData(on ? user.copyWith(biometricEnabled: true) : user);
   }
 
   /// Creates the account, logs it in and switches screens (to home). No biometric offer here:
@@ -58,8 +58,8 @@ class AuthController extends _$AuthController {
 
   /// The Profile switch for Face ID / fingerprint login.
   Future<void> setBiometricLogin({required bool enabled}) async {
-    await _service.setBiometricLogin(enabled: enabled);
-    state = AsyncData(state.value?.copyWith(biometricEnabled: enabled));
+    final on = await _service.setBiometricLogin(enabled: enabled);
+    state = AsyncData(state.value?.copyWith(biometricEnabled: on));
     ref.invalidate(biometricLoginProvider);
   }
 

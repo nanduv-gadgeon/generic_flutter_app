@@ -34,6 +34,7 @@ void main() {
     photos = MockProfilePhotoStore();
     when(() => biometrics.isAvailable()).thenAnswer((_) async => true);
     when(() => biometrics.authenticate(any())).thenAnswer((_) async => true);
+    stubUnchangedEnrollment(biometrics);
     when(() => photos.delete(any())).thenAnswer((_) async {});
     auth = LocalAuthService(
       db: db,

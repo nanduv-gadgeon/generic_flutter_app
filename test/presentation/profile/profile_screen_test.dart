@@ -35,7 +35,8 @@ void main() {
     when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
     when(() => auth.logout()).thenAnswer((_) async {});
     when(() => auth.canLoginWithBiometrics()).thenAnswer((_) async => false);
-    when(() => auth.setBiometricLogin(enabled: any(named: 'enabled'))).thenAnswer((_) async {});
+    when(() => auth.setBiometricLogin(enabled: any(named: 'enabled')))
+        .thenAnswer((_) async => true);
     when(() => settings.watchNotificationsEnabled(any())).thenAnswer((_) => Stream.value(true));
     when(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')))
         .thenAnswer((_) async {});

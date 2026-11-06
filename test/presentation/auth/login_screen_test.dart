@@ -151,7 +151,7 @@ void main() {
   testWidgets('offers Face ID after the first login and turns it on', (tester) async {
     when(() => service.login(any(), any()))
         .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
-    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async {});
+    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
     await _pumpLogin(tester);
 
     await _enterAndSubmit(tester);

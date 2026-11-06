@@ -80,8 +80,11 @@ class LocalAuthService implements AuthService {
       );
     }
     await _db.sessionDao.start(user.id);
-    final offer = !user.biometricEnabled && await _biometrics.isAvailable();
-    return LoginSuccess(_toAuthUser(user), offerBiometrics: offer);
+    // Biometrics turned off by a changed enrolment (TC-LOG-012) are offered again here.
+    final biometricOn = user.biometricEnabled && await _keepBiometricLogin(user.id);
+    final offer = !biometricOn && await _biometrics.isAvailable();
+    final current = (await _db.usersDao.findById(user.id))!;
+    return LoginSuccess(_toAuthUser(current), offerBiometrics: offer);
   }
 
   @override
@@ -99,21 +102,37 @@ class LocalAuthService implements AuthService {
       await _biometricLoginUser() != null && await _biometrics.isAvailable();
 
   @override
-  Future<void> setBiometricLogin({required bool enabled}) async {
+  Future<bool> setBiometricLogin({required bool enabled}) async {
     final session = await _db.sessionDao.current();
     if (session == null) throw StateError('No user is logged in');
     final previous = await _biometricUser.read();
 
     if (enabled) {
+      // Without a saved enrolment a new fingerprint could not be noticed, so stay off.
+      if (!await _biometrics.rememberEnrollment()) return false;
       if (previous != null && previous != session.userId) {
         await _db.usersDao.setBiometric(previous, enabled: false);
       }
       await _db.usersDao.setBiometric(session.userId, enabled: true);
       await _biometricUser.write(session.userId);
-    } else {
-      await _db.usersDao.setBiometric(session.userId, enabled: false);
-      if (previous == session.userId) await _biometricUser.clear();
+      return true;
     }
+    await _db.usersDao.setBiometric(session.userId, enabled: false);
+    if (previous == session.userId) {
+      await _biometricUser.clear();
+      await _biometrics.forgetEnrollment();
+    }
+    return false;
+  }
+
+  /// False, after turning biometric login off for [userId], when the phone's faces / fingerprints
+  /// changed since it was turned on: a newly added fingerprint must not log in (TC-LOG-012).
+  Future<bool> _keepBiometricLogin(int userId) async {
+    if (!await _biometrics.enrollmentChanged()) return true;
+    await _db.usersDao.setBiometric(userId, enabled: false);
+    if (await _biometricUser.read() == userId) await _biometricUser.clear();
+    await _biometrics.forgetEnrollment();
+    return false;
   }
 
   @override
@@ -190,7 +209,8 @@ class LocalAuthService implements AuthService {
     final id = await _biometricUser.read();
     if (id == null) return null;
     final user = await _db.usersDao.findById(id);
-    return (user != null && user.biometricEnabled) ? user : null;
+    if (user == null || !user.biometricEnabled) return null;
+    return await _keepBiometricLogin(user.id) ? user : null;
   }
 
   static PasswordHash _storedHash(User user) =>

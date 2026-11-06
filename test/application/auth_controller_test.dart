@@ -50,7 +50,7 @@ void main() {
 
   test('completeLogin can turn on biometrics', () async {
     await container.read(authControllerProvider.future);
-    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async {});
+    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
 
     await controller().completeLogin(fakeUser, enableBiometrics: true);
 
@@ -168,7 +168,7 @@ void main() {
 
     test('setBiometricLogin saves it and updates the user', () async {
       await container.read(authControllerProvider.future);
-      when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async {});
+      when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
 
       await controller().setBiometricLogin(enabled: true);
 

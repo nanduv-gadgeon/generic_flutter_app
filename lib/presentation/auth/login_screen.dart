@@ -50,7 +50,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       var enable = false;
-      if (result.offerBiometrics && mounted) {
+      // Offer only when the customer has the feature (TC-CFG-007).
+      final featureOn = ref.read(appConfigProvider).requireValue.features.faceIdLogin;
+      if (featureOn && result.offerBiometrics && mounted) {
         final kind = await ref.read(biometricAuthProvider).kind();
         if (mounted) enable = await showBiometricOfferDialog(context, kind);
       }

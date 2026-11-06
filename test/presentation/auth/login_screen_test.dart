@@ -158,6 +158,20 @@ void main() {
     verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
   });
 
+  testWidgets('no Face ID offer when the feature is off in the config', (tester) async {
+    when(() => service.login(any(), any()))
+        .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
+    await _pumpLogin(tester, faceIdLogin: false);
+
+    await _enterAndSubmit(tester);
+    await _settleDialog(tester);
+
+    expect(find.text('Use Face ID to log in next time?'), findsNothing);
+    verifyNever(() => biometrics.kind());
+    verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+    expect(find.byType(CircularProgressIndicator), findsNothing); // login finished
+  });
+
   // (feature on in config, a user has turned it on) -> button shown
   final faceIdCases = <(bool, bool), bool>{
     (true, true): true,

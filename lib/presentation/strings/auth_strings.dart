@@ -5,6 +5,17 @@ abstract final class AuthStrings {
   static const signingIn = 'Signing in';
   static const enterPassword = 'Enter your password.';
   static const wrongCredentials = 'Email or password is incorrect.';
+
+  /// [wait] is rounded up: under a minute in seconds, otherwise in minutes.
+  static String accountLocked(Duration wait) {
+    final seconds = (wait.inMilliseconds / 1000).ceil().clamp(1, 1 << 31);
+    final time = seconds < 60
+        ? _plural(seconds, 'second')
+        : _plural((seconds / 60).ceil(), 'minute');
+    return 'Too many attempts. Try again in $time.';
+  }
+
+  static String _plural(int n, String unit) => '$n $unit${n == 1 ? '' : 's'}';
   static const forgotPassword = 'Forgot password?';
 
   /// Shown by the phone's own Face ID / fingerprint prompt.

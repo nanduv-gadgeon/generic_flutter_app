@@ -1,3 +1,4 @@
+import '../../domain/auth/lockout_policy.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/password_hasher.dart';
@@ -7,7 +8,7 @@ import 'biometric_user_store.dart';
 
 /// Phase 1 accounts, kept in the encrypted local database.
 ///
-/// Wrong passwords do not lock the account (see docs/decisions.md).
+/// Repeated wrong passwords lock the account for a short time (see `lockout_policy.dart`).
 class LocalAuthService implements AuthService {
   LocalAuthService({
     required this._db,
@@ -15,6 +16,7 @@ class LocalAuthService implements AuthService {
     required this._biometrics,
     required this._biometricUser,
     required this._photos,
+    this._clock = DateTime.now,
   });
 
   final AppDatabase _db;
@@ -22,6 +24,7 @@ class LocalAuthService implements AuthService {
   final BiometricAuth _biometrics;
   final BiometricUserStore _biometricUser;
   final ProfilePhotoStore _photos;
+  final DateTime Function() _clock;
 
   /// Checked when the email is unknown, so a reply takes as long as for a real account.
   PasswordHash? _dummyHash;
@@ -43,8 +46,29 @@ class LocalAuthService implements AuthService {
       return const InvalidCredentials();
     }
 
+    final now = _clock();
+    // Checked before the password, so the right password does not get past the lock.
+    if (isLocked(user.lockedUntil, now)) return AccountLocked(user.lockedUntil!.difference(now));
+
     final stored = _storedHash(user);
-    if (!await _hasher.verify(password, stored)) return const InvalidCredentials();
+    if (!await _hasher.verify(password, stored)) {
+      final next = afterFailedLogin((
+        failedCount: user.failedLoginCount,
+        lockedUntil: user.lockedUntil,
+      ), now);
+      await _db.usersDao.recordFailedLogin(
+        user.id,
+        count: next.failedCount,
+        lockedUntil: next.lockedUntil,
+      );
+      return switch (next.lockedUntil) {
+        final until? => AccountLocked(until.difference(now)),
+        null => const InvalidCredentials(),
+      };
+    }
+    if (user.failedLoginCount != 0 || user.lockedUntil != null) {
+      await _db.usersDao.resetFailedLogins(user.id);
+    }
 
     if (_hasher.needsRehash(stored)) {
       final fresh = await _hasher.hash(password);
@@ -131,6 +155,8 @@ class LocalAuthService implements AuthService {
       salt: hashed.salt,
       params: hashed.params,
     );
+    // The phone's owner was verified, so a lock from wrong passwords is lifted too.
+    await _db.usersDao.resetFailedLogins(user.id);
     return const ResetSuccess();
   }
 

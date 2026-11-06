@@ -46,7 +46,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final auth = ref.read(authControllerProvider.notifier);
       final result = await auth.login(_email.text, _password.text);
       if (result is! LoginSuccess) {
-        _showError(AuthStrings.wrongCredentials);
+        _showError(switch (result) {
+          AccountLocked(:final retryAfter) => AuthStrings.accountLocked(retryAfter),
+          _ => AuthStrings.wrongCredentials,
+        });
         return;
       }
       var enable = false;

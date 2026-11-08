@@ -32,7 +32,16 @@ Future<void> pumpAddDevice(
   bool isCloud = false,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
+
+  /// On by default so the scan pulse stays still and `pumpAndSettle` can settle.
+  bool reduceMotion = true,
 }) async {
+  if (reduceMotion) {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+      disableAnimations: true,
+    );
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1;

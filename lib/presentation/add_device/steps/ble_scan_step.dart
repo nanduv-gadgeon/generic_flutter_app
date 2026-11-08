@@ -8,6 +8,7 @@ import '../../strings/add_device_strings.dart';
 import '../../widgets/form_widgets.dart';
 import '../add_device_parts.dart';
 import '../remove_device_dialog.dart';
+import '../scan_pulse.dart';
 
 /// Step 3 (screen 11): nearby devices of the chosen type, each with Connect. Also used to find a
 /// Wi‑Fi device in setup mode.
@@ -26,13 +27,18 @@ class BleScanStep extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: StatusCircle(
-            icon: Icons.bluetooth,
-            size: 76,
-            iconSize: 32,
-            ring: 120,
-            background: Theme.of(context).colorScheme.primary,
-            foreground: Theme.of(context).colorScheme.onPrimary,
+          // Pulses while scanning; still once the scan has stopped with an error.
+          child: ScanPulse(
+            active: error == null,
+            color: Theme.of(context).colorScheme.primary,
+            child: StatusCircle(
+              icon: Icons.bluetooth,
+              size: 76,
+              iconSize: 32,
+              ring: 120,
+              background: Theme.of(context).colorScheme.primary,
+              foreground: Theme.of(context).colorScheme.onPrimary,
+            ),
           ),
         ),
         const SizedBox(height: 12),

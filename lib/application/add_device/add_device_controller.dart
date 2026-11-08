@@ -28,8 +28,8 @@ class AddDeviceController extends _$AddDeviceController {
   StreamSubscription<List<FoundDevice>>? _scan;
   WifiCredentials? _credentials;
 
-  /// Keeps scanning while step 3 is open: each scan stops after this long, then starts again.
-  static const scanWindow = Duration(seconds: 15);
+  /// How long a scan runs before it stops and offers "Scan again", to save battery.
+  static const scanTime = Duration(seconds: 20);
 
   @override
   AddDeviceState build() {
@@ -158,10 +158,8 @@ class AddDeviceController extends _$AddDeviceController {
       return;
     }
     if (!ref.mounted) return;
-    if (state.phase case Scanning(:final found, :final added)) {
-      state = state.copyWith(
-        phase: Scanning(found: found, added: added.difference({device.id})),
-      );
+    if (state.phase case final Scanning scan) {
+      state = state.copyWith(phase: scan.copyWith(added: scan.added.difference({device.id})));
     }
   }
 
@@ -170,18 +168,14 @@ class AddDeviceController extends _$AddDeviceController {
   Future<bool> back() async {
     final phase = state.phase;
     if (state.step == 4 && phase is Registering) return true; // Wait for it to finish.
-    if (state.step == 3 &&
-        state.transport == Transport.wifi &&
-        (phase is Scanning || phase is JoinHotspot)) {
-      await _stopScan();
-      _credentials = null;
-      state = state.copyWith(phase: const WifiForm(), error: null);
-      return true;
-    }
     if (state.step == 3) {
       await _stopScan();
       _credentials = null;
-      state = state.copyWith(step: 2, phase: const Choosing(), error: null);
+      final toForm =
+          state.transport == Transport.wifi && (phase is Scanning || phase is JoinHotspot);
+      state = toForm
+          ? state.copyWith(phase: const WifiForm(), error: null)
+          : state.copyWith(step: 2, phase: const Choosing(), error: null);
       return true;
     }
     if (state.step == 2) {
@@ -206,8 +200,8 @@ class AddDeviceController extends _$AddDeviceController {
   void _listen() {
     final profile = state.profile!;
     final stream = state.transport == Transport.wifi
-        ? _scanner.scanForSetup(profile, timeout: scanWindow)
-        : _scanner.scan(profile, timeout: scanWindow);
+        ? _scanner.scanForSetup(profile, timeout: scanTime)
+        : _scanner.scan(profile, timeout: scanTime);
     _scan = stream.listen(
       (found) async {
         // Wi‑Fi setup devices are identified by their mDNS id later, not their BLE id.
@@ -216,18 +210,22 @@ class AddDeviceController extends _$AddDeviceController {
             : await addedIds(_devices, _userId, found);
         if (ref.mounted && state.phase is Scanning) {
           state = state.copyWith(
-            phase: Scanning(found: found, added: added),
+            phase: Scanning(found: found, added: added, searching: _scan != null),
           );
         }
       },
-      onError: (_) => state = state.copyWith(error: AddDeviceError.scanFailed),
-      // The window ended: scan again, keeping what was found, until the user leaves.
-      onDone: () {
-        if (ref.mounted && state.phase is Scanning && state.error != AddDeviceError.scanFailed) {
-          _listen();
-        }
-      },
+      onError: (_) => _scanStopped(AddDeviceError.scanFailed),
+      onDone: _scanStopped,
     );
+  }
+
+  /// The scan ended (after [scanTime], or with [error]): what was found stays listed.
+  void _scanStopped([AddDeviceError? error]) {
+    unawaited(_stopScan());
+    if (!ref.mounted) return;
+    if (state.phase case final Scanning scan) {
+      state = state.copyWith(phase: scan.copyWith(searching: false), error: error ?? state.error);
+    }
   }
 
   Future<void> _provision({String? bleDeviceId}) async {
@@ -282,7 +280,7 @@ class AddDeviceController extends _$AddDeviceController {
   /// Back to step 3 with [error]: the scan for Bluetooth, the Wi‑Fi form for Wi‑Fi.
   void _failBack(Transport transport, AddDeviceError error) => state = state.copyWith(
     step: 3,
-    phase: transport == Transport.ble ? const Scanning() : const WifiForm(),
+    phase: transport == Transport.ble ? const Scanning(searching: false) : const WifiForm(),
     error: error,
   );
 

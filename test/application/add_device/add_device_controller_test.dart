@@ -84,7 +84,7 @@ void main() {
   });
 
   group('Bluetooth', () {
-    test('scans, marks devices already added and keeps scanning after each window', () async {
+    test('scans for 20 s, marks devices already added, then stops until Scan again', () async {
       await fakes.devices.addDevice(
         NewDevice(
           userId: fakeUser.id,
@@ -102,9 +102,17 @@ void main() {
       final phase = state().phase as Scanning;
       expect(phase.found, fakeFound);
       expect(phase.added, {fakeFound[1].id});
+      expect(phase.searching, isTrue);
+      expect(fakes.scanner.lastTimeout, const Duration(seconds: 20));
 
-      await fakes.scanner.results.close();
+      await fakes.scanner.results.close(); // the 20 s are up
       await pumpEventQueue();
+      final stopped = state().phase as Scanning;
+      expect((stopped.searching, stopped.found, stopped.added), (false, fakeFound, phase.added));
+      expect((state().error, fakes.scanner.scans), (null, 1));
+
+      await controller().startScan();
+      expect((state().phase as Scanning).searching, isTrue);
       expect(fakes.scanner.scans, 2);
     });
 

@@ -23,13 +23,19 @@ class BleScanStep extends ConsumerWidget {
     final tokens = tokensOf(context);
     final error = state.error;
 
+    final stopped = !phase.searching && error == null;
+
     return StepLayout(
+      // After the 20 s scan: what was found stays listed.
+      button: stopped
+          ? PrimaryButton(label: AddDeviceStrings.scanAgain, onPressed: controller.startScan)
+          : null,
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 4),
-          // Pulses while scanning; still once the scan has stopped with an error.
+          // Pulses while scanning; still once the scan has stopped.
           child: ScanPulse(
-            active: error == null,
+            active: phase.searching && error == null,
             color: Theme.of(context).colorScheme.primary,
             child: StatusCircle(
               icon: Icons.bluetooth,
@@ -45,16 +51,22 @@ class BleScanStep extends ConsumerWidget {
         Semantics(
           liveRegion: true,
           child: Text(
-            state.transport == Transport.wifi
-                ? AddDeviceStrings.searchingSetup
-                : AddDeviceStrings.searching,
+            switch ((stopped, state.transport)) {
+              (true, _) => AddDeviceStrings.scanStopped,
+              (false, Transport.wifi) => AddDeviceStrings.searchingSetup,
+              _ => AddDeviceStrings.searching,
+            },
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          AddDeviceStrings.searchingBody,
+          switch ((stopped, phase.found.isEmpty)) {
+            (false, _) => AddDeviceStrings.searchingBody,
+            (true, true) => AddDeviceStrings.noneFound,
+            (true, false) => AddDeviceStrings.scanStoppedBody,
+          },
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: tokens?.muted),
         ),

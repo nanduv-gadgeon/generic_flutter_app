@@ -30,6 +30,7 @@ class FakeBleScanner implements BleScanner {
   int scans = 0;
   int setupScans = 0;
   bool stopped = false;
+  Duration? lastTimeout;
   StreamController<List<FoundDevice>> results = StreamController();
 
   @override
@@ -41,12 +42,14 @@ class FakeBleScanner implements BleScanner {
   @override
   Stream<List<FoundDevice>> scan(DeviceProfile profile, {Duration? timeout}) {
     scans++;
+    lastTimeout = timeout;
     return _next();
   }
 
   @override
   Stream<List<FoundDevice>> scanForSetup(DeviceProfile profile, {Duration? timeout}) {
     setupScans++;
+    lastTimeout = timeout;
     return _next();
   }
 

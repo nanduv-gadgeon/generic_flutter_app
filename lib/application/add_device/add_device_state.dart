@@ -45,9 +45,18 @@ class Choosing extends AddDevicePhase {
 
 /// Step 3: scanning nearby BLE devices (to add, or to set up Wi‑Fi over BLE).
 class Scanning extends AddDevicePhase {
-  const Scanning({this.found = const [], this.added = const {}});
+  const Scanning({this.found = const [], this.added = const {}, this.searching = true});
 
   final List<FoundDevice> found;
+
+  /// False once the scan has stopped; what was found stays listed until "Scan again".
+  final bool searching;
+
+  Scanning copyWith({List<FoundDevice>? found, Set<String>? added, bool? searching}) => Scanning(
+    found: found ?? this.found,
+    added: added ?? this.added,
+    searching: searching ?? this.searching,
+  );
 
   /// Ids in [found] the user has already added.
   final Set<String> added;

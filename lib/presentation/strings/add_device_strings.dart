@@ -33,6 +33,11 @@ abstract final class AddDeviceStrings {
   static const searching = 'Searching nearby…';
   static const searchingBody = 'Keep the device close and switched on.';
   static const searchingSetup = 'Looking for the device in setup mode…';
+  static const scanStopped = 'Search stopped';
+  static const scanStoppedBody =
+      'Not in the list? Check the device is on and close, then scan again.';
+  static const noneFound = 'No devices found. Check the device is on and close, then scan again.';
+  static const scanAgain = 'Scan again';
   static String found(int count) => 'Found $count ${count == 1 ? 'device' : 'devices'}';
   static const unknownDevice = 'Unknown device';
   static const connect = 'Connect';

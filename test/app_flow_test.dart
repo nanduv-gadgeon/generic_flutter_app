@@ -22,6 +22,19 @@ import 'fixtures/test_config.dart';
 class _NoDevices implements DeviceService {
   @override
   Stream<List<UserDevice>> watchDevices(int userId) => Stream.value(const []);
+
+  @override
+  Future<AddedDevice> addDevice(NewDevice device, List<AlertRule> defaults) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> rename(int deviceId, String name) async {}
+
+  @override
+  Future<bool> isAdded(int userId, String address) async => false;
+
+  @override
+  Future<void> removeDevice(int userId, String address) async {}
 }
 
 class _DefaultSettings implements AppSettingsService {
@@ -155,8 +168,12 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Add device'));
     await tester.pumpAndSettle();
-    expect(find.text('Add device (task 1.2.7)'), findsWidgets);
+    expect(find.text('What are you adding?'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expectHome();
   });
 
   testWidgets('forgot password goes from login to reset and back to login', (tester) async {

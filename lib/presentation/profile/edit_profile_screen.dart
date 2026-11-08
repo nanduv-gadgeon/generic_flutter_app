@@ -9,7 +9,7 @@ import '../../domain/models/dial_code.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/photo_picker.dart';
 import '../../domain/validation/auth_rules.dart';
-import '../auth/auth_form.dart';
+import '../widgets/form_widgets.dart';
 import '../auth/auth_validators.dart';
 import '../auth/mobile_number_field.dart';
 import '../strings/auth_strings.dart';
@@ -121,7 +121,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               children: [
                 Row(
                   children: [
-                    AuthBackButton(onPressed: () => context.pop()),
+                    CircleBackButton(onPressed: () => context.pop()),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Semantics(
@@ -154,12 +154,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
                 const SizedBox(height: 18),
                 ..._fields(),
-                if (_error case final error?) ...[
-                  const SizedBox(height: 12),
-                  AuthErrorMessage(error),
-                ],
+                if (_error case final error?) ...[const SizedBox(height: 12), ErrorMessage(error)],
                 const SizedBox(height: 26),
-                AuthSubmitButton(
+                PrimaryButton(
                   label: ProfileStrings.saveChanges,
                   busyLabel: ProfileStrings.saving,
                   busy: _busy,

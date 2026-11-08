@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../application/app_config_provider.dart';
 import '../../application/auth_controller.dart';
 import '../config/config_sections.dart';
+import '../../presentation/add_device/add_device_screen.dart';
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
@@ -13,6 +14,7 @@ import '../../presentation/profile/edit_profile_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
+import '../../presentation/strings/add_device_strings.dart';
 import '../../presentation/strings/shell_strings.dart';
 import '../../presentation/widgets/placeholder_screen.dart';
 
@@ -28,6 +30,7 @@ abstract final class Routes {
   static const alerts = '/alerts';
   static const profile = '/profile';
   static const addDevice = HomeScreen.addDeviceRoute;
+  static const device = '/device/:id';
   static const editProfile = EditProfileScreen.route;
 
   /// Screens for people who are not logged in; a logged-in user is sent home from these.
@@ -97,10 +100,12 @@ GoRouter goRouter(Ref ref) {
           ),
         ],
       ),
-      // Full screen, without the tab bar (task 1.2.7).
+      // Full screen, without the tab bar, like the mockup.
+      GoRoute(path: Routes.addDevice, builder: (_, _) => const AddDeviceScreen()),
+      // The device dashboard comes with its own task; Add device already ends here.
       GoRoute(
-        path: Routes.addDevice,
-        builder: (_, _) => const PlaceholderScreen(title: ShellStrings.addDevicePlaceholder),
+        path: Routes.device,
+        builder: (_, _) => const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder),
       ),
       // Full screen, without the tab bar, like the mockup.
       GoRoute(path: Routes.editProfile, builder: (_, _) => const EditProfileScreen()),

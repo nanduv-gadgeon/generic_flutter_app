@@ -19,11 +19,13 @@ void main() {
     (Routes.alerts, false): Routes.login,
     (Routes.profile, false): Routes.login,
     (Routes.addDevice, false): Routes.login,
+    ('/device/1', false): Routes.login,
     (Routes.editProfile, false): Routes.login,
     (Routes.history, true): null,
     (Routes.alerts, true): null,
     (Routes.profile, true): null,
     (Routes.addDevice, true): null,
+    ('/device/1', true): null,
     (Routes.editProfile, true): null,
   };
 

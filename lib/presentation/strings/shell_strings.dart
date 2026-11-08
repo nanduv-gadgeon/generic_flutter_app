@@ -8,5 +8,4 @@ abstract final class ShellStrings {
   // Placeholders until their tasks are built.
   static const historyPlaceholder = 'History';
   static const alertsPlaceholder = 'Alerts';
-  static const addDevicePlaceholder = 'Add device (task 1.2.7)';
 }

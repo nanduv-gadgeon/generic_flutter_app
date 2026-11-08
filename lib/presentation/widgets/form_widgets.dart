@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_tokens.dart';
 import '../strings/common_strings.dart';
 
-/// Pieces shared by the account screens (login, register, forgot password).
+/// Buttons and messages shared by the form screens (account, profile, Add device).
 
 /// The 44 px round back button from the mockup.
-class AuthBackButton extends StatelessWidget {
-  const AuthBackButton({super.key, required this.onPressed});
+class CircleBackButton extends StatelessWidget {
+  const CircleBackButton({super.key, required this.onPressed});
 
   final VoidCallback onPressed;
 
@@ -28,21 +28,21 @@ class AuthBackButton extends StatelessWidget {
   }
 }
 
-/// The screen's main button. While busy it shows only a spinner (requirement 2.5), labelled
-/// [busyLabel] for screen readers.
-class AuthSubmitButton extends StatelessWidget {
-  const AuthSubmitButton({
+/// A screen's main button, disabled while [onPressed] is null. While busy it shows only a spinner
+/// (requirement 2.5), labelled [busyLabel] for screen readers.
+class PrimaryButton extends StatelessWidget {
+  const PrimaryButton({
     super.key,
     required this.label,
-    required this.busyLabel,
-    required this.busy,
+    this.busyLabel = CommonStrings.loading,
+    this.busy = false,
     required this.onPressed,
   });
 
   final String label;
   final String busyLabel;
   final bool busy;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +62,8 @@ class AuthSubmitButton extends StatelessWidget {
 }
 
 /// Error text with an icon, so colour is not the only signal.
-class AuthErrorMessage extends StatelessWidget {
-  const AuthErrorMessage(this.message, {super.key});
+class ErrorMessage extends StatelessWidget {
+  const ErrorMessage(this.message, {super.key});
 
   final String message;
 

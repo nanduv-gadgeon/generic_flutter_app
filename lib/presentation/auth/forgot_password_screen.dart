@@ -10,7 +10,7 @@ import '../strings/auth_strings.dart';
 import '../strings/common_strings.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/password_field.dart';
-import 'auth_form.dart';
+import '../widgets/form_widgets.dart';
 import 'auth_validators.dart';
 
 /// Forgot password (Phase 1): email and a new password on one form. Saving asks for the phone's
@@ -86,7 +86,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: AuthBackButton(onPressed: _back),
+                    child: CircleBackButton(onPressed: _back),
                   ),
                   const SizedBox(height: 20),
                   Semantics(
@@ -106,10 +106,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ..._fields(),
                   if (_error case final error?) ...[
                     const SizedBox(height: 12),
-                    AuthErrorMessage(error),
+                    ErrorMessage(error),
                   ],
                   const SizedBox(height: 20),
-                  AuthSubmitButton(
+                  PrimaryButton(
                     label: AuthStrings.resetPassword,
                     busyLabel: AuthStrings.resettingPassword,
                     busy: _busy,

@@ -90,6 +90,22 @@ void main() {
     expect(await addressesFor(userId), isEmpty);
   });
 
+  test('deleteForUser removes only that user\'s device at the address, with its alerts', () async {
+    final other = await db.usersDao.insertUser(fakeUser(email: 'other@example.com'));
+    final id = await db.devicesDao.addDeviceWithAlerts(fakeDevice(userId, address: 'A'), [
+      DeviceAlertsCompanion.insert(deviceId: 0, readingKey: 'current', above: const Value(1)),
+    ]);
+    await db.devicesDao.addDevice(fakeDevice(userId, address: 'B'));
+    await db.devicesDao.addDevice(fakeDevice(other, address: 'A'));
+
+    expect(await db.devicesDao.deleteForUser(userId, 'A'), 1);
+    expect(await db.devicesDao.deleteForUser(userId, 'A'), 0);
+
+    expect(await addressesFor(userId), ['B']);
+    expect(await addressesFor(other), ['A']);
+    expect(await db.devicesDao.alertsFor(id), isEmpty);
+  });
+
   test('a device with the default sortOrder value still goes last', () async {
     await db.devicesDao.addDevice(fakeDevice(userId, address: 'A'));
     final id = await db.devicesDao.addDevice(
@@ -98,5 +114,79 @@ void main() {
 
     final device = (await db.devicesDao.watchForUser(userId).first).firstWhere((d) => d.id == id);
     expect(device.sortOrder, 1);
+  });
+
+  group('alerts', () {
+    DeviceAlertsCompanion alert(String key, {double? above, double? below}) =>
+        DeviceAlertsCompanion.insert(
+          deviceId: 0,
+          readingKey: key,
+          above: Value(above),
+          below: Value(below),
+        );
+
+    test('addDeviceWithAlerts saves the device last with its alerts', () async {
+      await db.devicesDao.addDevice(fakeDevice(userId, address: 'A'));
+      final id = await db.devicesDao.addDeviceWithAlerts(fakeDevice(userId, address: 'B'), [
+        alert('current', above: 120),
+        alert('battery', below: 15),
+      ]);
+
+      expect(await addressesFor(userId), ['A', 'B']);
+      expect(
+        [for (final a in await db.devicesDao.alertsFor(id)) (a.readingKey, a.deviceId)],
+        [('battery', id), ('current', id)],
+      );
+    });
+
+    test('addDeviceWithAlerts saves nothing when an alert fails', () async {
+      final add = db.devicesDao.addDeviceWithAlerts(fakeDevice(userId), [
+        alert('current', above: 1),
+        alert('current', above: 2), // duplicate key
+      ]);
+
+      await expectLater(add, throwsA(isA<Exception>()));
+      expect(await addressesFor(userId), isEmpty);
+      expect(await db.select(db.deviceAlerts).get(), isEmpty);
+    });
+
+    test('replaceAlerts swaps all of a device\'s alerts', () async {
+      final id = await db.devicesDao.addDeviceWithAlerts(fakeDevice(userId), [
+        alert('current', above: 120),
+        alert('battery', below: 15),
+      ]);
+
+      await db.devicesDao.replaceAlerts(id, [alert('current', above: 100)]);
+
+      final alerts = await db.devicesDao.alertsFor(id);
+      expect([for (final a in alerts) (a.readingKey, a.above)], [('current', 100.0)]);
+    });
+
+    test('deleting a device deletes its alerts', () async {
+      final id = await db.devicesDao.addDeviceWithAlerts(fakeDevice(userId), [
+        alert('current', above: 120),
+      ]);
+
+      await db.devicesDao.deleteDevice(id);
+
+      expect(await db.select(db.deviceAlerts).get(), isEmpty);
+    });
+  });
+
+  test('existsForUser only matches the same user and address', () async {
+    final other = await db.usersDao.insertUser(fakeUser(email: 'other@example.com'));
+    await db.devicesDao.addDevice(fakeDevice(userId, address: 'A'));
+
+    expect(await db.devicesDao.existsForUser(userId, 'A'), isTrue);
+    expect(await db.devicesDao.existsForUser(userId, 'B'), isFalse);
+    expect(await db.devicesDao.existsForUser(other, 'A'), isFalse);
+  });
+
+  test('setDeviceKey stores the cloud key', () async {
+    final id = await db.devicesDao.addDevice(fakeDevice(userId));
+
+    await db.devicesDao.setDeviceKey(id, 'DK-TEST-0000');
+
+    expect((await db.devicesDao.watchForUser(userId).first).single.deviceKey, 'DK-TEST-0000');
   });
 }

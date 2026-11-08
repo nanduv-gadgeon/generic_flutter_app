@@ -16,7 +16,7 @@ part 'app_database.g.dart';
 /// Changing the schema: bump [schemaVersion], run `dart run drift_dev make-migrations`, then
 /// write the migration step and its test.
 @DriftDatabase(
-  tables: [Users, Sessions, Devices, AppSettings],
+  tables: [Users, Sessions, Devices, AppSettings, DeviceAlerts],
   daos: [UsersDao, SessionDao, DevicesDao, SettingsDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -24,7 +24,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -32,6 +32,11 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: stepByStep(
       // v2 (task 1.1.11): per-user settings, starting with the notifications switch.
       from1To2: (m, schema) => m.createTable(schema.appSettings),
+      // v3 (task 1.2.7): per-device alert limits, and the last IP of Wi‑Fi devices.
+      from2To3: (m, schema) async {
+        await m.createTable(schema.deviceAlerts);
+        await m.addColumn(schema.devices, schema.devices.ipAddress);
+      },
     ),
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),
   );

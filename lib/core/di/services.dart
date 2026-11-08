@@ -11,7 +11,9 @@ import '../../data/auth/local_auth_service.dart';
 import '../../data/auth/local_biometric_auth.dart';
 import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
+import '../../data/devices/cloud_device_registration.dart';
 import '../../data/devices/local_device_service.dart';
+import '../../data/devices/no_device_registration.dart';
 import '../../data/profile/image_picker_photo_picker.dart';
 import '../../data/profile/profile_photo_store.dart';
 import '../../data/settings/local_app_settings_service.dart';
@@ -21,6 +23,7 @@ import '../../domain/services/app_settings_service.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/photo_picker.dart';
@@ -52,11 +55,24 @@ PasswordHasher passwordHasher(Ref ref) => const Argon2idPasswordHasher();
 @Riverpod(keepAlive: true)
 BiometricAuth biometricAuth(Ref ref) => LocalBiometricAuth();
 
-/// Both phases list devices from the local DB (Phase 2 only adds cloud registration, task 1.2.7),
-/// so there is no isCloud branch here yet.
+/// Phase 2 registers new devices with the cloud; Phase 1 registers nothing.
 @Riverpod(keepAlive: true)
-DeviceService deviceService(Ref ref) =>
-    LocalDeviceService(ref.watch(appDatabaseProvider).requireValue);
+DeviceRegistration deviceRegistration(Ref ref) {
+  final config = ref.watch(appConfigProvider).requireValue;
+  return config.isCloud ? CloudDeviceRegistration(config.cloud!) : const NoDeviceRegistration();
+}
+
+/// Add device shows the device key and cloud checklist only with the cloud, without checking
+/// isCloud itself.
+@Riverpod(keepAlive: true)
+bool cloudRegistrationAvailable(Ref ref) => ref.watch(appConfigProvider).requireValue.isCloud;
+
+/// Both phases keep devices in the local DB; the registration differs.
+@Riverpod(keepAlive: true)
+DeviceService deviceService(Ref ref) => LocalDeviceService(
+  ref.watch(appDatabaseProvider).requireValue,
+  ref.watch(deviceRegistrationProvider),
+);
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.
 @Riverpod(keepAlive: true)

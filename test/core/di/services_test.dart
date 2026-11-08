@@ -9,7 +9,11 @@ import 'package:generic_flutter_app/data/auth/cloud_auth_service.dart';
 import 'package:generic_flutter_app/data/auth/local_auth_service.dart';
 import 'package:generic_flutter_app/data/cloud/cloud_backend_health.dart';
 import 'package:generic_flutter_app/data/cloud/local_backend_health.dart';
+import 'package:generic_flutter_app/data/devices/cloud_device_registration.dart';
+import 'package:generic_flutter_app/data/devices/local_device_service.dart';
+import 'package:generic_flutter_app/data/devices/no_device_registration.dart';
 import 'package:generic_flutter_app/data/upload/cloud_uploader.dart';
+import 'package:generic_flutter_app/domain/models/new_device.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/upload/no_uploader.dart';
 
@@ -41,6 +45,9 @@ void main() {
     expect(container.read(uploaderProvider), isA<NoUploader>());
     expect(container.read(backendHealthProvider), isA<LocalBackendHealth>());
     expect(container.read(authServiceProvider), isA<LocalAuthService>());
+    expect(container.read(deviceRegistrationProvider), isA<NoDeviceRegistration>());
+    expect(container.read(cloudRegistrationAvailableProvider), isFalse);
+    expect(container.read(deviceServiceProvider), isA<LocalDeviceService>());
   });
 
   test('isCloud true wires the Phase 2 hooks', () async {
@@ -49,7 +56,25 @@ void main() {
     expect(container.read(uploaderProvider), isA<CloudUploader>());
     expect(container.read(backendHealthProvider), isA<CloudBackendHealth>());
     expect(container.read(authServiceProvider), isA<CloudAuthService>());
+    expect(container.read(deviceRegistrationProvider), isA<CloudDeviceRegistration>());
+    expect(container.read(cloudRegistrationAvailableProvider), isTrue);
   });
+
+  // Phase 1 must not register anywhere; the Phase 2 hook is empty until the cloud API exists.
+  for (final isCloud in [false, true]) {
+    test('device registration returns nothing yet (isCloud $isCloud)', () async {
+      final container = await _containerFor(isCloud: isCloud);
+      const device = NewDevice(
+        userId: 1,
+        profileId: 'test_device_v1',
+        transport: Transport.ble,
+        address: 'AA:BB:CC:00:00:01',
+        name: 'Test band',
+      );
+
+      expect(await container.read(deviceRegistrationProvider).register(device), isNull);
+    });
+  }
 
   test('Phase 1 backend is always reachable', () async {
     expect(await const LocalBackendHealth().isReachable(), isTrue);

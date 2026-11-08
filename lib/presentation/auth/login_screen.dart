@@ -13,7 +13,7 @@ import '../widgets/labeled_field.dart';
 import '../strings/auth_strings.dart';
 import '../strings/common_strings.dart';
 import '../widgets/password_field.dart';
-import 'auth_form.dart';
+import '../widgets/form_widgets.dart';
 import 'auth_validators.dart';
 import 'biometric_offer_dialog.dart';
 
@@ -107,9 +107,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         BrandHeader(brand: config.brand),
                         const SizedBox(height: 28),
                         ..._fields(),
-                        if (_error case final error?) AuthErrorMessage(error),
+                        if (_error case final error?) ErrorMessage(error),
                         const SizedBox(height: 14),
-                        AuthSubmitButton(
+                        PrimaryButton(
                           label: AuthStrings.logIn,
                           busyLabel: AuthStrings.signingIn,
                           busy: _busy,

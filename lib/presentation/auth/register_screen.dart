@@ -11,7 +11,7 @@ import '../strings/auth_strings.dart';
 import '../strings/common_strings.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/password_field.dart';
-import '../widgets/form_widgets.dart';
+import 'auth_form.dart';
 import 'auth_validators.dart';
 import 'mobile_number_field.dart';
 
@@ -94,7 +94,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: CircleBackButton(onPressed: _back),
+                    child: AuthBackButton(onPressed: _back),
                   ),
                   const SizedBox(height: 20),
                   Semantics(
@@ -114,9 +114,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ..._fields(),
                   const SizedBox(height: 14),
                   _TermsField(enabled: !_busy),
-                  if (_error case final error?) ...[const SizedBox(height: 8), ErrorMessage(error)],
+                  if (_error case final error?) ...[
+                    const SizedBox(height: 8),
+                    AuthErrorMessage(error),
+                  ],
                   const SizedBox(height: 20),
-                  PrimaryButton(
+                  AuthSubmitButton(
                     label: AuthStrings.createAccount,
                     busyLabel: AuthStrings.creatingAccount,
                     busy: _busy,
@@ -210,7 +213,7 @@ class _TermsField extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             title: Text(AuthStrings.acceptTerms, style: TextStyle(fontSize: 14, color: muted)),
           ),
-          if (field.errorText case final error?) ErrorMessage(error),
+          if (field.errorText case final error?) AuthErrorMessage(error),
         ],
       ),
     );

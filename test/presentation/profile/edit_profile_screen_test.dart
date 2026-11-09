@@ -95,7 +95,7 @@ void main() {
     expect(textOf(tester, field('Full name')), 'Test User');
     expect(find.text('test@example.com'), findsOneWidget);
     expect(find.text('+91'), findsOneWidget);
-    expect(find.text('0000000000'), findsOneWidget);
+    expect(find.text('8123456789'), findsOneWidget);
     expect(find.text('TU'), findsOneWidget);
   });
 
@@ -116,7 +116,7 @@ void main() {
     await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
 
-    expect(saved(), const ProfileChanges(name: ' New Name ', mobile: '+91 0000000000'));
+    expect(saved(), const ProfileChanges(name: ' New Name ', mobile: '+91 8123456789'));
     expect(find.text('profile page'), findsOneWidget);
     expect(find.text('Profile saved.'), findsOneWidget);
   });
@@ -129,6 +129,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Enter your name.'), findsOneWidget);
+    verifyNever(() => auth.updateProfile(any()));
+  });
+
+  testWidgets('a name over 70 characters is not saved (TC-REG-011)', (tester) async {
+    await pumpEdit(tester);
+
+    await tester.enterText(field('Full name'), 'T' * 300);
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Use at most 70 characters.'), findsOneWidget);
     verifyNever(() => auth.updateProfile(any()));
   });
 

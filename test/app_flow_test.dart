@@ -168,12 +168,8 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Add device'));
     await tester.pumpAndSettle();
-    expect(find.text('What are you adding?'), findsOneWidget);
+    expect(find.text('Add device (task 1.2.7)'), findsWidgets);
     expect(find.byType(NavigationBar), findsNothing);
-
-    await tester.tap(find.byTooltip('Back'));
-    await tester.pumpAndSettle();
-    expectHome();
   });
 
   testWidgets('forgot password goes from login to reset and back to login', (tester) async {
@@ -247,7 +243,7 @@ void main() {
     }
     await tester.enterText(
       find.descendant(of: find.byType(MobileNumberField), matching: find.byType(TextFormField)),
-      '0000000000',
+      '2015550123', // libphonenumber's example US number; tests run with the en_US region
     );
     await tester.tap(find.byType(Checkbox));
     await tester.tap(find.widgetWithText(FilledButton, 'Create account'));

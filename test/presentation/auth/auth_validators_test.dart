@@ -17,7 +17,7 @@ void main() {
     'mobile': (
       AuthValidators.mobile(dialCodeFor('IN')!),
       '123',
-      '00000 00000',
+      '81234 56789',
       'Enter a valid mobile number.',
     ),
   };
@@ -26,6 +26,22 @@ void main() {
       expect(validate(bad), message);
       expect(validate(null), message);
       expect(validate(good), isNull);
+    });
+  }
+
+  // (validator, input) -> message; null = allowed
+  final lengthCases = <(String? Function(String?), String), String?>{
+    (AuthValidators.name, 'T'): 'Use at least 2 characters.',
+    (AuthValidators.name, 'Ab'): null,
+    (AuthValidators.name, 'T' * 70): null,
+    (AuthValidators.name, 'T' * 71): 'Use at most 70 characters.',
+    (AuthValidators.email, 'a@b.c'): 'Enter a valid email address.', // 5
+    (AuthValidators.email, '${'a' * 242}@example.com'): null, // 254
+    (AuthValidators.email, '${'a' * 243}@example.com'): 'Enter a valid email address.', // 255
+  };
+  for (final MapEntry(key: (validate, input), value: message) in lengthCases.entries) {
+    test('length limit: ${input.length} characters -> ${message ?? 'allowed'}', () {
+      expect(validate(input), message);
     });
   }
 

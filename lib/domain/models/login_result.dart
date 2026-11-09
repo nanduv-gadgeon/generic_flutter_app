@@ -18,6 +18,13 @@ final class InvalidCredentials extends LoginResult {
   const InvalidCredentials();
 }
 
+/// Too many wrong passwords: no password is accepted for [retryAfter].
+final class AccountLocked extends LoginResult {
+  const AccountLocked(this.retryAfter);
+
+  final Duration retryAfter;
+}
+
 /// Face ID / fingerprint was cancelled, failed, or is not set up.
 final class BiometricFailed extends LoginResult {
   const BiometricFailed();

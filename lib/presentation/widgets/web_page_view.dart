@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../domain/validation/link_rules.dart';
-import 'form_widgets.dart';
+import '../auth/auth_form.dart';
 import '../strings/common_strings.dart';
 import '../strings/profile_strings.dart';
 
@@ -116,7 +116,7 @@ class _WebPageViewState extends State<WebPageView> {
           const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
-              child: ErrorMessage(ProfileStrings.pageFailed),
+              child: AuthErrorMessage(ProfileStrings.pageFailed),
             ),
           ),
       ],

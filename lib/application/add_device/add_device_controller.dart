@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/config/device_profile_registry.dart';
@@ -101,8 +103,7 @@ class AddDeviceController extends _$AddDeviceController {
     _listen();
   }
 
-  /// Step 3 Wi‑Fi "Connect device": BLE setup scans for the device; hotspot setup asks the user
-  /// to join it first.
+  /// Step 3 Wi‑Fi "Connect device": scans for the device, or asks the user to join its hotspot.
   Future<void> submitWifi(WifiCredentials credentials) async {
     final profile = state.profile;
     if (profile == null) return;
@@ -140,8 +141,8 @@ class AddDeviceController extends _$AddDeviceController {
       final link = ref.read(deviceLinkFactoryProvider)(profile, Transport.ble, device.id);
       await link.connect();
       await link.disconnect();
-    } on LinkException {
-      return _failBack(Transport.ble, AddDeviceError.connectFailed);
+    } on LinkException catch (e) {
+      return _failBack(Transport.ble, AddDeviceError.connectFailed, e);
     }
     await _save(profile, Transport.ble, device.id);
   }
@@ -163,8 +164,7 @@ class AddDeviceController extends _$AddDeviceController {
     }
   }
 
-  /// Back: steps 2 and 3 go back a step (Wi‑Fi setup goes back to the form first). Returns false
-  /// on steps 1 and 4, where the screen closes the flow instead.
+  /// Back: steps 2 and 3 go back (Wi‑Fi setup to the form first); false on steps 1 and 4.
   Future<bool> back() async {
     final phase = state.phase;
     if (state.step == 4 && phase is Registering) return true; // Wait for it to finish.
@@ -194,7 +194,6 @@ class AddDeviceController extends _$AddDeviceController {
   }
 
   BleScanner get _scanner => ref.read(bleScannerProvider);
-
   DeviceService get _devices => ref.read(deviceServiceProvider);
 
   void _listen() {
@@ -272,17 +271,20 @@ class AddDeviceController extends _$AddDeviceController {
       state = state.copyWith(phase: Done(await _devices.addDevice(device, profile.alerts)));
     } on DeviceAlreadyAddedException {
       _failBack(transport, AddDeviceError.alreadyAdded);
-    } catch (_) {
-      _failBack(transport, AddDeviceError.saveFailed);
+    } catch (e) {
+      _failBack(transport, AddDeviceError.saveFailed, e);
     }
   }
 
-  /// Back to step 3 with [error]: the scan for Bluetooth, the Wi‑Fi form for Wi‑Fi.
-  void _failBack(Transport transport, AddDeviceError error) => state = state.copyWith(
-    step: 3,
-    phase: transport == Transport.ble ? const Scanning(searching: false) : const WifiForm(),
-    error: error,
-  );
+  /// Back to step 3 (scan or Wi‑Fi form) with [error]; debug builds print its [cause].
+  void _failBack(Transport transport, AddDeviceError error, [Object? cause]) {
+    if (kDebugMode && cause != null) debugPrint('Add device: ${error.name}: $cause');
+    state = state.copyWith(
+      step: 3,
+      phase: transport == Transport.ble ? const Scanning(searching: false) : const WifiForm(),
+      error: error,
+    );
+  }
 
   int get _userId =>
       ref.read(authControllerProvider).value?.id ?? (throw StateError('Nobody is logged in'));

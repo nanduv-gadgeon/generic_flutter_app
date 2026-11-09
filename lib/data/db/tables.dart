@@ -6,10 +6,12 @@ enum DeviceTransport { ble, wifi }
 /// Phase 1 local accounts. Passwords are stored only as a salted hash (made in task 1.1.6).
 class Users extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text()();
 
-  /// Stored lowercased by [UsersDao], so uniqueness ignores letter case.
-  TextColumn get email => text().unique()();
+  /// The form allows 70 characters; 255 leaves room for international names.
+  TextColumn get name => text().withLength(max: 255)();
+
+  /// Stored lowercased by [UsersDao], so uniqueness ignores letter case. 254: the RFC 5321 limit.
+  TextColumn get email => text().withLength(max: 254).unique()();
   TextColumn get mobile => text()();
   BlobColumn get passwordHash => blob()();
   BlobColumn get passwordSalt => blob()();

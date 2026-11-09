@@ -34,6 +34,13 @@ class FakePasswordHasher implements PasswordHasher {
 
 class MockBiometricAuth extends Mock implements BiometricAuth {}
 
+/// The phone can track enrolment and its faces / fingerprints never change.
+void stubUnchangedEnrollment(MockBiometricAuth biometrics) {
+  when(() => biometrics.rememberEnrollment()).thenAnswer((_) async => true);
+  when(() => biometrics.enrollmentChanged()).thenAnswer((_) async => false);
+  when(() => biometrics.forgetEnrollment()).thenAnswer((_) async {});
+}
+
 /// [BiometricUserStore] backed by a plain variable instead of Keychain / Keystore.
 class FakeBiometricUserStore implements BiometricUserStore {
   int? userId;
@@ -57,6 +64,6 @@ const fakeUser = AuthUser(
   id: 1,
   name: 'Test User',
   email: 'test@example.com',
-  mobile: '+91 0000000000',
+  mobile: '+91 8123456789', // libphonenumber's example Indian mobile, not a real one
   biometricEnabled: false,
 );

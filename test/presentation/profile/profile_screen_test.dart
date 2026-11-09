@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
@@ -34,7 +35,8 @@ void main() {
     when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
     when(() => auth.logout()).thenAnswer((_) async {});
     when(() => auth.canLoginWithBiometrics()).thenAnswer((_) async => false);
-    when(() => auth.setBiometricLogin(enabled: any(named: 'enabled'))).thenAnswer((_) async {});
+    when(() => auth.setBiometricLogin(enabled: any(named: 'enabled')))
+        .thenAnswer((_) async => true);
     when(() => settings.watchNotificationsEnabled(any())).thenAnswer((_) => Stream.value(true));
     when(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')))
         .thenAnswer((_) async {});
@@ -233,6 +235,17 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Test User'), findsOneWidget);
+  });
+
+  testWidgets('a very long saved name is cut to two lines (TC-REG-011)', (tester) async {
+    final longName = 'Test ${'T' * 295}';
+    when(() => auth.currentUser()).thenAnswer((_) async => fakeUser.copyWith(name: longName));
+    await pumpProfile(tester);
+
+    expect(tester.takeException(), isNull);
+    final name = tester.renderObject<RenderParagraph>(find.text(longName));
+    expect(name.didExceedMaxLines, isTrue); // ends with an ellipsis
+    expect(find.text('Log out'), findsOneWidget);
   });
 
   testWidgets('works on a small phone with double text size', (tester) async {

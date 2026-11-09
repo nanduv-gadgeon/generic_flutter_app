@@ -39,7 +39,14 @@
             "customConstraints": null,
             "default_dart": null,
             "default_client_dart": null,
-            "dsl_features": []
+            "dsl_features": [
+              {
+                "allowed-lengths": {
+                  "min": null,
+                  "max": 255
+                }
+              }
+            ]
           },
           {
             "name": "email",
@@ -54,7 +61,13 @@
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": [
-              "unique"
+              "unique",
+              {
+                "allowed-lengths": {
+                  "min": null,
+                  "max": 254
+                }
+              }
             ]
           },
           {
@@ -363,16 +376,6 @@
             "dsl_features": []
           },
           {
-            "name": "ip_address",
-            "getter_name": "ipAddress",
-            "moor_type": "string",
-            "nullable": true,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": []
-          },
-          {
             "name": "firmware",
             "getter_name": "firmware",
             "moor_type": "string",
@@ -522,7 +525,7 @@
         ]
       }
     },
-    {
+     {
       "id": 4,
       "references": [
         2

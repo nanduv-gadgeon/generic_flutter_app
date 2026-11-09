@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:universal_ble/universal_ble.dart';
@@ -5,10 +6,12 @@ import 'package:universal_ble/universal_ble.dart';
 import '../../../domain/transport/ble_scanner.dart';
 import 'ble_adapter.dart';
 
-/// [BleAdapter] over the `universal_ble` package. The only file that imports it; no logic here.
+/// [BleAdapter] over the `universal_ble` package. The only file that imports it; only platform
+/// plumbing here.
 class UniversalBleAdapter implements BleAdapter {
-  /// For the first subscribe or read of an encrypted characteristic. The phone may stop there and
-  /// ask the user for the device's pairing key, which takes longer than the package's 10 s default.
+  /// For pairing, and the first subscribe or read of an encrypted characteristic: the phone may
+  /// stop there and ask the user for the device's pairing key, which takes longer than the
+  /// package's 10 s default.
   static const pairingTimeout = Duration(seconds: 60);
 
   @override
@@ -55,7 +58,28 @@ class UniversalBleAdapter implements BleAdapter {
   Stream<bool> connection(String deviceId) => UniversalBle.connectionStream(deviceId);
 
   @override
-  Future<void> pair(String deviceId) => UniversalBle.pair(deviceId);
+  Future<void> pair(String deviceId) async {
+    // iOS has no pairing call: it asks for the key itself on the first encrypted subscribe or
+    // read, which wait [pairingTimeout] for it.
+    if (!BleCapabilities.hasSystemPairingApi) return;
+
+    // A device may ask to pair as soon as it connects. Android then pairs on its own (its dialog
+    // is already up) and refuses our request, so listen first and wait for that pairing instead.
+    final systemPairing = Completer<bool>();
+    final sub = UniversalBle.pairingStateStream(deviceId).listen((paired) {
+      if (!systemPairing.isCompleted) systemPairing.complete(paired);
+    });
+    try {
+      await UniversalBle.pair(deviceId, timeout: pairingTimeout);
+    } on PairingException {
+      rethrow; // Declined, or the device refused.
+    } on UniversalBleException {
+      if (await UniversalBle.isPaired(deviceId) ?? false) return;
+      if (!await systemPairing.future.timeout(pairingTimeout)) throw PairingException();
+    } finally {
+      unawaited(sub.cancel()); // Nothing to wait for: the result is known.
+    }
+  }
 
   @override
   Future<int> requestMtu(String deviceId, int mtu) => UniversalBle.requestMtu(deviceId, mtu);

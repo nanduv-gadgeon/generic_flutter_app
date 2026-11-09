@@ -13,7 +13,7 @@ import '../widgets/labeled_field.dart';
 import '../strings/auth_strings.dart';
 import '../strings/common_strings.dart';
 import '../widgets/password_field.dart';
-import '../widgets/form_widgets.dart';
+import 'auth_form.dart';
 import 'auth_validators.dart';
 import 'biometric_offer_dialog.dart';
 
@@ -46,11 +46,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final auth = ref.read(authControllerProvider.notifier);
       final result = await auth.login(_email.text, _password.text);
       if (result is! LoginSuccess) {
-        _showError(AuthStrings.wrongCredentials);
+        _showError(switch (result) {
+          AccountLocked(:final retryAfter) => AuthStrings.accountLocked(retryAfter),
+          _ => AuthStrings.wrongCredentials,
+        });
         return;
       }
       var enable = false;
-      if (result.offerBiometrics && mounted) {
+      // Offer only when the customer has the feature (TC-CFG-007).
+      final featureOn = ref.read(appConfigProvider).requireValue.features.faceIdLogin;
+      if (featureOn && result.offerBiometrics && mounted) {
         final kind = await ref.read(biometricAuthProvider).kind();
         if (mounted) enable = await showBiometricOfferDialog(context, kind);
       }
@@ -107,9 +112,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         BrandHeader(brand: config.brand),
                         const SizedBox(height: 28),
                         ..._fields(),
-                        if (_error case final error?) ErrorMessage(error),
+                        if (_error case final error?) AuthErrorMessage(error),
                         const SizedBox(height: 14),
-                        PrimaryButton(
+                        AuthSubmitButton(
                           label: AuthStrings.logIn,
                           busyLabel: AuthStrings.signingIn,
                           busy: _busy,

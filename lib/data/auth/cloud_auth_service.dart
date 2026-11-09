@@ -30,7 +30,7 @@ class CloudAuthService implements AuthService {
   }
 
   @override
-  Future<void> setBiometricLogin({required bool enabled}) =>
+  Future<bool> setBiometricLogin({required bool enabled}) =>
       // TODO(phase2): store or remove the refresh token behind biometrics.
       throw UnimplementedError('Phase 2: cloud biometric setting');
 

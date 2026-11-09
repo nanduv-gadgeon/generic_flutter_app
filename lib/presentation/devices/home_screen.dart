@@ -78,6 +78,8 @@ class _Header extends StatelessWidget {
                 header: true,
                 child: Text(
                   name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,

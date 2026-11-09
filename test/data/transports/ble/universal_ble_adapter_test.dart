@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
@@ -69,6 +70,103 @@ void main() {
 
       expect(error, isNull);
       expect(value, [80]);
+    });
+  });
+
+  group('pair', () {
+    late bool systemPairing;
+    late StreamController<bool> pairingState;
+
+    setUp(() {
+      systemPairing = BleCapabilities.hasSystemPairingApi;
+      pairingState = StreamController.broadcast();
+      when(() => platform.pairingStateStream(any())).thenAnswer((_) => pairingState.stream);
+      when(() => platform.isPaired(any())).thenAnswer((_) async => false);
+    });
+    tearDown(() => BleCapabilities.hasSystemPairingApi = systemPairing);
+
+    group('when the device asks to pair as it connects (Android pairs on its own)', () {
+      setUp(() {
+        BleCapabilities.hasSystemPairingApi = true;
+        when(() => platform.pair(any())).thenThrow(
+          UniversalBleException(
+            code: UniversalBleErrorCode.pairingFailed,
+            message: 'Failed to pair',
+          ),
+        );
+      });
+
+      test('waits for the user to accept the system dialog', () async {
+        final pair = UniversalBleAdapter().pair(device);
+        await pumpEventQueue();
+        pairingState.add(true);
+
+        await expectLater(pair, completes);
+      });
+
+      test('fails when the user cancels it', () async {
+        final pair = UniversalBleAdapter().pair(device);
+        await pumpEventQueue();
+        pairingState.add(false);
+
+        await expectLater(pair, throwsA(isA<PairingException>()));
+      });
+
+      test('is done when it already finished', () async {
+        when(() => platform.isPaired(any())).thenAnswer((_) async => true);
+
+        await expectLater(UniversalBleAdapter().pair(device), completes);
+      });
+
+      test('gives up when nothing happens', () {
+        fakeAsync((async) {
+          Object? error;
+          UniversalBleAdapter().pair(device).catchError((Object e) {
+            error = e;
+          });
+          async.elapse(UniversalBleAdapter.pairingTimeout + const Duration(seconds: 1));
+
+          expect(error, isA<TimeoutException>());
+        });
+      });
+    });
+
+    test('Android waits while the user enters the pairing key', () {
+      BleCapabilities.hasSystemPairingApi = true;
+      when(() => platform.pair(any())).thenAnswer((_) => Future.delayed(keyEntry, () => true));
+
+      fakeAsync((async) {
+        Object? error;
+        var done = false;
+        UniversalBleAdapter()
+            .pair(device)
+            .then(
+              (_) => done = true,
+              onError: (Object e) {
+                error = e;
+                return false;
+              },
+            );
+        async.elapse(keyEntry + const Duration(seconds: 1));
+
+        expect(error, isNull);
+        expect(done, isTrue);
+      });
+    });
+
+    test('Android throws when pairing is refused', () async {
+      BleCapabilities.hasSystemPairingApi = true;
+      when(() => platform.pair(any())).thenAnswer((_) async => false);
+
+      await expectLater(UniversalBleAdapter().pair(device), throwsA(isA<PairingException>()));
+    });
+
+    test('iOS leaves pairing to the system', () async {
+      BleCapabilities.hasSystemPairingApi = false;
+
+      await UniversalBleAdapter().pair(device);
+
+      verifyNever(() => platform.pair(any()));
     });
   });
 

@@ -38,6 +38,8 @@
 	<string>Confirm it's you with Face ID</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Find and connect to your devices on your Wi-Fi network</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a profile photo</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose a profile photo</string>
 	<key>UIApplicationSceneManifest</key>

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../models/device_profile.dart';
 import '../transport/device_link.dart';
+import 'channel_frame.dart';
 import 'checksums.dart';
 import 'decoded_packet.dart';
 import 'device_codec.dart';
@@ -21,12 +22,27 @@ DeviceCodec codecFor(DeviceProfile profile, {DateTime Function()? now}) => Gener
 class GenericCodec implements DeviceCodec {
   GenericCodec(this._layout, List<DeviceCommand> commands, {DateTime Function()? now})
     : _commands = {for (final c in commands) c.id: c},
-      _frames = {for (final f in _layout.frames) hexByte(f.code): f},
+      _frames = {
+        for (final f in _layout.frames)
+          if (f.code case final code?) (f.source, hexByte(code)): f,
+      },
+      _anyFrame = {
+        for (final f in _layout.frames)
+          if (f.code == null) f.source: f,
+      },
+      _channels = {
+        for (final f in _layout.frames)
+          if (f.channels case final spec?) f: ChannelFrameReader(spec, _layout.byteOrder),
+      },
       _now = now ?? DateTime.now;
 
   final PacketLayout _layout;
   final Map<String, DeviceCommand> _commands;
-  final Map<int, FrameSpec> _frames;
+
+  /// Frames by source and first byte, and the frame taking the rest of each source.
+  final Map<(String, int), FrameSpec> _frames;
+  final Map<String, FrameSpec> _anyFrame;
+  final Map<FrameSpec, ChannelFrameReader> _channels;
   final DateTime Function() _now;
 
   /// Largest Unix time in milliseconds that [DateTime] can hold.
@@ -34,30 +50,45 @@ class GenericCodec implements DeviceCodec {
 
   @override
   Set<String> get readingKeys => {
-    for (final frame in _layout.frames) ...frame.fields.map((f) => f.key),
+    for (final frame in _layout.frames) ...[
+      ...frame.fields.map((f) => f.key),
+      ...?frame.channels?.keys.values,
+    ],
   };
 
   @override
-  Uint8List encode(String commandId) => Uint8List.fromList(
-    (_commands[commandId] ?? (throw UnsupportedCommandException(commandId))).data,
-  );
+  Uint8List encode(String commandId, {int? value}) {
+    final command = _commands[commandId] ?? (throw UnsupportedCommandException(commandId));
+    if (command.takesValue != (value != null)) throw UnsupportedCommandException(commandId);
+    return Uint8List.fromList([...command.data, ?value]);
+  }
 
   @override
-  List<DecodedPacket> feed(Uint8List bytes) {
+  List<DecodedPacket> feed(Uint8List bytes, {String source = FrameSource.data}) {
     if (bytes.isEmpty) return const [InvalidPacket('empty')];
-    final frame = _frames[bytes[0]];
+    final frame = _frames[(source, bytes[0])] ?? _anyFrame[source];
     if (frame == null) {
       return [InvalidPacket('unknown code 0x${bytes[0].toRadixString(16).padLeft(2, '0')}')];
     }
+    if (bytes.length < frame.minLength) return const [InvalidPacket('too short')];
     return switch (frame.kind) {
       FrameKind.batchEnd => const [BatchEnd(hadData: true)],
       FrameKind.noData => const [BatchEnd(hadData: false)],
-      FrameKind.data => _dataFrame(frame, bytes),
+      FrameKind.reply => _reply(frame.reply, bytes),
+      FrameKind.data => switch (_channels[frame]) {
+        final reader? => reader.read(bytes, _now().toUtc()),
+        null => _dataFrame(frame, bytes),
+      },
     };
   }
 
+  static List<DecodedPacket> _reply(ReplySpec? spec, Uint8List bytes) {
+    if (spec == null || spec.idOffset >= bytes.length) return const [InvalidPacket('too short')];
+    final data = spec.dataOffset < bytes.length ? bytes.sublist(spec.dataOffset) : <int>[];
+    return [CommandReply(bytes[spec.idOffset], List.unmodifiable(data))];
+  }
+
   List<DecodedPacket> _dataFrame(FrameSpec frame, Uint8List bytes) {
-    if (bytes.length < frame.minLength) return const [InvalidPacket('too short')];
     final checksum = frame.checksum;
     if (checksum != null && !_checksumMatches(checksum, bytes)) {
       return const [InvalidPacket('checksum')];

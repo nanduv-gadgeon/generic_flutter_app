@@ -12,6 +12,7 @@ import '../../data/auth/local_biometric_auth.dart';
 import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
 import '../../data/devices/cloud_device_registration.dart';
+import '../../data/devices/live_readings_service.dart';
 import '../../data/devices/local_device_service.dart';
 import '../../data/devices/no_device_registration.dart';
 import '../../data/profile/image_picker_photo_picker.dart';
@@ -25,10 +26,13 @@ import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
+import '../../domain/services/live_readings.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/photo_picker.dart';
 import '../../domain/services/uploader.dart';
+import '../config/device_profile_registry.dart';
 import 'database.dart';
+import 'transports.dart';
 
 part 'services.g.dart';
 
@@ -73,6 +77,17 @@ DeviceService deviceService(Ref ref) => LocalDeviceService(
   ref.watch(appDatabaseProvider).requireValue,
   ref.watch(deviceRegistrationProvider),
 );
+
+/// Live readings work the same in both phases: straight from the device to the screen.
+@Riverpod(keepAlive: true)
+LiveReadings liveReadings(Ref ref) {
+  final profiles = DeviceProfileRegistry(ref.watch(appConfigProvider).requireValue);
+  return LiveReadingsService(
+    ref.watch(appDatabaseProvider).requireValue,
+    (id) => profiles.contains(id) ? profiles.byId(id) : null,
+    ref.watch(deviceLinkFactoryProvider),
+  );
+}
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.
 @Riverpod(keepAlive: true)

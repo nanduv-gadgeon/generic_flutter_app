@@ -107,7 +107,10 @@
         "ble": { "$ref": "#/definitions/bleSettings" },
         "packet": { "$ref": "#/definitions/packet" },
         "wifi": { "$ref": "#/definitions/wifiSettings" },
-        "commands": { "type": "array", "items": { "$ref": "#/definitions/deviceCommand" } }
+        "commands": { "type": "array", "items": { "$ref": "#/definitions/deviceCommand" } },
+        "streaming": { "$ref": "#/definitions/streaming" },
+        "signal": { "$ref": "#/definitions/signal" },
+        "agc": { "$ref": "#/definitions/agc" }
       }
     },
     "uuid": {
@@ -122,7 +125,118 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "bytes"],
-      "properties": { "id": { "$ref": "#/definitions/key" }, "bytes": { "$ref": "#/definitions/hexBytes" } }
+      "properties": {
+        "id": { "$ref": "#/definitions/key" },
+        "bytes": { "$ref": "#/definitions/hexBytes" },
+        "reply": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id"],
+          "properties": { "id": { "$ref": "#/definitions/hexByte" }, "ok": { "$ref": "#/definitions/hexByte" } }
+        },
+        "takesValue": { "type": "boolean" }
+      }
+    },
+    "streaming": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start"],
+      "properties": {
+        "start": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/key" } },
+        "stop": { "type": "array", "items": { "$ref": "#/definitions/key" } },
+        "replyTimeoutMs": { "type": "integer", "minimum": 100 },
+        "retries": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "data", "problem"],
+            "properties": {
+              "id": { "$ref": "#/definitions/hexByte" },
+              "data": { "$ref": "#/definitions/hexByte" },
+              "problem": { "enum": ["lowBattery", "charging", "sensorError", "transferError"] }
+            }
+          }
+        }
+      }
+    },
+    "sosSections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "number" } }
+    },
+    "signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ppgOximetry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sampleRateHz", "red", "ir", "bandPass", "lowPass", "window", "emitEvery", "spo2", "heartRate", "perfusion"],
+          "properties": {
+            "sampleRateHz": { "type": "number", "exclusiveMinimum": 0 },
+            "red": { "$ref": "#/definitions/key" },
+            "ir": { "$ref": "#/definitions/key" },
+            "bandPass": { "$ref": "#/definitions/sosSections" },
+            "lowPass": { "$ref": "#/definitions/sosSections" },
+            "window": { "type": "integer", "minimum": 2 },
+            "emitEvery": { "type": "integer", "minimum": 1 },
+            "spo2": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["key", "coefficients", "min", "max", "average"],
+              "properties": {
+                "key": { "$ref": "#/definitions/key" },
+                "coefficients": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
+                "min": { "type": "integer" },
+                "max": { "type": "integer" },
+                "average": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "heartRate": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["key", "buffer", "window", "step", "neighbours", "min", "max", "average"],
+              "properties": {
+                "key": { "$ref": "#/definitions/key" },
+                "buffer": { "type": "integer", "minimum": 1 },
+                "window": { "type": "integer", "minimum": 10 },
+                "step": { "type": "integer", "minimum": 1 },
+                "neighbours": { "type": "integer", "minimum": 1 },
+                "min": { "type": "integer", "minimum": 1 },
+                "max": { "type": "integer", "minimum": 1 },
+                "average": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "perfusion": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["red", "ir"],
+              "properties": { "red": { "$ref": "#/definitions/key" }, "ir": { "$ref": "#/definitions/key" } }
+            }
+          }
+        }
+      }
+    },
+    "agc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "smoothing", "high", "low", "noContact", "holdMs", "cooldownMs", "start", "min", "max", "commands"],
+      "properties": {
+        "input": { "$ref": "#/definitions/key" },
+        "smoothing": { "type": "integer", "minimum": 1 },
+        "high": { "type": "number" },
+        "low": { "type": "number" },
+        "noContact": { "type": "number" },
+        "holdMs": { "type": "integer", "minimum": 0 },
+        "cooldownMs": { "type": "integer", "minimum": 0 },
+        "start": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "min": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "max": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "step": { "type": "integer", "minimum": 1 },
+        "commands": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/key" } }
+      }
     },
     "packet": {
       "type": "object",
@@ -136,10 +250,40 @@
     "frame": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["code", "kind"],
+      "required": ["kind"],
       "properties": {
         "code": { "$ref": "#/definitions/hexByte" },
-        "kind": { "enum": ["data", "batchEnd", "noData"] },
+        "kind": { "enum": ["data", "batchEnd", "noData", "reply"] },
+        "source": { "enum": ["data", "reply"] },
+        "channels": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maskOffset", "start", "type", "intervalMs", "keys"],
+          "properties": {
+            "maskOffset": { "type": "integer", "minimum": 0 },
+            "start": { "type": "integer", "minimum": 0 },
+            "type": { "$ref": "#/definitions/fieldType" },
+            "byteOrder": { "$ref": "#/definitions/byteOrder" },
+            "intervalMs": { "type": "integer", "minimum": 0 },
+            "validBelow": { "type": "number" },
+            "clampAbove": { "type": "number" },
+            "keys": {
+              "type": "object",
+              "minProperties": 1,
+              "propertyNames": { "pattern": "^[1-8]$" },
+              "additionalProperties": { "$ref": "#/definitions/key" }
+            }
+          }
+        },
+        "reply": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["idOffset", "dataOffset"],
+          "properties": {
+            "idOffset": { "type": "integer", "minimum": 0 },
+            "dataOffset": { "type": "integer", "minimum": 0 }
+          }
+        },
         "minLength": { "type": "integer", "minimum": 1 },
         "checksum": { "$ref": "#/definitions/checksum" },
         "records": {
@@ -167,7 +311,12 @@
         "events": { "$ref": "#/definitions/events" }
       },
       "if": { "properties": { "kind": { "const": "data" } } },
-      "then": { "required": ["fields"], "properties": { "fields": { "minItems": 1 } } }
+      "then": {
+        "anyOf": [
+          { "required": ["fields"], "properties": { "fields": { "minItems": 1 } } },
+          { "required": ["channels"] }
+        ]
+      }
     },
     "checksum": {
       "type": "object",
@@ -239,7 +388,22 @@
         "scanServiceUuid": { "$ref": "#/definitions/uuid" },
         "scanNamePrefix": { "type": "string", "minLength": 1 },
         "bond": { "type": "boolean" },
-        "batteryService": { "type": "boolean" }
+        "batteryService": { "type": "boolean" },
+        "batteryPollSeconds": { "type": "integer", "minimum": 10 },
+        "replyUuid": { "$ref": "#/definitions/uuid" },
+        "timeSync": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["uuid", "fields"],
+          "properties": {
+            "uuid": { "$ref": "#/definitions/uuid" },
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "enum": ["year16le", "month", "day", "hour", "minute", "second", "millis16le"] }
+            }
+          }
+        }
       }
     },
     "wifiSettings": {

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -88,7 +87,7 @@ class FakeLink implements DeviceLink {
   Stream<LinkState> get state => const Stream.empty();
 
   @override
-  Stream<Uint8List> get packets => const Stream.empty();
+  Stream<DevicePacket> get packets => const Stream.empty();
 
   @override
   Stream<int> get battery => const Stream.empty();

@@ -26,7 +26,7 @@
   },
   "history": { "daysOnPhone": 7 },
   "cloud": { "baseUrl": "https://api.example", "environment": "dev", "uploader": "flutterModule", "autoSyncDefault": "15m" },
-  "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1", "ief_device_v1"],
+  "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1", "ief_device_v1", "ppg_motion_v1"],
   "deviceProfiles": [
     {
       "id": "smart_band_v1",
@@ -143,6 +143,114 @@
         ]
       },
       "commands": [{ "id": "request_logs", "bytes": "82 00" }]
+    },
+    {
+      "id": "ppg_motion_v1",
+      "label": "PPG + Motion sensor",
+      "summary": "SpO₂, heart rate, perfusion",
+      "icon": "chip",
+      "transports": ["ble"],
+      "readings": [
+        { "key": "heart_rate", "label": "Heart rate", "unit": "bpm", "icon": "heart" },
+        { "key": "spo2", "label": "Blood oxygen", "unit": "%", "icon": "drop" },
+        { "key": "pi_red", "label": "PI (Red)", "unit": "%", "icon": "pulse", "decimals": 2 },
+        { "key": "pi_ir", "label": "PI (IR)", "unit": "%", "icon": "pulse", "decimals": 2 }
+      ],
+      "alerts": [{ "key": "spo2", "below": 92 }, { "key": "heart_rate", "above": 120 }, { "key": "battery", "below": 15 }],
+      "ble": {
+        "serviceUuid": "90bd6462-59c3-47ed-bbf8-745bfb95e91f",
+        "notifyUuid": "90bd6463-59c3-47ed-bbf8-745bfb95e91f",
+        "writeUuid": "90bd6465-59c3-47ed-bbf8-745bfb95e91f",
+        "replyUuid": "90bd6466-59c3-47ed-bbf8-745bfb95e91f",
+        "timeSync": {
+          "uuid": "90bd6468-59c3-47ed-bbf8-745bfb95e91f",
+          "fields": ["year16le", "month", "day", "hour", "minute", "second", "millis16le"]
+        },
+        "bond": false,
+        "batteryService": true,
+        "batteryPollSeconds": 60
+      },
+      "packet": {
+        "byteOrder": "big",
+        "frames": [
+          {
+            "kind": "data",
+            "source": "data",
+            "minLength": 11,
+            "channels": {
+              "maskOffset": 0,
+              "start": 10,
+              "type": "uint32",
+              "intervalMs": 10,
+              "validBelow": 1048576,
+              "clampAbove": 500000,
+              "keys": { "1": "ppg_red", "5": "ppg_ir" }
+            }
+          },
+          { "code": "5A", "kind": "reply", "source": "reply", "minLength": 4, "reply": { "idOffset": 3, "dataOffset": 4 } }
+        ]
+      },
+      "commands": [
+        { "id": "stop", "bytes": "A5 A5 02 20 02", "reply": { "id": "20", "ok": "02" } },
+        { "id": "set_channels", "bytes": "A5 A5 02 11 11", "reply": { "id": "11", "ok": "11" } },
+        { "id": "start", "bytes": "A5 A5 02 20 01", "reply": { "id": "20", "ok": "01" } },
+        { "id": "led_red", "bytes": "A5 A5 02 0A", "reply": { "id": "0A" }, "takesValue": true },
+        { "id": "led_ir", "bytes": "A5 A5 02 0E", "reply": { "id": "0E" }, "takesValue": true }
+      ],
+      "streaming": {
+        "start": ["stop", "set_channels", "start"],
+        "stop": ["stop"],
+        "replyTimeoutMs": 2500,
+        "retries": 1,
+        "problems": [
+          { "id": "20", "data": "03", "problem": "sensorError" },
+          { "id": "20", "data": "04", "problem": "lowBattery" },
+          { "id": "20", "data": "05", "problem": "charging" },
+          { "id": "CE", "data": "F4", "problem": "transferError" }
+        ]
+      },
+      "signal": {
+        "ppgOximetry": {
+          "sampleRateHz": 100,
+          "red": "ppg_red",
+          "ir": "ppg_ir",
+          "bandPass": [
+            [3.12389769e-5, 6.24779538e-5, 3.12389769e-5, 1, -1.78117614, 0.799052904],
+            [1, 2, 1, 1, -1.87122641, 0.903155206],
+            [1, -2, 1, 1, -1.93370793, 0.935416627],
+            [1, -2, 1, 1, -1.98111591, 0.982149019]
+          ],
+          "lowPass": [[2.46193005e-6, 4.92386009e-6, 2.46193005e-6, 1, -1.99555712, 0.995566972]],
+          "window": 100,
+          "emitEvery": 100,
+          "spo2": { "key": "spo2", "coefficients": [1.6, -35, 113], "min": 60, "max": 110, "average": 8 },
+          "heartRate": {
+            "key": "heart_rate",
+            "buffer": 600,
+            "window": 500,
+            "step": 100,
+            "neighbours": 3,
+            "min": 40,
+            "max": 120,
+            "average": 8
+          },
+          "perfusion": { "red": "pi_red", "ir": "pi_ir" }
+        }
+      },
+      "agc": {
+        "input": "ppg_ir",
+        "smoothing": 12,
+        "high": 355200,
+        "low": 222000,
+        "noContact": 90000,
+        "holdMs": 1500,
+        "cooldownMs": 1200,
+        "start": 5,
+        "min": 0,
+        "max": 32,
+        "step": 1,
+        "commands": ["led_ir", "led_red"]
+      }
     }
   ]
 }

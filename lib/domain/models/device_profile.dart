@@ -1,9 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'packet_layout.dart';
+import 'streaming_settings.dart';
 import 'wifi_settings.dart';
 
 export 'packet_layout.dart';
+export 'streaming_settings.dart';
 export 'wifi_settings.dart';
 
 part 'device_profile.freezed.dart';
@@ -66,6 +68,15 @@ abstract class DeviceProfile with _$DeviceProfile {
 
     /// Fixed byte commands the app can send, e.g. request logs.
     @Default([]) List<DeviceCommand> commands,
+
+    /// Commands that start and stop the device's live data; without it the device always sends.
+    StreamingSettings? streaming,
+
+    /// Readings worked out from raw samples, e.g. SpO₂ from red and infrared PPG.
+    SignalSettings? signal,
+
+    /// Automatic LED gain control while streaming.
+    AgcSettings? agc,
   }) = _DeviceProfile;
 
   factory DeviceProfile.fromJson(Map<String, dynamic> json) => _$DeviceProfileFromJson(json);
@@ -140,6 +151,15 @@ abstract class BleSettings with _$BleSettings {
 
     /// Read battery from the standard Battery Service (180F / 2A19) when the device has it.
     @Default(true) bool batteryService,
+
+    /// Read the battery again this often, in case notifications are dropped.
+    int? batteryPollSeconds,
+
+    /// Characteristic the device answers commands on; its data arrives as source `reply`.
+    String? replyUuid,
+
+    /// Characteristic the current time (UTC) is written to on every connection.
+    TimeSync? timeSync,
   }) = _BleSettings;
 
   const BleSettings._();
@@ -150,10 +170,31 @@ abstract class BleSettings with _$BleSettings {
   factory BleSettings.fromJson(Map<String, dynamic> json) => _$BleSettingsFromJson(json);
 }
 
+/// Parts of a time written to a device, in the order given. `year16le` and `millis16le` are two
+/// bytes, low byte first; the others are one byte.
+enum TimeField { year16le, month, day, hour, minute, second, millis16le }
+
+/// Where and how the phone's time is written to the device.
+@freezed
+abstract class TimeSync with _$TimeSync {
+  const factory TimeSync({required String uuid, required List<TimeField> fields}) = _TimeSync;
+
+  factory TimeSync.fromJson(Map<String, dynamic> json) => _$TimeSyncFromJson(json);
+}
+
 /// A command written to the device, e.g. `82 00`.
 @freezed
 abstract class DeviceCommand with _$DeviceCommand {
-  const factory DeviceCommand({required String id, required String bytes}) = _DeviceCommand;
+  const factory DeviceCommand({
+    required String id,
+    required String bytes,
+
+    /// The reply that confirms the command, when the device sends one.
+    CommandReplySpec? reply,
+
+    /// A value byte is added after [bytes] when sent, e.g. an LED level.
+    @Default(false) bool takesValue,
+  }) = _DeviceCommand;
 
   const DeviceCommand._();
 
@@ -161,6 +202,15 @@ abstract class DeviceCommand with _$DeviceCommand {
   List<int> get data => [for (final b in bytes.split(' ')) hexByte(b)];
 
   factory DeviceCommand.fromJson(Map<String, dynamic> json) => _$DeviceCommandFromJson(json);
+}
+
+/// A reply frame with command id [id] answers the command; it succeeded when its first data byte
+/// is [ok] (any value when [ok] is null).
+@freezed
+abstract class CommandReplySpec with _$CommandReplySpec {
+  const factory CommandReplySpec({required String id, String? ok}) = _CommandReplySpec;
+
+  factory CommandReplySpec.fromJson(Map<String, dynamic> json) => _$CommandReplySpecFromJson(json);
 }
 
 /// Standard Battery Service and Battery Level characteristic.

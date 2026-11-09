@@ -168,7 +168,7 @@ void main() {
 
     await tester.tap(find.widgetWithText(FilledButton, 'Add device'));
     await tester.pumpAndSettle();
-    expect(find.text('Add device (task 1.2.7)'), findsWidgets);
+    expect(find.text('What are you adding?'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
 

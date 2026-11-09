@@ -62,7 +62,7 @@ void main() {
     });
   }
 
-  test('VitaCare: only the IEF patch can connect over BLE until the other protocols arrive', () {
+  test('VitaCare: the IEF patch and the PPG + Motion sensor connect over BLE; others wait', () {
     final config = AppConfig.fromJson(
       jsonDecode(File('assets/config/vitacare/app_config.json').readAsStringSync())
           as Map<String, dynamic>,
@@ -72,7 +72,7 @@ void main() {
         if (isConnectable(p, Transport.ble)) p.id,
     ];
 
-    expect(connectable, ['ief_device_v1']);
+    expect(connectable, ['ief_device_v1', 'ppg_motion_v1']);
   });
 
   test('VitaCare: no type connects over Wi‑Fi until the env sensor protocol arrives', () {

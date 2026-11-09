@@ -98,6 +98,10 @@ class DevicesDao extends DatabaseAccessor<AppDatabase> with _$DevicesDaoMixin {
     }
   });
 
+  /// The device with [id], or null when it was removed.
+  Future<Device?> byId(int id) =>
+      (select(devices)..where((d) => d.id.equals(id))).getSingleOrNull();
+
   Future<void> deleteDevice(int id) => (delete(devices)..where((d) => d.id.equals(id))).go();
 
   /// Deletes the user's device at [address] (its alerts go with it) and returns how many rows

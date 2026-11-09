@@ -79,7 +79,7 @@ void main() {
       ),
       'a reading no packet field gives': (
         (j) => _readings(j).add({'key': 'pressure', 'label': 'P', 'unit': 'hPa', 'icon': 'gauge'}),
-        '/deviceProfiles/0/readings/2/key: no packet field gives "pressure"',
+        '/deviceProfiles/0/readings/2/key: no packet field or signal gives "pressure"',
       ),
       'a duplicate frame code': (
         (j) => _frames(j).add({'code': 'a5', 'kind': 'noData'}),

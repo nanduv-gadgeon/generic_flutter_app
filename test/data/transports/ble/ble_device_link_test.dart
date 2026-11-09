@@ -66,7 +66,7 @@ void main() {
 
   test('connects, then passes on packets and battery', () async {
     final l = link();
-    final packets = <Uint8List>[];
+    final packets = <DevicePacket>[];
     final levels = <int>[];
     l.packets.listen(packets.add);
     l.battery.listen(levels.add);
@@ -77,7 +77,8 @@ void main() {
     await _settle();
 
     expect(await l.state.first, LinkState.connected);
-    expect(packets.single, [0x91]);
+    expect(packets.single.bytes, [0x91]);
+    expect(packets.single.source, FrameSource.data);
     expect(levels, [80, 79]);
     verify(() => adapter.subscribe(_id, _service, _notify)).called(1);
     verifyNever(() => adapter.pair(any()));

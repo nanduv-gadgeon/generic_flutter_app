@@ -25,10 +25,18 @@ abstract interface class BleScanner {
   /// Starts with the current state.
   Stream<BleAvailability> get availability;
 
+  /// Asks the user for Bluetooth permission if not granted yet; returns whether it is granted.
+  /// Call before [scan].
+  Future<bool> requestPermission();
+
   /// Devices matching [profile]'s scan service or name prefix, newest list first.
   ///
   /// Stops after [timeout] or when the listener cancels. The profile must have a `ble` block.
   Stream<List<FoundDevice>> scan(DeviceProfile profile, {Duration timeout});
+
+  /// Devices of type [profile] in Wi‑Fi setup mode, found by its `wifi.bleSetup` service or name
+  /// prefix; otherwise like [scan].
+  Stream<List<FoundDevice>> scanForSetup(DeviceProfile profile, {Duration timeout});
 
   Future<void> stop();
 }

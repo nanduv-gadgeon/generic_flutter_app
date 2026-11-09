@@ -91,4 +91,43 @@ void main() {
       throwsA(isA<NotConnectableException>()),
     );
   });
+
+  group('scanForSetup', () {
+    final wifiProfile = DeviceProfile.fromJson(validWifiProfileJson());
+
+    test('scans for the Wi‑Fi setup service and name prefix', () async {
+      final sub = scanner.scanForSetup(wifiProfile).listen((_) {});
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      verify(
+        () => adapter.startScan(
+          services: [fullUuid(wifiProfile.wifi!.bleSetup!.serviceUuid)],
+          namePrefixes: ['TST-SETUP'],
+        ),
+      ).called(1);
+      verify(() => adapter.stopScan()).called(1);
+    });
+
+    test('refuses a profile that cannot be set up over BLE', () {
+      final noBleSetup = wifiProfile.copyWith(wifi: wifiProfile.wifi!.copyWith(bleSetup: null));
+
+      expect(() => scanner.scanForSetup(noBleSetup), throwsA(isA<NotConnectableException>()));
+      expect(() => scanner.scanForSetup(profile), throwsA(isA<NotConnectableException>()));
+    });
+  });
+
+  group('requestPermission', () {
+    test('passes on the answer', () async {
+      when(() => adapter.requestPermission()).thenAnswer((_) async => true);
+
+      expect(await scanner.requestPermission(), isTrue);
+    });
+
+    test('is false when the request fails', () async {
+      when(() => adapter.requestPermission()).thenThrow(Exception('unsupported'));
+
+      expect(await scanner.requestPermission(), isFalse);
+    });
+  });
 }

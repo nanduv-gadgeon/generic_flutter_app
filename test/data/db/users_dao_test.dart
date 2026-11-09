@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:generic_flutter_app/data/db/app_database.dart';
 
 import '../../fixtures/test_db.dart';
 
@@ -24,6 +25,22 @@ void main() {
       throwsA(isA<Exception>()),
     );
   });
+
+  // column -> (longest allowed, one too long); the forms allow less (name 70).
+  final lengthCases = <String, (UsersCompanion, UsersCompanion)>{
+    'name (255)': (fakeUser(name: 'T' * 255), fakeUser(name: 'T' * 256)),
+    'email (254)': (
+      fakeUser(email: '${'a' * 242}@example.com'),
+      fakeUser(email: '${'a' * 243}@example.com'),
+    ),
+  };
+  for (final MapEntry(key: column, value: (longest, tooLong)) in lengthCases.entries) {
+    test('limits the length of $column', () async {
+      final db = memoryDatabase();
+      await db.usersDao.insertUser(longest);
+      await expectLater(db.usersDao.insertUser(tooLong), throwsA(isA<InvalidDataException>()));
+    });
+  }
 
   test('records and resets failed logins', () async {
     final db = memoryDatabase();
@@ -70,6 +87,20 @@ void main() {
     expect(user.email, 'new@example.com');
     expect(user.mobile, '+10000000000');
     expect(user.biometricEnabled, isTrue);
+  });
+
+  test('sets and clears the photo path', () async {
+    final db = memoryDatabase();
+    final id = await db.usersDao.insertUser(fakeUser());
+
+    await db.usersDao.updateProfile(id, photoPath: '/fake/photo.jpg');
+    expect((await db.usersDao.findById(id))!.photoPath, '/fake/photo.jpg');
+
+    await db.usersDao.updateProfile(id, name: 'Test User');
+    expect((await db.usersDao.findById(id))!.photoPath, '/fake/photo.jpg');
+
+    await db.usersDao.updateProfile(id, clearPhoto: true);
+    expect((await db.usersDao.findById(id))!.photoPath, isNull);
   });
 
   test('deleting a user also deletes their session and devices', () async {

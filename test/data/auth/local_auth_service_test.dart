@@ -15,11 +15,15 @@ const _registration = RegistrationData(
   termsAccepted: true,
 );
 
+/// Prompt text; the screens pass the real one from AuthStrings.
+const _reason = 'test reason';
+
 void main() {
   late AppDatabase db;
   late FakePasswordHasher hasher;
   late MockBiometricAuth biometrics;
   late FakeBiometricUserStore biometricUser;
+  late MockProfilePhotoStore photos;
   late LocalAuthService auth;
 
   setUp(() {
@@ -27,13 +31,17 @@ void main() {
     hasher = FakePasswordHasher();
     biometrics = MockBiometricAuth();
     biometricUser = FakeBiometricUserStore();
+    photos = MockProfilePhotoStore();
     when(() => biometrics.isAvailable()).thenAnswer((_) async => true);
     when(() => biometrics.authenticate(any())).thenAnswer((_) async => true);
+    stubUnchangedEnrollment(biometrics);
+    when(() => photos.delete(any())).thenAnswer((_) async {});
     auth = LocalAuthService(
       db: db,
       hasher: hasher,
       biometrics: biometrics,
       biometricUser: biometricUser,
+      photos: photos,
     );
   });
 
@@ -122,6 +130,79 @@ void main() {
     });
   });
 
+  group('resetPassword', () {
+    setUp(() async {
+      await auth.register(_registration);
+      when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => true);
+    });
+
+    // (screen lock, prompt passes, email) -> result
+    final cases = <String, (bool, bool, String, Type)>{
+      'verified, known email': (true, true, 'test@example.com', ResetSuccess),
+      'email in another case': (true, true, ' TEST@example.com ', ResetSuccess),
+      'no screen lock': (false, true, 'test@example.com', NoScreenLock),
+      'prompt cancelled': (true, false, 'test@example.com', OwnerNotVerified),
+      'unknown email': (true, true, 'nobody@example.com', NoAccountForEmail),
+      // The email is only looked up after verification, so it cannot be probed.
+      'unknown email, not verified': (true, false, 'nobody@example.com', OwnerNotVerified),
+    };
+    for (final MapEntry(key: name, value: (lock, passes, email, type)) in cases.entries) {
+      test(name, () async {
+        when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => lock);
+        when(() => biometrics.authenticate(any())).thenAnswer((_) async => passes);
+
+        final result = await auth.resetPassword(
+          email: email,
+          newPassword: 'new-made-up',
+          reason: _reason,
+        );
+
+        expect(result.runtimeType, type);
+        final changed = type == ResetSuccess;
+        expect((await auth.login('test@example.com', 'new-made-up')) is LoginSuccess, changed);
+        await auth.logout();
+        expect((await auth.login('test@example.com', 'correct horse')) is LoginSuccess, !changed);
+      });
+    }
+
+    test('does not show the prompt when the phone has no screen lock', () async {
+      when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => false);
+
+      await auth.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: _reason,
+      );
+
+      verifyNever(() => biometrics.authenticate(any()));
+    });
+
+    test('shows the given reason in the prompt and does not log in', () async {
+      await auth.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: _reason,
+      );
+
+      verify(() => biometrics.authenticate(_reason)).called(1);
+      expect(await auth.currentUser(), isNull);
+    });
+
+    test('keeps Face ID login on', () async {
+      await auth.login('test@example.com', 'correct horse');
+      await auth.setBiometricLogin(enabled: true);
+      await auth.logout();
+
+      await auth.resetPassword(
+        email: 'test@example.com',
+        newPassword: 'new-made-up',
+        reason: _reason,
+      );
+
+      expect(await auth.canLoginWithBiometrics(), isTrue);
+    });
+  });
+
   group('biometric login', () {
     setUp(() => auth.register(_registration));
 
@@ -133,7 +214,7 @@ void main() {
 
     test('is not possible until a user turns it on', () async {
       expect(await auth.canLoginWithBiometrics(), isFalse);
-      expect(await auth.loginWithBiometrics(), isA<BiometricFailed>());
+      expect(await auth.loginWithBiometrics(reason: _reason), isA<BiometricFailed>());
       verifyNever(() => biometrics.authenticate(any()));
     });
 
@@ -141,7 +222,7 @@ void main() {
       await loginAndEnable();
 
       expect(await auth.canLoginWithBiometrics(), isTrue);
-      final result = await auth.loginWithBiometrics();
+      final result = await auth.loginWithBiometrics(reason: _reason);
 
       expect(result, isA<LoginSuccess>());
       expect((await auth.currentUser())?.email, 'test@example.com');
@@ -152,7 +233,7 @@ void main() {
       await loginAndEnable();
       when(() => biometrics.authenticate(any())).thenAnswer((_) async => false);
 
-      expect(await auth.loginWithBiometrics(), isA<BiometricFailed>());
+      expect(await auth.loginWithBiometrics(reason: _reason), isA<BiometricFailed>());
       expect(await auth.currentUser(), isNull);
     });
 
@@ -182,12 +263,70 @@ void main() {
       await auth.logout();
 
       expect((await db.usersDao.findByEmail('test@example.com'))!.biometricEnabled, isFalse);
-      await auth.loginWithBiometrics();
+      await auth.loginWithBiometrics(reason: _reason);
       expect((await auth.currentUser())?.email, 'second@example.com');
     });
 
     test('changing the setting needs a logged-in user', () async {
       await expectLater(auth.setBiometricLogin(enabled: true), throwsStateError);
+    });
+  });
+
+  group('updateProfile', () {
+    const changes = ProfileChanges(name: ' New Name ', mobile: '+44 0000000000');
+
+    setUp(() async {
+      await auth.register(_registration);
+      await auth.login('test@example.com', 'correct horse');
+    });
+
+    test('saves the trimmed name and mobile, and keeps the email', () async {
+      final user = await auth.updateProfile(changes);
+
+      expect(
+        (user.name, user.email, user.mobile),
+        ('New Name', 'test@example.com', '+44 0000000000'),
+      );
+      expect(await auth.currentUser(), user);
+    });
+
+    test('a new photo is saved, then the old one deleted', () async {
+      when(() => photos.save('/tmp/a.jpg', userId: any(named: 'userId')))
+          .thenAnswer((_) async => '/photos/a.jpg');
+      when(() => photos.save('/tmp/b.jpg', userId: any(named: 'userId')))
+          .thenAnswer((_) async => '/photos/b.jpg');
+
+      final first = await auth.updateProfile(changes.copyWith(photo: const NewPhoto('/tmp/a.jpg')));
+      final second = await auth.updateProfile(
+        changes.copyWith(photo: const NewPhoto('/tmp/b.jpg')),
+      );
+
+      expect((first.photoPath, second.photoPath), ('/photos/a.jpg', '/photos/b.jpg'));
+      verify(() => photos.delete('/photos/a.jpg')).called(1);
+    });
+
+    test('removing the photo clears it and deletes the file', () async {
+      when(() => photos.save(any(), userId: any(named: 'userId')))
+          .thenAnswer((_) async => '/photos/a.jpg');
+      await auth.updateProfile(changes.copyWith(photo: const NewPhoto('/tmp/a.jpg')));
+
+      final user = await auth.updateProfile(changes.copyWith(photo: const RemovePhoto()));
+
+      expect(user.photoPath, isNull);
+      verify(() => photos.delete('/photos/a.jpg')).called(1);
+    });
+
+    test('keeping the photo touches no files', () async {
+      await auth.updateProfile(changes);
+
+      verifyNever(() => photos.save(any(), userId: any(named: 'userId')));
+      verifyNever(() => photos.delete(any()));
+    });
+
+    test('needs a logged-in user', () async {
+      await auth.logout();
+
+      await expectLater(auth.updateProfile(changes), throwsStateError);
     });
   });
 }

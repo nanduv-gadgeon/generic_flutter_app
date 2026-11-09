@@ -16,6 +16,14 @@
     "mode": "system"
   },
   "features": { "registration": true, "faceIdLogin": true, "history": true, "export": true, "alerts": true },
+  "links": {
+    "privacyPolicy": "https://example.com/privacy",
+    "termsOfUse": "https://example.com/terms"
+  },
+  "links": {
+    "privacyPolicy": "https://example.com/privacy",
+    "termsOfUse": "https://example.com/terms"
+  },
   "history": { "daysOnPhone": 7 },
   "cloud": { "baseUrl": "https://api.example", "environment": "dev", "uploader": "flutterModule", "autoSyncDefault": "15m" },
   "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1", "ief_device_v1"],
@@ -97,7 +105,7 @@
         "writeUuid": "1257dd11-6f99-498f-b4a6-04dc1e3591f6",
         "notifyUuid": "1257dd12-6f99-498f-b4a6-04dc1e3591f6",
         "scanServiceUuid": "00001257-dd10-6f99-498f-b4a604dc91f6",
-        "bond": false,
+        "bond": true,
         "batteryService": true
       },
       "packet": {

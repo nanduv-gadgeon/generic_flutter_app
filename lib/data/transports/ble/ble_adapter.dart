@@ -9,6 +9,9 @@ abstract interface class BleAdapter {
   /// Starts with the current state.
   Stream<BleAvailability> get availability;
 
+  /// Asks the user for Bluetooth permission if not granted yet; returns whether it is granted.
+  Future<bool> requestPermission();
+
   /// Every advertisement seen while scanning.
   Stream<FoundDevice> get scanResults;
 
@@ -24,7 +27,8 @@ abstract interface class BleAdapter {
   /// true when connected, false when the link drops.
   Stream<bool> connection(String deviceId);
 
-  /// Pairs (bonds) with the device; throws if pairing fails.
+  /// Pairs (bonds) with the device, waiting while the user enters its pairing key; returns at once
+  /// when already paired. Does nothing on iOS, which pairs on its own. Throws if pairing fails.
   Future<void> pair(String deviceId);
 
   /// Asks for a larger packet size; returns the size agreed.
@@ -33,11 +37,13 @@ abstract interface class BleAdapter {
   /// Service UUID -> its characteristic UUIDs.
   Future<Map<String, Set<String>>> discover(String deviceId);
 
+  /// May wait for the user to enter a pairing key when the characteristic is encrypted.
   Future<void> subscribe(String deviceId, String service, String characteristic);
 
   /// Values notified on [characteristic].
   Stream<Uint8List> values(String deviceId, String characteristic);
 
+  /// May wait for the user to enter a pairing key when the characteristic is encrypted.
   Future<Uint8List> read(String deviceId, String service, String characteristic);
 
   /// Writes with response.

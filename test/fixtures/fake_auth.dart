@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:generic_flutter_app/data/auth/biometric_user_store.dart';
+import 'package:generic_flutter_app/data/profile/profile_photo_store.dart';
 import 'package:generic_flutter_app/domain/services/auth_service.dart';
 import 'package:generic_flutter_app/domain/services/biometric_auth.dart';
 import 'package:generic_flutter_app/domain/services/password_hasher.dart';
@@ -33,6 +34,13 @@ class FakePasswordHasher implements PasswordHasher {
 
 class MockBiometricAuth extends Mock implements BiometricAuth {}
 
+/// The phone can track enrolment and its faces / fingerprints never change.
+void stubUnchangedEnrollment(MockBiometricAuth biometrics) {
+  when(() => biometrics.rememberEnrollment()).thenAnswer((_) async => true);
+  when(() => biometrics.enrollmentChanged()).thenAnswer((_) async => false);
+  when(() => biometrics.forgetEnrollment()).thenAnswer((_) async {});
+}
+
 /// [BiometricUserStore] backed by a plain variable instead of Keychain / Keystore.
 class FakeBiometricUserStore implements BiometricUserStore {
   int? userId;
@@ -49,9 +57,13 @@ class FakeBiometricUserStore implements BiometricUserStore {
 
 class MockAuthService extends Mock implements AuthService {}
 
+/// No real files: tests check which paths are saved and deleted.
+class MockProfilePhotoStore extends Mock implements ProfilePhotoStore {}
+
 const fakeUser = AuthUser(
   id: 1,
   name: 'Test User',
   email: 'test@example.com',
+  mobile: '+91 8123456789', // libphonenumber's example Indian mobile, not a real one
   biometricEnabled: false,
 );

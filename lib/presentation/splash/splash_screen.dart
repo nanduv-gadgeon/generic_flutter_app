@@ -9,6 +9,8 @@ import '../../application/startup_provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/config/config_loader.dart';
 import '../../core/theme/app_theme.dart';
+import '../strings/common_strings.dart';
+import '../strings/startup_strings.dart';
 import '../widgets/brand_header.dart';
 
 /// Shows the brand and a spinner while the local database opens and the backend is checked,
@@ -33,7 +35,7 @@ class SplashScreen extends ConsumerWidget {
       AsyncData(value: StartupResult.backendUnreachable) => _Unreachable(
         onRetry: () => ref.invalidate(startupProvider),
       ),
-      _ => Semantics(label: 'Loading', child: const CircularProgressIndicator()),
+      _ => Semantics(label: CommonStrings.loading, child: const CircularProgressIndicator()),
     };
 
     return Scaffold(
@@ -68,7 +70,7 @@ class _BrandedSplash extends StatelessWidget {
                 BrandHeader.splash(brand: config.brand, background: background),
                 const SizedBox(height: 70),
                 Semantics(
-                  label: 'Loading',
+                  label: CommonStrings.loading,
                   child: const SizedBox.square(
                     dimension: 28,
                     child: CircularProgressIndicator(
@@ -96,12 +98,9 @@ class _StartupError extends StatelessWidget {
   Widget build(BuildContext context) {
     final error = this.error;
     final (message, details) = switch (error) {
-      ConfigException(:final errors) => (
-        'Could not load the app configuration.',
-        errors.join('\n'),
-      ),
-      LocalDataException(:final cause) => ("Could not open the app's local data.", '$cause'),
-      _ => ('Something went wrong while starting the app.', '$error'),
+      ConfigException(:final errors) => (StartupStrings.configError, errors.join('\n')),
+      LocalDataException(:final cause) => (StartupStrings.localDataError, '$cause'),
+      _ => (StartupStrings.unknownError, '$error'),
     };
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -127,13 +126,13 @@ class _Unreachable extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text("Can't reach the server. Check your connection.", textAlign: TextAlign.center),
+        const Text(StartupStrings.unreachable, textAlign: TextAlign.center),
         const SizedBox(height: 16),
         Semantics(
           button: true,
-          label: 'Retry connecting to the server',
+          label: StartupStrings.retryLabel,
           excludeSemantics: true,
-          child: FilledButton(onPressed: onRetry, child: const Text('Retry')),
+          child: FilledButton(onPressed: onRetry, child: const Text(StartupStrings.retry)),
         ),
       ],
     );

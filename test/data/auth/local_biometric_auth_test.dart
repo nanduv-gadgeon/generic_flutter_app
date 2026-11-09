@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/auth/local_biometric_auth.dart';
 import 'package:generic_flutter_app/domain/services/biometric_auth.dart';
@@ -28,6 +29,21 @@ void main() {
       expect(await auth.isAvailable(), expected);
     });
   }
+
+  for (final supported in [true, false]) {
+    test('canVerifyOwner: screen lock set up $supported', () async {
+      when(() => plugin.isDeviceSupported()).thenAnswer((_) async => supported);
+
+      expect(await auth.canVerifyOwner(), supported);
+    });
+  }
+
+  test('canVerifyOwner returns false instead of throwing', () async {
+    when(() => plugin.isDeviceSupported())
+        .thenThrow(const LocalAuthException(code: LocalAuthExceptionCode.noCredentialsSet));
+
+    expect(await auth.canVerifyOwner(), isFalse);
+  });
 
   final kinds = <List<BiometricType>, BiometricKind>{
     [BiometricType.face, BiometricType.fingerprint]: BiometricKind.face,
@@ -62,5 +78,60 @@ void main() {
     ).thenThrow(const LocalAuthException(code: LocalAuthExceptionCode.userCanceled));
 
     expect(await auth.authenticate('reason'), isFalse);
+  });
+
+  group('enrolment channel (TC-LOG-012)', () {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    const channel = MethodChannel('app/biometric_enrollment');
+    final calls = <String>[];
+
+    /// [reply] answers every call; a [PlatformException] is thrown back to Dart.
+    void nativeAnswers(Object? reply) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async {
+          calls.add(call.method);
+          if (reply is PlatformException) throw reply;
+          return reply;
+        },
+      );
+    }
+
+    setUp(calls.clear);
+    tearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null),
+    );
+
+    // native reply -> (rememberEnrollment, enrollmentChanged)
+    final replies = <String, (Object?, bool, bool)>{
+      'true': (true, true, true),
+      'false': (false, false, false),
+      'nothing': (null, false, true),
+      'an error': (PlatformException(code: 'failed'), false, true),
+    };
+    for (final MapEntry(key: name, value: (reply, remembered, changed)) in replies.entries) {
+      test('native replies $name -> remembered $remembered, changed $changed', () async {
+        nativeAnswers(reply);
+
+        expect(await auth.rememberEnrollment(), remembered);
+        expect(await auth.enrollmentChanged(), changed);
+        expect(calls, ['remember', 'changed']);
+      });
+    }
+
+    test('with no native side: not remembered, and treated as changed', () async {
+      expect(await auth.rememberEnrollment(), isFalse);
+      expect(await auth.enrollmentChanged(), isTrue);
+      await auth.forgetEnrollment(); // does not throw
+    });
+
+    test('forgetEnrollment calls native and ignores errors', () async {
+      nativeAnswers(PlatformException(code: 'failed'));
+
+      await auth.forgetEnrollment();
+
+      expect(calls, ['forget']);
+    });
   });
 }

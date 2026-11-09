@@ -129,10 +129,29 @@ void main() {
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
   });
 
+  // time left -> message (TC-LOG-008)
+  final lockedCases = <Duration, String>{
+    const Duration(seconds: 30): 'Too many attempts. Try again in 30 seconds.',
+    const Duration(milliseconds: 400): 'Too many attempts. Try again in 1 second.',
+    const Duration(seconds: 90): 'Too many attempts. Try again in 2 minutes.',
+  };
+  for (final MapEntry(key: wait, value: message) in lockedCases.entries) {
+    testWidgets('a locked account says when to try again: $wait', (tester) async {
+      when(() => service.login(any(), any())).thenAnswer((_) async => AccountLocked(wait));
+      await _pumpLogin(tester);
+
+      await _enterAndSubmit(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text(message), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    });
+  }
+
   testWidgets('offers Face ID after the first login and turns it on', (tester) async {
     when(() => service.login(any(), any()))
         .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
-    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async {});
+    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
     await _pumpLogin(tester);
 
     await _enterAndSubmit(tester);
@@ -158,6 +177,20 @@ void main() {
     verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
   });
 
+  testWidgets('no Face ID offer when the feature is off in the config', (tester) async {
+    when(() => service.login(any(), any()))
+        .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
+    await _pumpLogin(tester, faceIdLogin: false);
+
+    await _enterAndSubmit(tester);
+    await _settleDialog(tester);
+
+    expect(find.text('Use Face ID to log in next time?'), findsNothing);
+    verifyNever(() => biometrics.kind());
+    verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+    expect(find.byType(CircularProgressIndicator), findsNothing); // login finished
+  });
+
   // (feature on in config, a user has turned it on) -> button shown
   final faceIdCases = <(bool, bool), bool>{
     (true, true): true,
@@ -177,7 +210,8 @@ void main() {
 
   testWidgets('a cancelled Face ID login shows a message', (tester) async {
     when(() => service.canLoginWithBiometrics()).thenAnswer((_) async => true);
-    when(() => service.loginWithBiometrics()).thenAnswer((_) async => const BiometricFailed());
+    when(() => service.loginWithBiometrics(reason: 'Log in to your account'))
+        .thenAnswer((_) async => const BiometricFailed());
     await _pumpLogin(tester);
 
     await tester.tap(find.text('Log in with Face ID'));

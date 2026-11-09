@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'application/app_config_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'presentation/strings/common_strings.dart';
 
 /// Root widget. Uses a neutral theme until the config file has loaded.
 class GenericApp extends ConsumerWidget {
@@ -15,7 +16,7 @@ class GenericApp extends ConsumerWidget {
     final theme = config?.theme ?? fallbackThemeConfig;
 
     return MaterialApp.router(
-      title: config?.brand.appName ?? 'Generic App',
+      title: config?.brand.appName ?? CommonStrings.fallbackAppName,
       theme: buildTheme(theme, Brightness.light),
       darkTheme: buildTheme(theme, Brightness.dark),
       themeMode: themeModeFor(theme),

@@ -162,6 +162,7 @@
         "notifyUuid": "90bd6463-59c3-47ed-bbf8-745bfb95e91f",
         "writeUuid": "90bd6465-59c3-47ed-bbf8-745bfb95e91f",
         "replyUuid": "90bd6466-59c3-47ed-bbf8-745bfb95e91f",
+        "writeWithoutResponse": true,
         "timeSync": {
           "uuid": "90bd6468-59c3-47ed-bbf8-745bfb95e91f",
           "fields": ["year16le", "month", "day", "hour", "minute", "second", "millis16le"]
@@ -234,7 +235,8 @@
             "max": 120,
             "average": 8
           },
-          "perfusion": { "red": "pi_red", "ir": "pi_ir" }
+          "perfusion": { "red": "pi_red", "ir": "pi_ir" },
+          "finger": { "minDcIr": 12000, "minAcIr": 35, "settleSeconds": 5 }
         }
       },
       "agc": {

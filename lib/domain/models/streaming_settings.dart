@@ -68,6 +68,9 @@ abstract class PpgOximetrySettings with _$PpgOximetrySettings {
     required Spo2Settings spo2,
     required HeartRateSettings heartRate,
     required PerfusionSettings perfusion,
+
+    /// When set, results are given only while a finger is on the sensor and has settled.
+    FingerSettings? finger,
   }) = _PpgOximetrySettings;
 
   factory PpgOximetrySettings.fromJson(Map<String, dynamic> json) =>
@@ -118,6 +121,20 @@ abstract class PerfusionSettings with _$PerfusionSettings {
 
   factory PerfusionSettings.fromJson(Map<String, dynamic> json) =>
       _$PerfusionSettingsFromJson(json);
+}
+
+/// A finger is on the sensor while the infrared DC level is at least [minDcIr] and its AC spread
+/// at least [minAcIr]. Results wait [settleSeconds] after a finger is first seen, while the
+/// filters and windows fill.
+@freezed
+abstract class FingerSettings with _$FingerSettings {
+  const factory FingerSettings({
+    required double minDcIr,
+    required double minAcIr,
+    @Default(0) double settleSeconds,
+  }) = _FingerSettings;
+
+  factory FingerSettings.fromJson(Map<String, dynamic> json) => _$FingerSettingsFromJson(json);
 }
 
 /// `agc` block of a profile: raises or lowers the LED levels to keep the [input] signal between

@@ -108,6 +108,17 @@ class UniversalBleAdapter implements BleAdapter {
       UniversalBle.read(deviceId, service, characteristic, timeout: pairingTimeout);
 
   @override
-  Future<void> write(String deviceId, String service, String characteristic, Uint8List value) =>
-      UniversalBle.write(deviceId, service, characteristic, value);
+  Future<void> write(
+    String deviceId,
+    String service,
+    String characteristic,
+    Uint8List value, {
+    bool withoutResponse = false,
+  }) => UniversalBle.write(
+    deviceId,
+    service,
+    characteristic,
+    value,
+    withoutResponse: withoutResponse,
+  );
 }

@@ -12,6 +12,15 @@ abstract final class DeviceStrings {
   static const noValue = '–';
   static const noValueSpoken = 'no reading yet';
   static const note = 'Readings update about once a second while this screen is open.';
+  static const placeFinger = 'Place your finger on the sensor';
+  static const measuring = 'Measuring… hold still';
+
+  /// What to tell the user about the sensor, or null while readings are coming.
+  static String? contact(SensorContact? contact) => switch (contact) {
+    SensorContact.none => placeFinger,
+    SensorContact.settling => measuring,
+    SensorContact.ok || null => null,
+  };
 
   static String status(LiveStatus status) => switch (status) {
     LiveStatus.connecting => connecting,

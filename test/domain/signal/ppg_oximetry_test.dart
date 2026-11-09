@@ -19,7 +19,7 @@ List<Sample> _pulse(int pairs, {double hz = 1.2, double redAc = 2000, double irA
 
 /// Results by the number of pairs fed when they came.
 Map<int, Map<String, double>> _run(List<Sample> samples) {
-  final oximetry = PpgOximetry(ppgMotionProfile().signal!.ppgOximetry!);
+  final oximetry = PpgOximetry(ppgMotionProfile().signal!.ppgOximetry!.copyWith(finger: null));
   final results = <int, Map<String, double>>{};
   var pairs = 0;
   for (final sample in samples) {
@@ -77,7 +77,7 @@ void main() {
   });
 
   test('ignores other readings and waits for both colours', () {
-    final oximetry = PpgOximetry(ppgMotionProfile().signal!.ppgOximetry!);
+    final oximetry = PpgOximetry(ppgMotionProfile().signal!.ppgOximetry!.copyWith(finger: null));
     final t = DateTime.utc(2026);
     for (var i = 0; i < 300; i++) {
       expect(oximetry.feed(Sample('battery', 80, t)), isEmpty);

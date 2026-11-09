@@ -183,4 +183,54 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  final hints = <SensorContact, String?>{
+    SensorContact.none: 'Place your finger on the sensor',
+    SensorContact.settling: 'Measuring… hold still',
+    SensorContact.ok: null,
+  };
+  for (final MapEntry(key: contact, value: hint) in hints.entries) {
+    testWidgets('while streaming, contact ${contact.name} shows ${hint ?? 'no hint'}', (
+      tester,
+    ) async {
+      await pump(tester);
+      await send(tester, [
+        const LiveStatusChanged(LiveStatus.streaming),
+        LiveContactChanged(contact),
+      ]);
+
+      if (hint == null) {
+        expect(find.byIcon(Icons.touch_app_outlined), findsNothing);
+      } else {
+        expect(find.text(hint), findsOneWidget);
+        expect(find.bySemanticsLabel(hint), findsOneWidget);
+      }
+    });
+  }
+
+  testWidgets('lifting the finger clears the readings but keeps the battery', (tester) async {
+    await pump(tester);
+    await send(tester, [
+      const LiveStatusChanged(LiveStatus.streaming),
+      const LiveContactChanged(SensorContact.ok),
+      LiveValue(Sample('heart_rate', 72, _t)),
+      LiveValue(Sample('spo2', 97, _t)),
+      LiveValue(Sample('battery', 81, _t)),
+    ]);
+    expect(find.text('72 bpm'), findsOneWidget);
+
+    await send(tester, [const LiveContactChanged(SensorContact.none)]);
+
+    expect(find.text('72 bpm'), findsNothing);
+    expect(find.text('97 %'), findsNothing);
+    expect(find.text('81 %'), findsOneWidget);
+    expect(find.text('Place your finger on the sensor'), findsOneWidget);
+  });
+
+  testWidgets('no hint before the device is streaming', (tester) async {
+    await pump(tester);
+    await send(tester, [const LiveContactChanged(SensorContact.none)]);
+
+    expect(find.text('Place your finger on the sensor'), findsNothing);
+  });
 }

@@ -214,6 +214,16 @@
               "additionalProperties": false,
               "required": ["red", "ir"],
               "properties": { "red": { "$ref": "#/definitions/key" }, "ir": { "$ref": "#/definitions/key" } }
+            },
+            "finger": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["minDcIr", "minAcIr"],
+              "properties": {
+                "minDcIr": { "type": "number", "minimum": 0 },
+                "minAcIr": { "type": "number", "minimum": 0 },
+                "settleSeconds": { "type": "number", "minimum": 0 }
+              }
             }
           }
         }
@@ -391,6 +401,7 @@
         "batteryService": { "type": "boolean" },
         "batteryPollSeconds": { "type": "integer", "minimum": 10 },
         "replyUuid": { "$ref": "#/definitions/uuid" },
+        "writeWithoutResponse": { "type": "boolean" },
         "timeSync": {
           "type": "object",
           "additionalProperties": false,

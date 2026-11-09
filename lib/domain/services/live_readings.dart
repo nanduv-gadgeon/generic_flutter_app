@@ -1,8 +1,10 @@
 import '../decoder/decoded_packet.dart';
 import '../models/streaming_settings.dart';
+import '../signal/ppg_oximetry.dart';
 
 export '../decoder/decoded_packet.dart' show Sample;
 export '../models/streaming_settings.dart' show DeviceProblem;
+export '../signal/ppg_oximetry.dart' show SensorContact;
 
 /// A saved device's readings as they arrive. Listening connects to the device and starts its data;
 /// cancelling stops the data and disconnects, so only listen while the readings are on screen.
@@ -29,6 +31,14 @@ final class LiveValue extends LiveUpdate {
   const LiveValue(this.sample);
 
   final Sample sample;
+}
+
+/// Whether a finger is on the sensor, for profiles that check it. Readings worked out from the
+/// signal are only sent while it is [SensorContact.ok].
+final class LiveContactChanged extends LiveUpdate {
+  const LiveContactChanged(this.contact);
+
+  final SensorContact contact;
 }
 
 /// Why the readings stopped or are unreliable. [problem] is set when the device said why.

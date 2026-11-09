@@ -58,10 +58,35 @@ void main() {
   test('passes on the profile readings and battery, never the raw PPG', () async {
     await session.start();
     link.sendBattery(81);
-    await stream(10);
+    await stream(16); // about 1 s to see the finger and 5 s to settle, then 10 s of readings
 
     expect(keys().toSet(), {'battery', 'spo2', 'heart_rate', 'pi_red', 'pi_ir'});
     expect(keys().where((k) => k == 'pi_ir'), hasLength(10)); // once a second
+  });
+
+  List<SensorContact> contacts() => [
+    for (final u in updates)
+      if (u is LiveContactChanged) u.contact,
+  ];
+
+  test('with nothing on the sensor it says so and sends no worked-out readings', () async {
+    await session.start();
+    link.sendBattery(81);
+    await stream(8, irLevel: 6000); // background light only (protocol doc §3.3)
+
+    expect(contacts(), [SensorContact.none]);
+    expect(keys().toSet(), {'battery'});
+  });
+
+  test('a finger is reported as settling, then ok, and only then are readings sent', () async {
+    await session.start();
+    await stream(10);
+
+    expect(contacts(), [SensorContact.none, SensorContact.settling, SensorContact.ok]);
+    final okAt = updates.indexWhere(
+      (u) => u is LiveContactChanged && u.contact == SensorContact.ok,
+    );
+    expect(updates.take(okAt).whereType<LiveValue>(), isEmpty);
   });
 
   test('a failed connect is reported and nothing is sent', () async {

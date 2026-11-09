@@ -4,12 +4,30 @@ import '../decoder/decoded_packet.dart';
 import '../models/streaming_settings.dart';
 import 'sos_filter.dart';
 
+/// Whether a finger is on the sensor, for profiles with a `finger` block.
+enum SensorContact {
+  /// Nothing on the sensor: no results.
+  none,
+
+  /// A finger is on, but the filters and windows are still filling: no results yet.
+  settling,
+
+  /// Results are being given.
+  ok,
+}
+
+/// Whether a finger is on the sensor, from the infrared DC level and AC spread.
+bool hasFinger(double dcIr, double acIr, FingerSettings finger) =>
+    dcIr >= finger.minDcIr && acIr >= finger.minAcIr;
+
 /// SpO₂, heart rate and perfusion index from red and infrared PPG samples, as the profile's
 /// `signal.ppgOximetry` block describes. Not clinically validated.
 ///
 /// Feed it the decoder's samples; it uses the [PpgOximetrySettings.red] and
 /// [PpgOximetrySettings.ir] ones, paired in the order they arrive, and returns results once per
-/// [PpgOximetrySettings.emitEvery] pairs. Values are passed on, never logged.
+/// [PpgOximetrySettings.emitEvery] pairs. With a [PpgOximetrySettings.finger] block it gives results
+/// only while [contact] is [SensorContact.ok], and forgets its averages when the finger is lifted.
+/// Values are passed on, never logged.
 class PpgOximetry {
   PpgOximetry(this._s)
     : _bandPassRed = SosFilter(_s.bandPass),
@@ -34,6 +52,19 @@ class PpgOximetry {
   double? _ir;
   int _pairs = 0;
 
+  /// Sample pairs since the finger was put on the sensor.
+  int _withFinger = 0;
+
+  /// Null when the profile has no `finger` block (results are always given).
+  SensorContact? get contact {
+    final finger = _s.finger;
+    if (finger == null) return null;
+    if (_withFinger == 0) return SensorContact.none;
+    return _withFinger < finger.settleSeconds * _s.sampleRateHz
+        ? SensorContact.settling
+        : SensorContact.ok;
+  }
+
   /// Results to pass on after [sample]; empty most of the time.
   List<Sample> feed(Sample sample) {
     if (sample.key == _s.red) {
@@ -48,7 +79,10 @@ class PpgOximetry {
     if (red == null || ir == null) return const [];
     _red = _ir = null;
     _pair(red, ir);
-    return ++_pairs % _s.emitEvery == 0 ? _results(sample.at) : const [];
+    _trackFinger();
+    if (++_pairs % _s.emitEvery != 0) return const [];
+    final gated = contact;
+    return gated == null || gated == SensorContact.ok ? _results(sample.at) : const [];
   }
 
   void _pair(double red, double ir) {
@@ -67,6 +101,20 @@ class PpgOximetry {
       final bpm = _heartRate(_peakBuffer.sublist(0, hr.window));
       if (bpm != null) _keep(_heartRates, bpm, hr.average);
       _peakBuffer.removeRange(0, hr.step);
+    }
+  }
+
+  void _trackFinger() {
+    final finger = _s.finger;
+    if (finger == null) return;
+    if (hasFinger(_mean(_dcIr), _stdDev(_acIr), finger)) {
+      _withFinger++;
+    } else if (_withFinger > 0) {
+      // Lifted: values from before are stale, so start the averages and peak search again.
+      _withFinger = 0;
+      _spo2Values.clear();
+      _heartRates.clear();
+      _peakBuffer.clear();
     }
   }
 

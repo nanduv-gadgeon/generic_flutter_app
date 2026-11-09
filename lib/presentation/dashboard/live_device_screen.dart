@@ -39,6 +39,11 @@ class LiveDeviceScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             _StatusLine(status: live.status),
+            if (live.status == LiveStatus.streaming)
+              if (DeviceStrings.contact(live.contact) case final hint?) ...[
+                const SizedBox(height: 12),
+                _ContactHint(text: hint),
+              ],
             if (failure != null) ...[
               const SizedBox(height: 12),
               ErrorMessage(DeviceStrings.failure(failure)),
@@ -113,6 +118,43 @@ class _StatusLine extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Tells the user to put a finger on the sensor, or to hold still while values settle.
+class _ContactHint extends StatelessWidget {
+  const _ContactHint({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppTokens>();
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: text,
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: tokens?.soft,
+          borderRadius: BorderRadius.circular(tokens?.radiusSmall ?? 12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.touch_app_outlined, size: 20, color: tokens?.accent),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: tokens?.accent),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

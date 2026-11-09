@@ -158,6 +158,11 @@ abstract class BleSettings with _$BleSettings {
     /// Characteristic the device answers commands on; its data arrives as source `reply`.
     String? replyUuid,
 
+    /// Write to the device (commands and [timeSync]) without a link-level acknowledgement, for
+    /// devices whose characteristics only allow that. A reply on [replyUuid] can still confirm
+    /// each command.
+    @Default(false) bool writeWithoutResponse,
+
     /// Characteristic the current time (UTC) is written to on every connection.
     TimeSync? timeSync,
   }) = _BleSettings;

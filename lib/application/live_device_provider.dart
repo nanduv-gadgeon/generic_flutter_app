@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/di/services.dart';
+import '../domain/models/device_profile.dart' show batteryKey;
 import '../domain/services/live_readings.dart';
 
 export '../domain/services/live_readings.dart';
@@ -15,6 +16,9 @@ abstract class LiveDeviceState with _$LiveDeviceState {
   const factory LiveDeviceState({
     @Default(LiveStatus.connecting) LiveStatus status,
     @Default({}) Map<String, double> values,
+
+    /// Whether a finger is on the sensor; null for profiles that do not check it.
+    SensorContact? contact,
 
     /// The last problem; cleared once the device is streaming again.
     LiveFailure? failure,
@@ -44,6 +48,16 @@ class LiveDevice extends _$LiveDevice {
       ),
       LiveValue(:final sample) => state.copyWith(
         values: {...state.values, sample.key: sample.value},
+      ),
+      // Without a settled finger the worked-out readings would be noise: keep only the battery.
+      LiveContactChanged(:final contact) => state.copyWith(
+        contact: contact,
+        values: contact == SensorContact.ok
+            ? state.values
+            : {
+                for (final e in state.values.entries)
+                  if (e.key == batteryKey) e.key: e.value,
+              },
       ),
       LiveFailure() => state.copyWith(failure: update),
     };

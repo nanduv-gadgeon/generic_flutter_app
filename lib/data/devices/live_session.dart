@@ -49,6 +49,7 @@ class LiveSession {
   bool _streaming = false;
   bool _adjusting = false;
   LinkState? _lastState;
+  SensorContact? _contact;
 
   Future<void> start() async {
     _subs
@@ -136,8 +137,17 @@ class LiveSession {
 
   void _onSample(Sample sample) {
     if (_readingKeys.contains(sample.key)) _emit(LiveValue(sample));
-    for (final result in _oximetry?.feed(sample) ?? const <Sample>[]) {
-      if (_readingKeys.contains(result.key)) _emit(LiveValue(result));
+    final oximetry = _oximetry;
+    if (oximetry != null) {
+      final results = oximetry.feed(sample);
+      final contact = oximetry.contact;
+      if (contact != null && contact != _contact) {
+        _contact = contact;
+        _emit(LiveContactChanged(contact));
+      }
+      for (final result in results) {
+        if (_readingKeys.contains(result.key)) _emit(LiveValue(result));
+      }
     }
     final agc = _agc;
     if (agc != null && sample.key == _profile.agc!.input && _streaming && !_adjusting) {

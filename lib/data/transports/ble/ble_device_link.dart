@@ -82,13 +82,25 @@ class BleDeviceLink implements DeviceLink {
 
     final data = Uint8List.fromList(bytes);
     try {
-      await _adapter.write(deviceId, _service, fullUuid(write), data);
+      await _adapter.write(
+        deviceId,
+        _service,
+        fullUuid(write),
+        data,
+        withoutResponse: _settings.writeWithoutResponse,
+      );
     } catch (_) {
       await _delay(writeRetryDelay);
       try {
-        await _adapter.write(deviceId, _service, fullUuid(write), data);
+        await _adapter.write(
+          deviceId,
+          _service,
+          fullUuid(write),
+          data,
+          withoutResponse: _settings.writeWithoutResponse,
+        );
       } catch (e) {
-        throw LinkException('write failed: ${e.runtimeType}');
+        throw LinkException('write failed: ${describeError(e)}');
       }
     }
   }
@@ -122,7 +134,7 @@ class BleDeviceLink implements DeviceLink {
       } catch (_) {
         // Best effort.
       }
-      throw e is LinkException ? e : LinkException('connect failed: ${e.runtimeType}');
+      throw e is LinkException ? e : LinkException('connect failed: ${describeError(e)}');
     }
     _setState(LinkState.connected);
   }
@@ -160,7 +172,13 @@ class BleDeviceLink implements DeviceLink {
     if (reply != null) await _listen(fullUuid(reply), FrameSource.reply);
     if (clock != null) {
       final time = Uint8List.fromList(encodeTime(clock.fields, _now()));
-      await _adapter.write(deviceId, _service, fullUuid(clock.uuid), time);
+      await _adapter.write(
+        deviceId,
+        _service,
+        fullUuid(clock.uuid),
+        time,
+        withoutResponse: _settings.writeWithoutResponse,
+      );
     }
     await _subscribeBattery(services);
   }

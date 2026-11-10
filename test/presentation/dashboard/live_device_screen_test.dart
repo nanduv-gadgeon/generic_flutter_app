@@ -14,6 +14,7 @@ import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/models/user_device.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/dashboard/live_device_screen.dart';
+import 'package:go_router/go_router.dart';
 
 const _theme = ThemeConfig(
   primary: '#123456',
@@ -261,5 +262,40 @@ void main() {
     await send(tester, [const LiveContactChanged(SensorContact.none)]);
 
     expect(find.text('Place your finger on the sensor'), findsNothing);
+  });
+
+  testWidgets('the chevron at the top goes to the home page', (tester) async {
+    final router = GoRouter(
+      // Opened the way Add device opens it: nothing to go back to.
+      initialLocation: '/device/1',
+      routes: [
+        GoRoute(path: '/home', builder: (_, _) => const Text('home page')),
+        GoRoute(path: '/device/:id', builder: (_, _) => const LiveDeviceScreen(deviceId: 1)),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          liveReadingsProvider.overrideWithValue(live),
+          myDevicesProvider.overrideWith((ref) => Stream.value(const [_sensor, _patch, _band])),
+          deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
+        ],
+        child: MaterialApp.router(
+          theme: buildTheme(_theme, Brightness.light),
+          routerConfig: router,
+        ),
+      ),
+    );
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+    }
+
+    expect(find.byTooltip('Back'), findsOneWidget); // read out by screen readers
+    await tester.tap(find.byTooltip('Back'));
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+    }
+
+    expect(find.text('home page'), findsOneWidget);
   });
 }

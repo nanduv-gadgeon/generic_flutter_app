@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
@@ -17,6 +18,10 @@ import '../widgets/placeholder_screen.dart';
 class LiveDeviceScreen extends ConsumerWidget {
   const LiveDeviceScreen({super.key, required this.deviceId});
 
+  /// Where the back button goes: always the home page (Add device opens this screen with nothing
+  /// to go back to).
+  static const homeRoute = '/home';
+
   final int deviceId;
 
   @override
@@ -33,7 +38,12 @@ class LiveDeviceScreen extends ConsumerWidget {
     final failure = live.failure;
 
     return Scaffold(
-      appBar: AppBar(title: Text(device?.name ?? DeviceStrings.fallbackTitle)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: 64,
+        leading: Center(child: CircleBackButton(onPressed: () => context.go(homeRoute))),
+        title: Text(device?.name ?? DeviceStrings.fallbackTitle),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

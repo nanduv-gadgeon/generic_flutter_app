@@ -10,9 +10,11 @@ import '../../domain/signal/agc.dart';
 import '../../domain/signal/ppg_oximetry.dart';
 import '../../domain/transport/device_link.dart';
 import 'command_sequencer.dart';
+import 'log_sync.dart';
 
-/// One listener's connection to a saved device: connects, starts the data with the profile's
-/// `streaming` commands, and passes on the profile's readings and battery until [stop].
+/// A connection to a saved device: connects, fetches stored data with the profile's `sync`
+/// commands, starts the live data with its `streaming` commands, and passes on the profile's
+/// readings and battery until [stop]. Both run again after a reconnect.
 ///
 /// Values are passed on, never logged.
 class LiveSession {
@@ -47,6 +49,10 @@ class LiveSession {
     timeout: Duration(milliseconds: _profile.streaming?.replyTimeoutMs ?? 2500),
     retries: _profile.streaming?.retries ?? 1,
   );
+  late final _sync = switch (_profile.sync) {
+    final s? => LogSync(s, _commands),
+    null => null,
+  };
   bool _stopped = false;
   bool _streaming = false;
   bool _adjusting = false;
@@ -75,13 +81,14 @@ class LiveSession {
     }
     // Closed while connecting: stop() already ran, so make sure the link does not stay up.
     if (_stopped) return _link.disconnect();
-    await _startStreaming();
+    await _afterConnect();
   }
 
   Future<void> stop() async {
     if (_stopped) return;
     _stopped = true;
     _reportTimer?.cancel();
+    _sync?.cancel();
     if (_streaming) {
       for (final id in _profile.streaming?.stop ?? const <String>[]) {
         try {
@@ -100,6 +107,21 @@ class LiveSession {
 
   DateTime get _at => _now().toUtc();
 
+  Future<void> _afterConnect() async {
+    final sync = _sync;
+    if (sync != null && !_stopped) {
+      _emit(const LiveStatusChanged(LiveStatus.syncing));
+      try {
+        await sync.run();
+      } on CommandFailedException {
+        return _fail(LiveFailureReason.startFailed);
+      } on LinkException {
+        return _fail(LiveFailureReason.startFailed);
+      }
+    }
+    await _startStreaming();
+  }
+
   Future<void> _startStreaming() async {
     if (_stopped) return;
     _emit(const LiveStatusChanged(LiveStatus.starting));
@@ -115,6 +137,7 @@ class LiveSession {
     }
     if (_stopped) return;
     _streaming = true;
+    _sync?.startPolling();
     _emit(const LiveStatusChanged(LiveStatus.streaming));
   }
 
@@ -123,14 +146,18 @@ class LiveSession {
     _lastState = state;
     if (state == LinkState.reconnecting) {
       _streaming = false;
+      _sync?.cancel();
       _emit(const LiveStatusChanged(LiveStatus.reconnecting));
     } else if (state == LinkState.connected && previous == LinkState.reconnecting) {
-      unawaited(_startStreaming()); // The device starts again after a drop.
+      unawaited(_afterConnect()); // Fetch what was missed, then start again after a drop.
     }
   }
 
   void _onPacket(DevicePacket packet) {
-    if (kDebugMode && packet.source == FrameSource.data) _frames++;
+    if (packet.source == FrameSource.data) {
+      if (kDebugMode) _frames++;
+      _sync?.onFrame();
+    }
     for (final decoded in _codec.feed(packet.bytes, source: packet.source)) {
       if (kDebugMode) {
         if (decoded is Sample) _samples++;
@@ -146,8 +173,10 @@ class LiveSession {
           }
         case Sample():
           _onSample(decoded);
-        case DeviceEvent() || BatchEnd() || InvalidPacket():
-          break;
+        case BatchEnd():
+          _sync?.onBatchEnd();
+        case DeviceEvent() || InvalidPacket():
+          break; // Device events are not stored yet.
       }
     }
   }

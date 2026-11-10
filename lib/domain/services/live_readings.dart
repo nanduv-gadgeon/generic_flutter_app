@@ -6,14 +6,42 @@ export '../decoder/decoded_packet.dart' show Sample;
 export '../models/streaming_settings.dart' show DeviceProblem;
 export '../signal/ppg_oximetry.dart' show SensorContact;
 
-/// A saved device's readings as they arrive. Listening connects to the device and starts its data;
-/// cancelling stops the data and disconnects, so only listen while the readings are on screen.
+/// A saved device's readings as they arrive. One device is connected at a time: listening to a
+/// device connects it (and disconnects any other one); cancelling keeps it connected.
 abstract interface class LiveReadings {
-  /// Updates for the saved device [deviceId]. Values are health data: never log them.
+  /// Updates for the saved device [deviceId], starting with its latest status and values. Values
+  /// are health data: never log them.
   Stream<LiveUpdate> watch(int deviceId);
+
+  /// Disconnects [deviceId] and connects it again from the start.
+  Future<void> retry(int deviceId);
+
+  /// The device that is connected or connecting, and its status; null when there is none.
+  /// Starts with the current one.
+  Stream<ActiveLink?> watchActive();
+
+  /// [userId] logged in: a device they remove is disconnected. Connects nothing.
+  Future<void> start(int userId);
+
+  /// Logged out: disconnects the device.
+  Future<void> stop();
 }
 
-enum LiveStatus { connecting, starting, streaming, reconnecting }
+/// The one device the phone is linked to, and how that is going.
+typedef ActiveLink = ({int deviceId, LiveStatus status});
+
+enum LiveStatus {
+  connecting,
+
+  /// Fetching data the device stored while it was not connected.
+  syncing,
+  starting,
+  streaming,
+  reconnecting,
+
+  /// The device could not be reached; trying again soon.
+  waiting,
+}
 
 sealed class LiveUpdate {
   const LiveUpdate();

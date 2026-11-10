@@ -6,6 +6,7 @@ import 'channel_frame.dart';
 import 'checksums.dart';
 import 'decoded_packet.dart';
 import 'device_codec.dart';
+import 'time_encoding.dart';
 
 /// A codec for [profile], read from its `packet` block. Throws [NotConnectableException] when the
 /// profile has none yet. [now] gives the receive time for frames without a time field.
@@ -60,7 +61,12 @@ class GenericCodec implements DeviceCodec {
   Uint8List encode(String commandId, {int? value}) {
     final command = _commands[commandId] ?? (throw UnsupportedCommandException(commandId));
     if (command.takesValue != (value != null)) throw UnsupportedCommandException(commandId);
-    return Uint8List.fromList([...command.data, ?value]);
+    final time = command.time;
+    return Uint8List.fromList([
+      ...command.data,
+      ?value,
+      if (time != null) ...encodeTime(time, _now()),
+    ]);
   }
 
   @override

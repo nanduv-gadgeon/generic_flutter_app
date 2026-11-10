@@ -26,4 +26,38 @@ abstract final class DevicesStrings {
   static const myDevices = 'My devices';
   static const noDevices = 'No devices yet';
   static const noDevicesBody = 'Add your first device to start monitoring.';
+
+  // Device cards (mockup 06_home).
+  static const addADevice = 'Add a device';
+  static const noReadings = 'No readings yet';
+  static const notConnected = 'Not connected';
+  static const bluetooth = 'Bluetooth';
+  static const wifi = 'Wi‑Fi';
+  static const connected = 'Connected';
+  static const connecting = 'Connecting…';
+  static const notSeen = 'Not seen yet';
+
+  /// "Bluetooth · Connected".
+  static String link(String transport, String state) => '$transport · $state';
+
+  /// "SpO₂ 97 % · Heart rate 72 bpm".
+  static String quickReading(List<String> parts) => parts.join(' · ');
+
+  /// "78%".
+  static String battery(int percent) => '$percent%';
+
+  /// "Battery 78%" for screen readers.
+  static String batterySpoken(int percent) => 'Battery $percent%';
+
+  /// "Seen 12 s ago", "Seen 5 min ago", "Seen 3 h ago", "Seen 2 d ago".
+  static String seen(Duration ago) {
+    final d = ago.isNegative ? Duration.zero : ago;
+    if (d.inMinutes < 1) return 'Seen ${d.inSeconds} s ago';
+    if (d.inHours < 1) return 'Seen ${d.inMinutes} min ago';
+    if (d.inDays < 1) return 'Seen ${d.inHours} h ago';
+    return 'Seen ${d.inDays} d ago';
+  }
+
+  /// One phrase for a whole card, then what tapping does.
+  static String card(List<String> parts) => '${parts.join(', ')}. Opens the device';
 }

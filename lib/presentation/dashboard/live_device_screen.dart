@@ -26,7 +26,7 @@ class LiveDeviceScreen extends ConsumerWidget {
     final profile = device != null && registry != null && registry.contains(device.profileId)
         ? registry.byId(device.profileId)
         : null;
-    if (profile == null || profile.streaming == null) {
+    if (profile == null || profile.packet == null) {
       return const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder);
     }
     final live = ref.watch(liveDeviceProvider(deviceId));
@@ -50,7 +50,7 @@ class LiveDeviceScreen extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: ref.read(liveDeviceProvider(deviceId).notifier).retry,
+                  onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
                   child: const Text(DeviceStrings.tryAgain),
                 ),
               ),

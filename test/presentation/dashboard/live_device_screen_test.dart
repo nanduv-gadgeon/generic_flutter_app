@@ -29,12 +29,25 @@ class _FakeLiveReadings implements LiveReadings {
   StreamController<LiveUpdate>? controller;
   int listens = 0;
   int cancels = 0;
+  final retried = <int>[];
 
   @override
   Stream<LiveUpdate> watch(int deviceId) {
     controller = StreamController(onListen: () => listens++, onCancel: () => cancels++);
     return controller!.stream;
   }
+
+  @override
+  Stream<ActiveLink?> watchActive() => Stream.value(null);
+
+  @override
+  Future<void> retry(int deviceId) async => retried.add(deviceId);
+
+  @override
+  Future<void> start(int userId) async {}
+
+  @override
+  Future<void> stop() async {}
 
   void send(LiveUpdate update) => controller!.add(update);
 }
@@ -50,6 +63,7 @@ final _t = DateTime.utc(2026, 11, 3);
 
 const _sensor = UserDevice(id: 1, name: 'Finger sensor', profileId: 'ppg_motion_v1');
 const _patch = UserDevice(id: 2, name: 'Patch', profileId: 'ief_device_v1');
+const _band = UserDevice(id: 3, name: 'Band', profileId: 'smart_band_v1');
 
 void main() {
   late _FakeLiveReadings live;
@@ -74,7 +88,7 @@ void main() {
       ProviderScope(
         overrides: [
           liveReadingsProvider.overrideWithValue(live),
-          myDevicesProvider.overrideWith((ref) => Stream.value(const [_sensor, _patch])),
+          myDevicesProvider.overrideWith((ref) => Stream.value(const [_sensor, _patch, _band])),
           deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
         ],
         child: MaterialApp(
@@ -138,7 +152,7 @@ void main() {
     await tester.tap(find.text('Try again'));
     await tester.pump();
 
-    expect((live.listens, live.cancels), (2, 1));
+    expect(live.retried, [_sensor.id]);
     expect(find.textContaining('battery is low'), findsNothing);
   });
 
@@ -155,7 +169,7 @@ void main() {
     expect(find.textContaining('stopped sending'), findsNothing);
   });
 
-  testWidgets('closing the screen stops the readings', (tester) async {
+  testWidgets('closing the screen stops listening (the device stays connected)', (tester) async {
     await pump(tester);
     open.value = false;
     await tester.pump();
@@ -163,12 +177,27 @@ void main() {
     expect(live.cancels, 1);
   });
 
-  testWidgets('a device that cannot stream yet keeps the placeholder', (tester) async {
-    await pump(tester, deviceId: _patch.id);
+  testWidgets('a device type without a protocol keeps the placeholder', (tester) async {
+    await pump(tester, deviceId: _band.id);
 
     expect(find.text('Device dashboard (later task)'), findsWidgets);
     expect(live.listens, 0);
   });
+
+  final statuses = {
+    LiveStatus.syncing: 'Getting stored readings…',
+    LiveStatus.waiting: 'Device not found. Trying again…',
+  };
+  for (final MapEntry(key: status, value: text) in statuses.entries) {
+    testWidgets('a device that syncs its logs shows "$text" while ${status.name}', (tester) async {
+      await pump(tester, deviceId: _patch.id);
+      await send(tester, [LiveStatusChanged(status)]);
+
+      expect(live.listens, 1);
+      expect(find.text(text), findsOneWidget);
+      expect(find.bySemanticsLabel(text), findsWidgets);
+    });
+  }
 
   for (final brightness in Brightness.values) {
     testWidgets('fits a small phone with double text size (${brightness.name})', (tester) async {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'application/app_config_provider.dart';
+import 'application/reading_pipeline_provider.dart';
+import 'core/di/services.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/strings/common_strings.dart';
@@ -14,6 +16,11 @@ class GenericApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final config = ref.watch(appConfigProvider).value;
     final theme = config?.theme ?? fallbackThemeConfig;
+    if (config != null) {
+      ref
+        ..watch(readingPipelineProvider)
+        ..watch(readingCleanupJobProvider);
+    }
 
     return MaterialApp.router(
       title: config?.brand.appName ?? CommonStrings.fallbackAppName,

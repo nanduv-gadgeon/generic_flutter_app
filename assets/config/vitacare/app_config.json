@@ -142,7 +142,20 @@
           { "code": "92", "kind": "noData" }
         ]
       },
-      "commands": [{ "id": "request_logs", "bytes": "82 00" }]
+      "commands": [
+        {
+          "id": "set_clock",
+          "bytes": "81 09",
+          "time": ["second", "minute", "hour12", "day", "month", "year2", "weekdayMon1", "pm", "zero"]
+        },
+        { "id": "request_logs", "bytes": "82 00" }
+      ],
+      "sync": {
+        "onConnect": ["set_clock", "request_logs"],
+        "idleTimeoutMs": 30000,
+        "everySeconds": 60,
+        "repeat": ["request_logs"]
+      }
     },
     {
       "id": "ppg_motion_v1",

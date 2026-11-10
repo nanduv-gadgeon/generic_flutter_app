@@ -76,6 +76,8 @@ RTC fields (all uint8, UTC):
 
 The last byte `00` is padding. The length byte says `09` while 9 bytes follow it, so the last byte counts as data.
 
+How the app uses them (task 1.3.3): on every connect and reconnect it sends Set RTC with the phone's UTC time, then Request logs, and stores the readings with the device's timestamps. The profile's `sync` block holds this, and the Set RTC fields are `time` fields of the `set_clock` command.
+
 ## Sample packets (synthetic)
 | Hex | Decoded |
 | --- | --- |

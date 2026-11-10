@@ -17,6 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'fixtures/fake_auth.dart';
+import 'fixtures/fake_live_readings.dart';
 import 'fixtures/test_config.dart';
 
 class _NoDevices implements DeviceService {
@@ -70,6 +71,7 @@ void main() {
           authServiceProvider.overrideWithValue(service),
           // These tests are about navigation; the device list has its own tests.
           deviceServiceProvider.overrideWithValue(_NoDevices()),
+          liveReadingsProvider.overrideWithValue(FakeLiveReadings()),
           appSettingsServiceProvider.overrideWithValue(_DefaultSettings()),
           appVersionProvider.overrideWith((ref) async => ('1.0.0', '1')),
         ],

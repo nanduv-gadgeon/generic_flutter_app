@@ -14,6 +14,11 @@ List<int> encodeTime(List<TimeField> fields, DateTime time) {
         TimeField.minute => [utc.minute],
         TimeField.second => [utc.second],
         TimeField.millis16le => twoBytes(utc.millisecond),
+        TimeField.year2 => [utc.year % 100],
+        TimeField.hour12 => [utc.hour % 12 == 0 ? 12 : utc.hour % 12],
+        TimeField.pm => [utc.hour < 12 ? 0 : 1],
+        TimeField.weekdayMon1 => [utc.weekday],
+        TimeField.zero => [0],
       },
   ];
 }

@@ -7,7 +7,7 @@ Set<String> signalOutputs(DeviceProfile profile) {
   return {ppg.spo2.key, ppg.heartRate.key, ppg.perfusion.red, ppg.perfusion.ir};
 }
 
-/// Rules for the `streaming`, `signal` and `agc` blocks the JSON schema cannot express.
+/// Rules for the `streaming`, `sync`, `signal` and `agc` blocks the JSON schema cannot express.
 /// [rawKeys] are the keys the packet layout gives. Returns one `/path: message` per problem.
 List<String> checkStreaming(DeviceProfile profile, String path, Set<String> rawKeys) {
   final commands = {for (final c in profile.commands) c.id: c};
@@ -29,6 +29,19 @@ List<String> checkStreaming(DeviceProfile profile, String path, Set<String> rawK
     }
     for (final (i, id) in streaming.stop.indexed) {
       command('$path/streaming/stop/$i', id, value: false);
+    }
+  }
+
+  final sync = profile.sync;
+  if (sync != null) {
+    for (final (i, id) in sync.onConnect.indexed) {
+      command('$path/sync/onConnect/$i', id, value: false);
+    }
+    for (final (i, id) in sync.repeat.indexed) {
+      command('$path/sync/repeat/$i', id, value: false);
+    }
+    if ((sync.everySeconds == null) != sync.repeat.isEmpty) {
+      errors.add('$path/sync: everySeconds and repeat go together');
     }
   }
 

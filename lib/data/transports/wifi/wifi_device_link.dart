@@ -34,7 +34,7 @@ class WifiDeviceLink implements DeviceLink {
   final Delay _delay;
 
   final _states = LinkStates();
-  final _packets = StreamController<Uint8List>.broadcast();
+  final _packets = StreamController<DevicePacket>.broadcast();
   WifiChannel? _channel;
   StreamSubscription<Uint8List>? _frames;
   String? _lastAddress;
@@ -49,7 +49,7 @@ class WifiDeviceLink implements DeviceLink {
   Stream<LinkState> get state => _states.stream;
 
   @override
-  Stream<Uint8List> get packets => _packets.stream;
+  Stream<DevicePacket> get packets => _packets.stream;
 
   /// The Wi‑Fi setup contract has no battery level.
   @override
@@ -101,7 +101,11 @@ class WifiDeviceLink implements DeviceLink {
     }
     _channel = channel;
     _lastAddress = endpoint.host;
-    _frames = channel.frames.listen(_packets.add, onDone: _onDropped, onError: (Object _) {});
+    _frames = channel.frames.listen(
+      (bytes) => _packets.add((bytes: bytes, source: FrameSource.data)),
+      onDone: _onDropped,
+      onError: (Object _) {},
+    );
     _states.value = LinkState.connected;
   }
 

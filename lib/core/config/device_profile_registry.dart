@@ -1,5 +1,6 @@
 import '../../domain/transport/lan_address.dart';
 import 'app_config.dart';
+import 'streaming_checks.dart';
 
 /// No profile in the config has this id.
 class UnknownDeviceTypeException implements Exception {
@@ -73,6 +74,10 @@ List<String> checkDeviceProfiles(AppConfig config) {
       errors.add('$path/ble: set, but "ble" is not in transports');
     }
     errors.addAll(_checkPacket(profile, path));
+    if (profile.ble?.replyUuid != null &&
+        !(profile.packet?.frames.any((f) => f.source == FrameSource.reply) ?? false)) {
+      errors.add('$path/ble/replyUuid: no packet frame reads source "reply"');
+    }
     errors.addAll(_checkWifi(profile, path));
     final commandIds = <String>{};
     for (final (j, command) in profile.commands.indexed) {
@@ -116,12 +121,24 @@ List<String> _checkPacket(DeviceProfile profile, String path) {
     ];
   }
   final errors = <String>[];
-  final codes = <int>{};
+  final codes = <(String, int)>{};
+  final catchAll = <String>{};
   final fieldKeys = <String>{};
   for (final (f, frame) in packet.frames.indexed) {
     final framePath = '$path/packet/frames/$f';
-    if (!codes.add(hexByte(frame.code))) errors.add('$framePath/code: duplicate frame code');
+    final code = frame.code;
+    if (code == null) {
+      if (!catchAll.add(frame.source)) {
+        errors.add('$framePath/code: only one frame per source may leave out its code');
+      }
+    } else if (!codes.add((frame.source, hexByte(code)))) {
+      errors.add('$framePath/code: duplicate frame code');
+    }
+    if (frame.kind == FrameKind.reply && frame.reply == null) {
+      errors.add('$framePath/reply: needed for a reply frame');
+    }
     fieldKeys.addAll(frame.fields.map((field) => field.key));
+    fieldKeys.addAll(frame.channels?.keys.values ?? const <String>[]);
 
     // Fields must fit in a record, or in the shortest accepted frame when there are no records.
     final size = frame.records?.size ?? frame.minLength;
@@ -144,10 +161,11 @@ List<String> _checkPacket(DeviceProfile profile, String path) {
     }
   }
 
+  final given = {...fieldKeys, ...signalOutputs(profile)};
   for (final (j, reading) in profile.readings.indexed) {
-    if (reading.key != batteryKey && !fieldKeys.contains(reading.key)) {
-      errors.add('$path/readings/$j/key: no packet field gives "${reading.key}"');
+    if (reading.key != batteryKey && !given.contains(reading.key)) {
+      errors.add('$path/readings/$j/key: no packet field or signal gives "${reading.key}"');
     }
   }
-  return errors;
+  return [...errors, ...checkStreaming(profile, path, fieldKeys)];
 }

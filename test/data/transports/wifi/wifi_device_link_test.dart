@@ -79,7 +79,7 @@ void main() {
     final states = <LinkState>[];
     l.state.listen(states.add);
     final packets = <Uint8List>[];
-    l.packets.listen(packets.add);
+    l.packets.listen((p) => packets.add(p.bytes));
 
     await l.connect();
     channels.single.incoming.add(Uint8List.fromList([1, 2, 3]));

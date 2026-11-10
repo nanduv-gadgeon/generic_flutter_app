@@ -65,6 +65,32 @@ final class BatchEnd extends DecodedPacket {
   String toString() => 'BatchEnd(hadData: $hadData)';
 }
 
+/// The device's answer to a command: the command's id byte and the data after it.
+final class CommandReply extends DecodedPacket {
+  const CommandReply(this.id, this.data);
+
+  final int id;
+  final List<int> data;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CommandReply && other.id == id && _sameBytes(other.data, data);
+
+  @override
+  int get hashCode => Object.hash(id, Object.hashAll(data));
+
+  @override
+  String toString() => 'CommandReply(0x${id.toRadixString(16).padLeft(2, '0')})';
+}
+
+bool _sameBytes(List<int> a, List<int> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
 /// Data that was dropped, e.g. a failed checksum. [reason] never contains the data itself.
 final class InvalidPacket extends DecodedPacket {
   const InvalidPacket(this.reason);

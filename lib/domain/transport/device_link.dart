@@ -1,5 +1,10 @@
 import 'dart:typed_data';
 
+export '../models/packet_layout.dart' show FrameSource;
+
+/// Data received from a device and where it arrived (a `FrameSource`), for the decoder.
+typedef DevicePacket = ({Uint8List bytes, String source});
+
 enum LinkState { disconnected, connecting, connected, reconnecting }
 
 /// One connected device, over BLE now and local Wi‑Fi from task 1.2.6.
@@ -10,7 +15,7 @@ abstract interface class DeviceLink {
   Stream<LinkState> get state;
 
   /// Raw data from the device, for the decoder (1.2.5). Never logged: it holds health readings.
-  Stream<Uint8List> get packets;
+  Stream<DevicePacket> get packets;
 
   /// Battery level in %, when the device reports it.
   Stream<int> get battery;

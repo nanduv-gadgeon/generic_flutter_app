@@ -12,8 +12,15 @@ enum ByteOrder { little, big }
 
 enum FieldType { uint8, uint16, uint32, uint64, int8, int16, int32, float32 }
 
-/// What a frame means: readings, the end of a transfer of stored data, or "nothing stored".
-enum FrameKind { data, batchEnd, noData }
+/// What a frame means: readings, the end of a transfer of stored data, "nothing stored", or the
+/// device's reply to a command.
+enum FrameKind { data, batchEnd, noData, reply }
+
+/// The characteristic (or channel) a frame arrives on. Frames that do not name one use [data].
+abstract final class FrameSource {
+  static const data = 'data';
+  static const reply = 'reply';
+}
 
 enum ChecksumType { crc32, xor8, sum8 }
 
@@ -31,12 +38,14 @@ abstract class PacketLayout with _$PacketLayout {
   factory PacketLayout.fromJson(Map<String, dynamic> json) => _$PacketLayoutFromJson(json);
 }
 
-/// One frame type, picked by the value of its first byte.
+/// One frame type, picked by where it arrives ([source]) and the value of its first byte ([code]).
+/// A frame without a code takes everything from its source that no other frame claims.
 @freezed
 abstract class FrameSpec with _$FrameSpec {
   const factory FrameSpec({
-    required String code,
+    String? code,
     required FrameKind kind,
+    @Default(FrameSource.data) String source,
 
     /// Shorter data frames are dropped.
     @Default(1) int minLength,
@@ -49,6 +58,12 @@ abstract class FrameSpec with _$FrameSpec {
     TimeSpec? time,
     @Default([]) List<FieldSpec> fields,
     EventSpec? events,
+
+    /// Samples of several channels picked by a bitmask, e.g. raw PPG.
+    ChannelSpec? channels,
+
+    /// Where a reply frame holds the id of the command it answers and its data.
+    ReplySpec? reply,
   }) = _FrameSpec;
 
   factory FrameSpec.fromJson(Map<String, dynamic> json) => _$FrameSpecFromJson(json);
@@ -139,6 +154,42 @@ abstract class EventSpec with _$EventSpec {
   }) = _EventSpec;
 
   factory EventSpec.fromJson(Map<String, dynamic> json) => _$EventSpecFromJson(json);
+}
+
+/// Rounds of samples after a channel bitmask: each round holds one sample of every enabled channel,
+/// in channel order. Bit 0 of the mask is channel 1. Only the channels in [keys] are passed on.
+@freezed
+abstract class ChannelSpec with _$ChannelSpec {
+  const factory ChannelSpec({
+    required int maskOffset,
+
+    /// Where the first round starts; rounds run to the end of the frame.
+    required int start,
+    required FieldType type,
+    ByteOrder? byteOrder,
+
+    /// Time between rounds. Rounds are stamped from the receive time, as device clocks vary.
+    required int intervalMs,
+
+    /// A sample at or above this is invalid; the channel's previous value is used instead.
+    double? validBelow,
+
+    /// Valid samples above this are lowered to it.
+    double? clampAbove,
+
+    /// Channel number (1-based) to reading key, e.g. `{"1": "ppg_red"}`.
+    required Map<String, String> keys,
+  }) = _ChannelSpec;
+
+  factory ChannelSpec.fromJson(Map<String, dynamic> json) => _$ChannelSpecFromJson(json);
+}
+
+/// Offsets of the command id and the start of the data in a reply frame.
+@freezed
+abstract class ReplySpec with _$ReplySpec {
+  const factory ReplySpec({required int idOffset, required int dataOffset}) = _ReplySpec;
+
+  factory ReplySpec.fromJson(Map<String, dynamic> json) => _$ReplySpecFromJson(json);
 }
 
 /// Value of a hex byte such as `"90"`; the schema guarantees the format.

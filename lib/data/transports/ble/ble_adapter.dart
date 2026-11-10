@@ -46,6 +46,12 @@ abstract interface class BleAdapter {
   /// May wait for the user to enter a pairing key when the characteristic is encrypted.
   Future<Uint8List> read(String deviceId, String service, String characteristic);
 
-  /// Writes with response.
-  Future<void> write(String deviceId, String service, String characteristic, Uint8List value);
+  /// Writes with response, or without when [withoutResponse] is set.
+  Future<void> write(
+    String deviceId,
+    String service,
+    String characteristic,
+    Uint8List value, {
+    bool withoutResponse = false,
+  });
 }

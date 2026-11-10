@@ -9,6 +9,7 @@ import '../../presentation/add_device/add_device_screen.dart';
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
+import '../../presentation/dashboard/live_device_screen.dart';
 import '../../presentation/devices/home_screen.dart';
 import '../../presentation/profile/edit_profile_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
@@ -105,7 +106,10 @@ GoRouter goRouter(Ref ref) {
       // The device dashboard comes with its own task; Add device already ends here.
       GoRoute(
         path: Routes.device,
-        builder: (_, _) => const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder),
+        builder: (_, state) => switch (int.tryParse(state.pathParameters['id'] ?? '')) {
+          final id? => LiveDeviceScreen(deviceId: id),
+          null => const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder),
+        },
       ),
       // Full screen, without the tab bar, like the mockup.
       GoRoute(path: Routes.editProfile, builder: (_, _) => const EditProfileScreen()),

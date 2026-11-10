@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import '../../../domain/decoder/time_encoding.dart';
 import '../../../domain/models/device_profile.dart';
 import '../../../domain/transport/device_link.dart';
 import '../../../domain/transport/reconnect_backoff.dart';
@@ -19,6 +20,7 @@ class BleDeviceLink implements DeviceLink {
     this._settings, {
     this._backoff = const ReconnectBackoff(),
     this._delay = realDelay,
+    this._now = DateTime.now,
   });
 
   /// Wait before the one retry of a failed write (as in the IEF protocol).
@@ -34,11 +36,15 @@ class BleDeviceLink implements DeviceLink {
   final ReconnectBackoff _backoff;
   final Delay _delay;
 
+  /// The time written to the device's clock on connect.
+  final DateTime Function() _now;
+
   final _states = LinkStates();
-  final _packets = StreamController<Uint8List>.broadcast();
+  final _packets = StreamController<DevicePacket>.broadcast();
   final _battery = StreamController<int>.broadcast();
   final _valueSubs = <StreamSubscription<Uint8List>>[];
   StreamSubscription<bool>? _connectionSub;
+  Timer? _batteryPoll;
 
   /// False once [disconnect] is called; stops the reconnect loop.
   bool _wanted = false;
@@ -49,7 +55,7 @@ class BleDeviceLink implements DeviceLink {
   Stream<LinkState> get state => _states.stream;
 
   @override
-  Stream<Uint8List> get packets => _packets.stream;
+  Stream<DevicePacket> get packets => _packets.stream;
 
   @override
   Stream<int> get battery => _battery.stream;
@@ -76,13 +82,25 @@ class BleDeviceLink implements DeviceLink {
 
     final data = Uint8List.fromList(bytes);
     try {
-      await _adapter.write(deviceId, _service, fullUuid(write), data);
+      await _adapter.write(
+        deviceId,
+        _service,
+        fullUuid(write),
+        data,
+        withoutResponse: _settings.writeWithoutResponse,
+      );
     } catch (_) {
       await _delay(writeRetryDelay);
       try {
-        await _adapter.write(deviceId, _service, fullUuid(write), data);
+        await _adapter.write(
+          deviceId,
+          _service,
+          fullUuid(write),
+          data,
+          withoutResponse: _settings.writeWithoutResponse,
+        );
       } catch (e) {
-        throw LinkException('write failed: ${e.runtimeType}');
+        throw LinkException('write failed: ${describeError(e)}');
       }
     }
   }
@@ -90,6 +108,7 @@ class BleDeviceLink implements DeviceLink {
   @override
   Future<void> disconnect() async {
     _wanted = false;
+    _stopBatteryPoll();
     await _connectionSub?.cancel();
     _connectionSub = null;
     await _cancelValueSubs();
@@ -115,7 +134,7 @@ class BleDeviceLink implements DeviceLink {
       } catch (_) {
         // Best effort.
       }
-      throw e is LinkException ? e : LinkException('connect failed: ${e.runtimeType}');
+      throw e is LinkException ? e : LinkException('connect failed: ${describeError(e)}');
     }
     _setState(LinkState.connected);
   }
@@ -139,12 +158,43 @@ class BleDeviceLink implements DeviceLink {
     if (write != null && !characteristics.contains(fullUuid(write))) {
       throw const LinkException('device has no command characteristic');
     }
+    final reply = _settings.replyUuid;
+    if (reply != null && !characteristics.contains(fullUuid(reply))) {
+      throw const LinkException('device has no reply characteristic');
+    }
+    final clock = _settings.timeSync;
+    if (clock != null && !characteristics.contains(fullUuid(clock.uuid))) {
+      throw const LinkException('device has no clock characteristic');
+    }
 
     await _cancelValueSubs();
-    // Listen before subscribing so the first value is not missed.
-    _valueSubs.add(_adapter.values(deviceId, notify).listen(_packets.add));
-    await _adapter.subscribe(deviceId, _service, notify);
+    await _listen(notify, FrameSource.data);
+    if (reply != null) await _listen(fullUuid(reply), FrameSource.reply);
+    if (clock != null) {
+      final time = Uint8List.fromList(encodeTime(clock.fields, _now()));
+      await _adapter.write(
+        deviceId,
+        _service,
+        fullUuid(clock.uuid),
+        time,
+        withoutResponse: _settings.writeWithoutResponse,
+      );
+    }
+    await _subscribeBattery(services);
+  }
 
+  /// Passes on what [characteristic] notifies as packets from [source].
+  Future<void> _listen(String characteristic, String source) async {
+    // Listen before subscribing so the first value is not missed.
+    _valueSubs.add(
+      _adapter
+          .values(deviceId, characteristic)
+          .listen((bytes) => _packets.add((bytes: bytes, source: source))),
+    );
+    await _adapter.subscribe(deviceId, _service, characteristic);
+  }
+
+  Future<void> _subscribeBattery(Map<String, Set<String>> services) async {
     final battery = fullUuid(batteryServiceUuid);
     final level = fullUuid(batteryLevelUuid);
     if (!_settings.batteryService || !(services[battery]?.contains(level) ?? false)) return;
@@ -155,6 +205,15 @@ class BleDeviceLink implements DeviceLink {
     } catch (_) {
       // Some devices only allow reading the level; the value read above still counts.
     }
+    final poll = _settings.batteryPollSeconds;
+    if (poll == null) return;
+    _batteryPoll = Timer.periodic(Duration(seconds: poll), (_) async {
+      try {
+        _addBattery(await _adapter.read(deviceId, battery, level));
+      } catch (_) {
+        // Try again at the next tick; a lost link is handled by the connection stream.
+      }
+    });
   }
 
   void _addBattery(Uint8List value) {
@@ -179,7 +238,13 @@ class BleDeviceLink implements DeviceLink {
     }
   }
 
+  void _stopBatteryPoll() {
+    _batteryPoll?.cancel();
+    _batteryPoll = null;
+  }
+
   Future<void> _cancelValueSubs() async {
+    _stopBatteryPoll();
     for (final sub in _valueSubs) {
       await sub.cancel();
     }

@@ -16,6 +16,17 @@ enum SensorContact {
   ok,
 }
 
+/// Which part of the finger rule the latest sample pair met, for diagnostics. Never a value.
+enum FingerCheck {
+  ok,
+
+  /// Infrared DC level below `minDcIr`: not enough light coming back.
+  lightTooLow,
+
+  /// Light is fine, but the infrared AC spread is below `minAcIr`: no pulse seen.
+  pulseTooSmall,
+}
+
 /// Whether a finger is on the sensor, from the infrared DC level and AC spread.
 bool hasFinger(double dcIr, double acIr, FingerSettings finger) =>
     dcIr >= finger.minDcIr && acIr >= finger.minAcIr;
@@ -54,6 +65,11 @@ class PpgOximetry {
 
   /// Sample pairs since the finger was put on the sensor.
   int _withFinger = 0;
+
+  /// The finger rule's outcome for the latest pair; null without a `finger` block or before the
+  /// first pair. For diagnostics only.
+  FingerCheck? get lastCheck => _lastCheck;
+  FingerCheck? _lastCheck;
 
   /// Null when the profile has no `finger` block (results are always given).
   SensorContact? get contact {
@@ -107,7 +123,14 @@ class PpgOximetry {
   void _trackFinger() {
     final finger = _s.finger;
     if (finger == null) return;
-    if (hasFinger(_mean(_dcIr), _stdDev(_acIr), finger)) {
+    final dcIr = _mean(_dcIr);
+    final acIr = _stdDev(_acIr);
+    _lastCheck = dcIr < finger.minDcIr
+        ? FingerCheck.lightTooLow
+        : acIr < finger.minAcIr
+        ? FingerCheck.pulseTooSmall
+        : FingerCheck.ok;
+    if (hasFinger(dcIr, acIr, finger)) {
       _withFinger++;
     } else if (_withFinger > 0) {
       // Lifted: values from before are stale, so start the averages and peak search again.

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/devices/live_session.dart';
 import 'package:generic_flutter_app/domain/decoder/generic_codec.dart';
@@ -25,7 +26,10 @@ void main() {
     final profile = ppgMotionProfile();
     session = LiveSession(profile, link, codecFor(profile), out, now: () => now);
   });
-  tearDown(() => out.close());
+  tearDown(() async {
+    await session.stop();
+    await out.close();
+  });
 
   List<LiveStatus> statuses() => [
     for (final u in updates)
@@ -177,4 +181,48 @@ void main() {
 
     expect(link.sent, isEmpty);
   });
+
+  test(
+    'debug builds print status, contact and a once-a-second line with counts, never values',
+    () async {
+      final lines = <String>[];
+      final original = debugPrint;
+      debugPrint = (message, {wrapWidth}) => lines.add(message ?? '');
+      addTearDown(() => debugPrint = original);
+      addTearDown(session.stop);
+
+      await session.start();
+      await stream(3);
+      // The counts line runs on a real 1 s timer.
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+
+      final live = lines.where((l) => l.startsWith('Live device:')).toList();
+      expect(
+        live,
+        containsAll(['Live device: status connecting', 'Live device: status streaming']),
+      );
+      expect(live, contains('Live device: contact settling'));
+      final counts = live.where((l) => l.contains('frames')).toList();
+      expect(counts, isNotEmpty);
+      // Every tick has the same shape, also with nothing arriving (`frames 0/s`); the tick after
+      // the data has non-zero counts.
+      final shape = RegExp(
+        r'^Live device: frames \d+/s, samples \d+/s, invalid \d+, contact [\w-]+, finger [\w-]+$',
+      );
+      expect(counts, everyElement(matches(shape)));
+      expect(
+        counts,
+        contains(
+          matches(
+            RegExp(
+              r'^Live device: frames [1-9]\d*/s, samples [1-9]\d*/s, invalid 0, '
+              r'contact \w+, finger ok$',
+            ),
+          ),
+        ),
+      );
+      // Nothing that looks like a reading value is printed.
+      expect(live.where((l) => RegExp(r'\d+\.\d').hasMatch(l)), isEmpty);
+    },
+  );
 }

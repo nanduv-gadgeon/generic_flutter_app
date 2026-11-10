@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../../domain/decoder/decoded_packet.dart';
 import '../../domain/decoder/device_codec.dart';
 import '../../domain/models/device_profile.dart';
@@ -51,7 +53,16 @@ class LiveSession {
   LinkState? _lastState;
   SensorContact? _contact;
 
+  /// Debug builds only: counts for the once-a-second diagnostic line. Never values.
+  int _frames = 0;
+  int _samples = 0;
+  int _invalid = 0;
+  Timer? _reportTimer;
+
   Future<void> start() async {
+    if (kDebugMode) {
+      _reportTimer = Timer.periodic(const Duration(seconds: 1), (_) => _report());
+    }
     _subs
       ..add(_link.packets.listen(_onPacket))
       ..add(_link.battery.listen((v) => _emit(LiveValue(Sample(batteryKey, v.toDouble(), _at)))))
@@ -70,6 +81,7 @@ class LiveSession {
   Future<void> stop() async {
     if (_stopped) return;
     _stopped = true;
+    _reportTimer?.cancel();
     if (_streaming) {
       for (final id in _profile.streaming?.stop ?? const <String>[]) {
         try {
@@ -118,7 +130,12 @@ class LiveSession {
   }
 
   void _onPacket(DevicePacket packet) {
+    if (kDebugMode && packet.source == FrameSource.data) _frames++;
     for (final decoded in _codec.feed(packet.bytes, source: packet.source)) {
+      if (kDebugMode) {
+        if (decoded is Sample) _samples++;
+        if (decoded is InvalidPacket) _invalid++;
+      }
       switch (decoded) {
         case CommandReply():
           if (!_replies.isClosed) _replies.add(decoded);
@@ -133,6 +150,19 @@ class LiveSession {
           break;
       }
     }
+  }
+
+  /// Debug builds only: every second, how much data arrived and what the finger check decided,
+  /// e.g. `Live device: frames 10/s, samples 200/s, invalid 0, contact settling, finger ok`.
+  /// Printed even when nothing arrives (`frames 0/s`). Counts and states only; never readings or
+  /// light levels.
+  void _report() {
+    final check = _oximetry?.lastCheck;
+    debugPrint(
+      'Live device: frames $_frames/s, samples $_samples/s, invalid $_invalid, '
+      'contact ${_contact?.name ?? '-'}, finger ${check?.name ?? '-'}',
+    );
+    _frames = _samples = _invalid = 0;
   }
 
   void _onSample(Sample sample) {
@@ -182,6 +212,20 @@ class LiveSession {
       _emit(LiveFailure(reason, problem: problem));
 
   void _emit(LiveUpdate update) {
+    if (kDebugMode) {
+      switch (update) {
+        case LiveStatusChanged(:final status):
+          debugPrint('Live device: status ${status.name}');
+        case LiveFailure(:final reason, :final problem):
+          debugPrint(
+            'Live device: failed ${reason.name}${problem == null ? '' : ' (${problem.name})'}',
+          );
+        case LiveContactChanged(:final contact):
+          debugPrint('Live device: contact ${contact.name}');
+        case LiveValue():
+          break; // A reading: never logged.
+      }
+    }
     if (!_out.isClosed && !_stopped) _out.add(update);
   }
 }

@@ -108,4 +108,34 @@ void main() {
     final firstValues = again.firstWhere((s) => s.values.isNotEmpty).values;
     expect(firstValues.containsKey('heart_rate'), isFalse);
   });
+
+  group('lastCheck says which part of the finger rule failed', () {
+    test('nothing on the sensor: light too low', () {
+      final oximetry = PpgOximetry(_settings());
+      _run(oximetry, List.filled(3, false));
+      expect(oximetry.lastCheck, FingerCheck.lightTooLow);
+    });
+
+    test('bright but no pulse: pulse too small', () {
+      final oximetry = PpgOximetry(_settings());
+      for (var i = 0; i < 800; i++) {
+        oximetry
+          ..feed(Sample('ppg_red', 20000, _t))
+          ..feed(Sample('ppg_ir', 26000, _t));
+      }
+      expect(oximetry.lastCheck, FingerCheck.pulseTooSmall);
+    });
+
+    test('a finger with a pulse: ok', () {
+      final oximetry = PpgOximetry(_settings());
+      _run(oximetry, List.filled(4, true));
+      expect(oximetry.lastCheck, FingerCheck.ok);
+    });
+
+    test('no finger block: no check', () {
+      final oximetry = PpgOximetry(_settings().copyWith(finger: null));
+      _run(oximetry, List.filled(2, true));
+      expect(oximetry.lastCheck, isNull);
+    });
+  });
 }

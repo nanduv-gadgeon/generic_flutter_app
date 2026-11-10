@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'application/app_config_provider.dart';
 import 'application/reading_pipeline_provider.dart';
+import 'core/di/database.dart';
 import 'core/di/services.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -16,7 +17,9 @@ class GenericApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final config = ref.watch(appConfigProvider).value;
     final theme = config?.theme ?? fallbackThemeConfig;
-    if (config != null) {
+    // Both need the config and the database, which the splash screen opens after the config.
+    final databaseReady = ref.watch(appDatabaseProvider).hasValue;
+    if (config != null && databaseReady) {
       ref
         ..watch(readingPipelineProvider)
         ..watch(readingCleanupJobProvider);

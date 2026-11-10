@@ -6,7 +6,8 @@ import 'auth_controller.dart';
 part 'reading_pipeline_provider.g.dart';
 
 /// Ties the connected device to the logged-in user: logging in lets a removed device be
-/// disconnected, and logging out disconnects it. Watch it only once the config has loaded.
+/// disconnected, and logging out disconnects it. Watch it only once the config has loaded and the
+/// database is open.
 ///
 /// The app keeps the device connected while it runs in the foreground; background Bluetooth is
 /// not set up.

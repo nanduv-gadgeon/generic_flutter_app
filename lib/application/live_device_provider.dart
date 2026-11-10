@@ -25,8 +25,8 @@ abstract class LiveDeviceState with _$LiveDeviceState {
   }) = _LiveDeviceState;
 }
 
-/// Live readings of the saved device [deviceId]. Watching it connects to the device; it
-/// disconnects when nothing watches it any more, e.g. when its screen closes.
+/// Live readings of the saved device [deviceId]. Watching it connects to the device (and
+/// disconnects any other); the device stays connected after its screen closes.
 @riverpod
 class LiveDevice extends _$LiveDevice {
   @override
@@ -37,7 +37,10 @@ class LiveDevice extends _$LiveDevice {
   }
 
   /// Disconnects and connects again from the start.
-  void retry() => ref.invalidateSelf();
+  Future<void> retry() async {
+    state = state.copyWith(failure: null);
+    await ref.read(liveReadingsProvider).retry(deviceId);
+  }
 
   void _on(LiveUpdate update) {
     if (!ref.mounted) return;

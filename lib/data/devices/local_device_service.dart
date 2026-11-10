@@ -72,6 +72,7 @@ class LocalDeviceService implements DeviceService {
     id: row.id,
     name: row.name,
     profileId: row.profileId,
+    transport: Transport.values.byName(row.transport.name),
     batteryPercent: row.batteryPercent,
     lastHeartbeatAt: row.lastHeartbeatAt,
   );

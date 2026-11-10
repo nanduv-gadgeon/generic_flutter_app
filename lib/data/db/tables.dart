@@ -96,3 +96,22 @@ class DeviceAlerts extends Table {
   @override
   Set<Column<Object>> get primaryKey => {deviceId, readingKey};
 }
+
+/// Readings from devices (added in schema v4). One row per reading key and time; the same reading
+/// arriving twice (e.g. a log synced again) is stored once.
+///
+/// Values are health data: never log them.
+// TODO(phase2): what the uploader has sent goes in an upload_state table.
+@TableIndex(name: 'readings_device_key_time', columns: {#deviceId, #key, #atMs}, unique: true)
+class Readings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
+
+  /// A reading key of the device's profile, e.g. `heart_rate`.
+  TextColumn get key => text()();
+  RealColumn get value => real()();
+
+  /// When it was measured: UTC milliseconds since 1970. Drift date-times keep only whole seconds,
+  /// which would merge readings that arrive several times a second.
+  IntColumn get atMs => integer()();
+}

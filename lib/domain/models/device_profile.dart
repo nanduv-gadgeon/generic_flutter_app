@@ -72,6 +72,9 @@ abstract class DeviceProfile with _$DeviceProfile {
     /// Commands that start and stop the device's live data; without it the device always sends.
     StreamingSettings? streaming,
 
+    /// Commands sent on every connection to fetch data the device stored, e.g. its logs.
+    SyncSettings? sync,
+
     /// Readings worked out from raw samples, e.g. SpO₂ from red and infrared PPG.
     SignalSettings? signal,
 
@@ -176,8 +179,22 @@ abstract class BleSettings with _$BleSettings {
 }
 
 /// Parts of a time written to a device, in the order given. `year16le` and `millis16le` are two
-/// bytes, low byte first; the others are one byte.
-enum TimeField { year16le, month, day, hour, minute, second, millis16le }
+/// bytes, low byte first; the others are one byte: `year2` is the year % 100, `hour12` is 1–12
+/// with `pm` 0 (AM) or 1 (PM), `weekdayMon1` is 1 (Monday) to 7 (Sunday) and `zero` is padding.
+enum TimeField {
+  year16le,
+  month,
+  day,
+  hour,
+  minute,
+  second,
+  millis16le,
+  year2,
+  hour12,
+  pm,
+  weekdayMon1,
+  zero,
+}
 
 /// Where and how the phone's time is written to the device.
 @freezed
@@ -199,6 +216,9 @@ abstract class DeviceCommand with _$DeviceCommand {
 
     /// A value byte is added after [bytes] when sent, e.g. an LED level.
     @Default(false) bool takesValue,
+
+    /// The current time (UTC) is added after [bytes] when sent, e.g. to set the device clock.
+    List<TimeField>? time,
   }) = _DeviceCommand;
 
   const DeviceCommand._();

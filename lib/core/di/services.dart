@@ -12,7 +12,9 @@ import '../../data/auth/local_biometric_auth.dart';
 import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
 import '../../data/devices/cloud_device_registration.dart';
-import '../../data/devices/live_readings_service.dart';
+import '../../data/devices/active_device.dart';
+import '../../data/devices/reading_writer.dart';
+import '../../data/readings/local_reading_repository.dart';
 import '../../data/devices/local_device_service.dart';
 import '../../data/devices/no_device_registration.dart';
 import '../../data/profile/image_picker_photo_picker.dart';
@@ -27,10 +29,12 @@ import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
 import '../../domain/services/live_readings.dart';
+import '../../domain/services/reading_repository.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/photo_picker.dart';
 import '../../domain/services/uploader.dart';
 import '../config/device_profile_registry.dart';
+import '../jobs/reading_cleanup_job.dart';
 import 'database.dart';
 import 'transports.dart';
 
@@ -78,15 +82,41 @@ DeviceService deviceService(Ref ref) => LocalDeviceService(
   ref.watch(deviceRegistrationProvider),
 );
 
-/// Live readings work the same in both phases: straight from the device to the screen.
+/// Stored readings: the local database in both phases.
+// TODO(phase2): the uploader reads the rows it has not sent yet.
+@Riverpod(keepAlive: true)
+ReadingRepository readingRepository(Ref ref) =>
+    LocalReadingRepository(ref.watch(appDatabaseProvider).requireValue);
+
+/// Deletes readings older than the config's `history.daysOnPhone`, now and once a day.
+@Riverpod(keepAlive: true)
+ReadingCleanupJob readingCleanupJob(Ref ref) {
+  final days = ref.watch(appConfigProvider).requireValue.history.daysOnPhone;
+  final job = ReadingCleanupJob(ref.watch(readingRepositoryProvider), days)..start();
+  ref.onDispose(job.stop);
+  return job;
+}
+
+/// Live readings work the same in both phases: from the one connected device to the screen and
+/// the local database.
 @Riverpod(keepAlive: true)
 LiveReadings liveReadings(Ref ref) {
   final profiles = DeviceProfileRegistry(ref.watch(appConfigProvider).requireValue);
-  return LiveReadingsService(
-    ref.watch(appDatabaseProvider).requireValue,
+  final db = ref.watch(appDatabaseProvider).requireValue;
+  final readings = ref.watch(readingRepositoryProvider);
+  final active = ActiveDevice(
+    db,
     (id) => profiles.contains(id) ? profiles.byId(id) : null,
     ref.watch(deviceLinkFactoryProvider),
+    (deviceId) => ReadingWriter(
+      deviceId,
+      readings,
+      (id, {batteryPercent, seenAt}) =>
+          db.devicesDao.updateStatus(id, batteryPercent: batteryPercent, lastHeartbeatAt: seenAt),
+    ),
   );
+  ref.onDispose(active.stop);
+  return active;
 }
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.

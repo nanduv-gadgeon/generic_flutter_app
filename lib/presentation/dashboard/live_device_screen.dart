@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
@@ -17,6 +18,10 @@ import '../widgets/placeholder_screen.dart';
 class LiveDeviceScreen extends ConsumerWidget {
   const LiveDeviceScreen({super.key, required this.deviceId});
 
+  /// Where the back button goes: always the home page (Add device opens this screen with nothing
+  /// to go back to).
+  static const homeRoute = '/home';
+
   final int deviceId;
 
   @override
@@ -26,14 +31,19 @@ class LiveDeviceScreen extends ConsumerWidget {
     final profile = device != null && registry != null && registry.contains(device.profileId)
         ? registry.byId(device.profileId)
         : null;
-    if (profile == null || profile.streaming == null) {
+    if (profile == null || profile.packet == null) {
       return const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder);
     }
     final live = ref.watch(liveDeviceProvider(deviceId));
     final failure = live.failure;
 
     return Scaffold(
-      appBar: AppBar(title: Text(device?.name ?? DeviceStrings.fallbackTitle)),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: 64,
+        leading: Center(child: CircleBackButton(onPressed: () => context.go(homeRoute))),
+        title: Text(device?.name ?? DeviceStrings.fallbackTitle),
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -50,7 +60,7 @@ class LiveDeviceScreen extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: ref.read(liveDeviceProvider(deviceId).notifier).retry,
+                  onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
                   child: const Text(DeviceStrings.tryAgain),
                 ),
               ),

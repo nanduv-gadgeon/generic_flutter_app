@@ -23,6 +23,26 @@ abstract class StreamingSettings with _$StreamingSettings {
       _$StreamingSettingsFromJson(json);
 }
 
+/// `sync` block of a profile: profile command ids sent in order after every connection, e.g. set
+/// the clock then request stored logs. The sync ends when the device says it has sent everything,
+/// or when nothing arrives for [idleTimeoutMs]. With [everySeconds], [repeat] is sent again on
+/// that interval while connected.
+@freezed
+abstract class SyncSettings with _$SyncSettings {
+  const factory SyncSettings({
+    required List<String> onConnect,
+    @Default(30000) int idleTimeoutMs,
+
+    /// While connected, [repeat] is sent again this often, e.g. to fetch new logs.
+    int? everySeconds,
+
+    /// Commands sent on each poll, e.g. request logs (the clock is set only on connect).
+    @Default([]) List<String> repeat,
+  }) = _SyncSettings;
+
+  factory SyncSettings.fromJson(Map<String, dynamic> json) => _$SyncSettingsFromJson(json);
+}
+
 /// Something the device reports that stops or spoils its data.
 enum DeviceProblem { lowBattery, charging, sensorError, transferError }
 

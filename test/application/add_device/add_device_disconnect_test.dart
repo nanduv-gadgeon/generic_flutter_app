@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/add_device/add_device_controller.dart';
 import 'package:generic_flutter_app/application/device_profiles_provider.dart';
-import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 
 import '../../fixtures/add_device_fakes.dart';

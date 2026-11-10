@@ -49,6 +49,33 @@ void main() {
       (p) => (p['streaming'] as Map)['stop'] = ['led_ir'],
       '$_at/streaming/stop/0: command "led_ir" must not take a value',
     ),
+    'a sync command that does not exist': (
+      (p) => p['sync'] = {
+        'onConnect': ['stop', 'fetch_logs'],
+      },
+      '$_at/sync/onConnect/1: no command "fetch_logs"',
+    ),
+    'a sync command that needs a value': (
+      (p) => p['sync'] = {
+        'onConnect': ['led_red'],
+      },
+      '$_at/sync/onConnect/0: command "led_red" must not take a value',
+    ),
+    'a poll command that does not exist': (
+      (p) => p['sync'] = {
+        'onConnect': ['stop'],
+        'everySeconds': 60,
+        'repeat': ['fetch_logs'],
+      },
+      '$_at/sync/repeat/0: no command "fetch_logs"',
+    ),
+    'a poll interval without commands': (
+      (p) => p['sync'] = {
+        'onConnect': ['stop'],
+        'everySeconds': 60,
+      },
+      '$_at/sync: everySeconds and repeat go together',
+    ),
     'an AGC command without a value': (
       (p) => (p['agc'] as Map)['commands'] = ['start'],
       '$_at/agc/commands/0: command "start" must take a value',

@@ -13,7 +13,40 @@ void main() {
     TimeField.millis16le,
   ];
 
+  // docs/protocols/ief_device_v1.md Set RTC: SS MM HH DD MO YY WD AP 00 (12-hour clock).
+  const ief = [
+    TimeField.second,
+    TimeField.minute,
+    TimeField.hour12,
+    TimeField.day,
+    TimeField.month,
+    TimeField.year2,
+    TimeField.weekdayMon1,
+    TimeField.pm,
+    TimeField.zero,
+  ];
+
   final cases = <String, (List<TimeField>, DateTime, List<int>)>{
+    'the IEF patch layout (Tue 15:45:30, sent as 03:45:30 PM)': (
+      ief,
+      DateTime.utc(2026, 11, 3, 15, 45, 30),
+      [0x1E, 0x2D, 0x03, 0x03, 0x0B, 0x1A, 0x02, 0x01, 0x00],
+    ),
+    'midnight as 12 AM on a Sunday': (
+      ief,
+      DateTime.utc(2026, 11, 8),
+      [0, 0, 12, 8, 11, 26, 7, 0, 0],
+    ),
+    'noon as 12 PM on a Monday': (
+      ief,
+      DateTime.utc(2026, 11, 9, 12),
+      [0, 0, 12, 9, 11, 26, 1, 1, 0],
+    ),
+    '11 AM in the year 2100': (
+      [TimeField.hour12, TimeField.pm, TimeField.year2],
+      DateTime.utc(2100, 1, 1, 11),
+      [11, 0, 0],
+    ),
     // docs/protocols/ppg_motion_v1.md sample.
     'the PPG + Motion sensor layout': (
       ppgMotion,

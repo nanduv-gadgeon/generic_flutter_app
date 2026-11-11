@@ -65,6 +65,10 @@ void main() {
         (j) => (_profile(j)['alerts'] as List)[0]['key'] = 'pressure',
         '/deviceProfiles/0/alerts/0/key: "pressure" is not a reading',
       ),
+      'a quick reading that is not a reading': (
+        (j) => _profile(j)['quickReadings'] = ['current', 'pressure'],
+        '/deviceProfiles/0/quickReadings/1: "pressure" is not a reading',
+      ),
       'a normal range with low = high': (
         (j) => _readings(j)[0]['normal'] = [20, 20],
         '/deviceProfiles/0/readings/0/normal: low must be below high',

@@ -30,8 +30,8 @@ abstract final class DevicesStrings {
   // Device cards (mockup 06_home).
   static const addADevice = 'Add a device';
   static const noReadings = 'No readings yet';
-  static const notConnected = 'Not connected';
-  static const bluetooth = 'Bluetooth';
+  static const offline = 'Offline';
+  static const bluetooth = 'BLE';
   static const wifi = 'Wi‑Fi';
   static const connected = 'Connected';
   static const connecting = 'Connecting…';

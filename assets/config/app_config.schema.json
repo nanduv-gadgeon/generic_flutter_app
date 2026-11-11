@@ -104,6 +104,11 @@
         },
         "readings": { "type": "array", "minItems": 1, "items": { "$ref": "#/definitions/reading" } },
         "alerts": { "type": "array", "items": { "$ref": "#/definitions/alertRule" } },
+        "quickReadings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/key" }
+        },
         "ble": { "$ref": "#/definitions/bleSettings" },
         "packet": { "$ref": "#/definitions/packet" },
         "wifi": { "$ref": "#/definitions/wifiSettings" },
@@ -492,6 +497,7 @@
       "properties": {
         "key": { "$ref": "#/definitions/key" },
         "label": { "type": "string", "minLength": 1 },
+        "shortLabel": { "type": "string", "minLength": 1 },
         "unit": { "type": "string" },
         "icon": {
           "enum": [

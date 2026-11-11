@@ -35,7 +35,7 @@
       "icon": "watch",
       "transports": ["ble"],
       "readings": [
-        { "key": "hr", "label": "Heart rate", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
+        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
         { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100] },
         { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120] },
         { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2] },
@@ -69,7 +69,7 @@
       "icon": "patch",
       "transports": ["ble"],
       "readings": [
-        { "key": "hr", "label": "Heart rate", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
+        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
         { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2] },
         { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20] },
         { "key": "hrv", "label": "HRV", "unit": "ms", "icon": "trend", "normal": [20, 70] },
@@ -164,11 +164,12 @@
       "icon": "chip",
       "transports": ["ble"],
       "readings": [
-        { "key": "heart_rate", "label": "Heart rate", "unit": "bpm", "icon": "heart" },
-        { "key": "spo2", "label": "Blood oxygen", "unit": "%", "icon": "drop" },
+        { "key": "heart_rate", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "heart" },
+        { "key": "spo2", "label": "Blood oxygen", "shortLabel": "SpO₂", "unit": "%", "icon": "drop" },
         { "key": "pi_red", "label": "PI (Red)", "unit": "%", "icon": "pulse", "decimals": 2 },
         { "key": "pi_ir", "label": "PI (IR)", "unit": "%", "icon": "pulse", "decimals": 2 }
       ],
+      "quickReadings": ["spo2", "heart_rate"],
       "alerts": [{ "key": "spo2", "below": 92 }, { "key": "heart_rate", "above": 120 }, { "key": "battery", "below": 15 }],
       "ble": {
         "serviceUuid": "90bd6462-59c3-47ed-bbf8-745bfb95e91f",

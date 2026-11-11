@@ -125,7 +125,13 @@ class FakeDeviceService implements DeviceService {
   Future<bool> isAdded(int userId, String address) async => _addresses.containsValue(address);
 
   @override
+  Stream<DeviceDetails?> watchDevice(int userId, int deviceId) => Stream.value(null);
+
+  @override
   Future<void> rename(int deviceId, String name) async => renamed.add((deviceId, name));
+
+  @override
+  Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled}) async {}
 
   /// Makes [removeDevice] throw.
   bool removeFails = false;

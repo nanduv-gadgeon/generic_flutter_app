@@ -20,6 +20,8 @@ void main() {
     (Routes.profile, false): Routes.login,
     (Routes.addDevice, false): Routes.login,
     ('/device/1', false): Routes.login,
+    ('/device/1/settings', false): Routes.login,
+    ('/device/1/settings', true): null,
     (Routes.editProfile, false): Routes.login,
     (Routes.history, true): null,
     (Routes.alerts, true): null,

@@ -29,7 +29,13 @@ class _NoDevices implements DeviceService {
       throw UnimplementedError();
 
   @override
+  Stream<DeviceDetails?> watchDevice(int userId, int deviceId) => Stream.value(null);
+
+  @override
   Future<void> rename(int deviceId, String name) async {}
+
+  @override
+  Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled}) async {}
 
   @override
   Future<bool> isAdded(int userId, String address) async => false;
@@ -264,5 +270,21 @@ void main() {
 
     expect(find.text('Log in'), findsOneWidget);
     expect(find.text('Full name'), findsNothing);
+  });
+
+  testWidgets("the device page's settings button opens Device settings", (tester) async {
+    when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
+    await pumpApp(tester);
+
+    GoRouter.of(tester.element(find.byType(NavigationBar))).go('/device/1');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Device settings'));
+    await tester.pumpAndSettle();
+
+    // No such device in this app's fake service, so the screen says so; Back returns.
+    expect(find.text('This device is no longer on this phone.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Device settings'), findsOneWidget);
   });
 }

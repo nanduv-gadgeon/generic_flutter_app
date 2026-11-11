@@ -1,7 +1,9 @@
+import '../models/device_details.dart';
 import '../models/device_profile.dart';
 import '../models/new_device.dart';
 import '../models/user_device.dart';
 
+export '../models/device_details.dart';
 export '../models/new_device.dart';
 export '../models/user_device.dart';
 
@@ -17,7 +19,14 @@ abstract interface class DeviceService {
   /// Throws [DeviceAlreadyAddedException] when the user already has a device at that address.
   Future<AddedDevice> addDevice(NewDevice device, List<AlertRule> defaults);
 
+  /// One of [userId]'s devices with its alert limits, for Device settings; emits again whenever it
+  /// changes. Null when there is no such device or it belongs to another user.
+  Stream<DeviceDetails?> watchDevice(int userId, int deviceId);
+
   Future<void> rename(int deviceId, String name);
+
+  /// Turns one of the device's alert limits on or off (Device settings). The limit stays as it is.
+  Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled});
 
   /// Whether the user already has a device at [address].
   Future<bool> isAdded(int userId, String address);

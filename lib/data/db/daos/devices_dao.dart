@@ -35,6 +35,28 @@ class DevicesDao extends DatabaseAccessor<AppDatabase> with _$DevicesDaoMixin {
         return id;
       });
 
+  /// One of [userId]'s devices with its alert limits (reading-key order); emits again when the
+  /// device or its alerts change. Null when there is no such device or it is another user's.
+  Stream<(Device, List<DeviceAlert>)?> watchDevice(int userId, int id) {
+    // One query over both tables, so it re-runs when either changes.
+    final query =
+        select(devices)
+            .join([leftOuterJoin(deviceAlerts, deviceAlerts.deviceId.equalsExp(devices.id))])
+          ..where(devices.id.equals(id) & devices.userId.equals(userId))
+          ..orderBy([OrderingTerm.asc(deviceAlerts.readingKey)]);
+    return query.watch().map((rows) {
+      if (rows.isEmpty) return null;
+      final alerts = [for (final row in rows) ?row.readTableOrNull(deviceAlerts)];
+      return (rows.first.readTable(devices), alerts);
+    });
+  }
+
+  /// Turns one alert limit of the device on or off; the limit itself is not changed.
+  Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled}) =>
+      (update(deviceAlerts)
+            ..where((a) => a.deviceId.equals(deviceId) & a.readingKey.equals(readingKey)))
+          .write(DeviceAlertsCompanion(enabled: Value(enabled)));
+
   /// Whether the user already has a device at [address].
   Future<bool> existsForUser(int userId, String address) async {
     final count = devices.id.count();

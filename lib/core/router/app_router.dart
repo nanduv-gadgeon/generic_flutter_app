@@ -10,6 +10,7 @@ import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
 import '../../presentation/dashboard/live_device_screen.dart';
+import '../../presentation/device_settings/device_settings_screen.dart';
 import '../../presentation/devices/home_screen.dart';
 import '../../presentation/profile/edit_profile_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
@@ -32,6 +33,7 @@ abstract final class Routes {
   static const profile = '/profile';
   static const addDevice = HomeScreen.addDeviceRoute;
   static const device = '/device/:id';
+  static const deviceSettings = DeviceSettingsScreen.path;
   static const editProfile = EditProfileScreen.route;
 
   /// Screens for people who are not logged in; a logged-in user is sent home from these.
@@ -110,6 +112,12 @@ GoRouter goRouter(Ref ref) {
           final id? => LiveDeviceScreen(deviceId: id),
           null => const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder),
         },
+      ),
+      // Full screen, without the tab bar, like the mockup (opened from the device page's header).
+      GoRoute(
+        path: Routes.deviceSettings,
+        builder: (_, state) =>
+            DeviceSettingsScreen(deviceId: int.tryParse(state.pathParameters['id'] ?? '') ?? -1),
       ),
       // Full screen, without the tab bar, like the mockup.
       GoRoute(path: Routes.editProfile, builder: (_, _) => const EditProfileScreen()),

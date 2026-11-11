@@ -7,6 +7,7 @@ import '../../application/devices_provider.dart';
 import '../../application/live_device_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/models/device_profile.dart';
+import '../device_settings/device_settings_button.dart';
 import '../strings/add_device_strings.dart';
 import '../strings/device_strings.dart';
 import '../widgets/device_icons.dart';
@@ -32,7 +33,10 @@ class LiveDeviceScreen extends ConsumerWidget {
         ? registry.byId(device.profileId)
         : null;
     if (profile == null || profile.packet == null) {
-      return const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder);
+      return PlaceholderScreen(
+        title: AddDeviceStrings.dashboardPlaceholder,
+        actions: [DeviceSettingsButton(deviceId: deviceId)],
+      );
     }
     final live = ref.watch(liveDeviceProvider(deviceId));
     final failure = live.failure;
@@ -43,6 +47,11 @@ class LiveDeviceScreen extends ConsumerWidget {
         leadingWidth: 64,
         leading: Center(child: CircleBackButton(onPressed: () => context.go(homeRoute))),
         title: Text(device?.name ?? DeviceStrings.fallbackTitle),
+        // The mockup's Device settings button (screen 13).
+        actions: [
+          DeviceSettingsButton(deviceId: deviceId),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
         child: ListView(

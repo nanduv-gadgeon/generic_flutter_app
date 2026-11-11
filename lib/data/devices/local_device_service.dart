@@ -47,7 +47,16 @@ class LocalDeviceService implements DeviceService {
   }
 
   @override
+  Stream<DeviceDetails?> watchDevice(int userId, int deviceId) => _db.devicesDao
+      .watchDevice(userId, deviceId)
+      .map((found) => found == null ? null : _toDetails(found.$1, found.$2));
+
+  @override
   Future<void> rename(int deviceId, String name) => _db.devicesDao.rename(deviceId, name);
+
+  @override
+  Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled}) =>
+      _db.devicesDao.setAlertEnabled(deviceId, readingKey, enabled: enabled);
 
   @override
   Future<bool> isAdded(int userId, String address) => _db.devicesDao.existsForUser(userId, address);
@@ -67,6 +76,25 @@ class LocalDeviceService implements DeviceService {
         below: Value(alert.below),
       ),
   ];
+
+  static DeviceDetails _toDetails(Device row, List<DeviceAlert> alerts) => DeviceDetails(
+    id: row.id,
+    name: row.name,
+    profileId: row.profileId,
+    transport: Transport.values.byName(row.transport.name),
+    address: row.address,
+    ipAddress: row.ipAddress,
+    firmware: row.firmware,
+    batteryPercent: row.batteryPercent,
+    lastHeartbeatAt: row.lastHeartbeatAt,
+    alerts: [
+      for (final a in alerts)
+        AlertSetting(
+          rule: AlertRule(key: a.readingKey, above: a.above, below: a.below),
+          enabled: a.enabled,
+        ),
+    ],
+  );
 
   static UserDevice _toUserDevice(Device row) => UserDevice(
     id: row.id,

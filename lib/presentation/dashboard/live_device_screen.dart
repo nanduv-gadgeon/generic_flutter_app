@@ -57,7 +57,15 @@ class LiveDeviceScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            _StatusLine(status: live.status),
+            _StatusLine(
+              status: live.status,
+              offline: live.online
+                  ? null
+                  : DeviceStrings.offline(switch (live.lastHeartbeatAt) {
+                      final at? => ref.watch(clockProvider)().difference(at),
+                      null => null,
+                    }),
+            ),
             if (live.status == LiveStatus.streaming)
               if (DeviceStrings.contact(live.contact) case final hint?) ...[
                 const SizedBox(height: 12),
@@ -110,22 +118,33 @@ class LiveDeviceScreen extends ConsumerWidget {
 }
 
 class _StatusLine extends StatelessWidget {
-  const _StatusLine({required this.status});
+  const _StatusLine({required this.status, this.offline});
 
   final LiveStatus status;
 
+  /// The Offline text when the device has missed its heartbeats; it then replaces the status.
+  final String? offline;
+
   @override
   Widget build(BuildContext context) {
-    final text = DeviceStrings.status(status);
-    final live = status == LiveStatus.streaming;
-    final color = live ? Theme.of(context).extension<AppTokens>()?.ok : null;
+    final tokens = Theme.of(context).extension<AppTokens>();
+    final offline = this.offline;
+    final text = offline ?? DeviceStrings.status(status);
+    final live = offline == null && status == LiveStatus.streaming;
+    final color = offline != null
+        ? Theme.of(context).colorScheme.error
+        : live
+        ? tokens?.ok
+        : null;
     return Semantics(
       liveRegion: true,
       label: text,
       excludeSemantics: true,
       child: Row(
         children: [
-          if (live)
+          if (offline != null)
+            Icon(Icons.portable_wifi_off, size: 20, color: color)
+          else if (live)
             Icon(Icons.sensors, size: 20, color: color)
           else
             const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),

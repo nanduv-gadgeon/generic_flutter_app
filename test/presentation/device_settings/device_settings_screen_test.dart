@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
+import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/device_settings/device_settings_sections.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,16 +32,44 @@ void main() {
     'Signal (RSSI)': '—',
     'Firmware': 'v1.4.2',
     'Battery': '78%',
-    'Heartbeat interval': '—',
+    // The test profile has no heartbeat block: the defaults.
+    'Heartbeat interval': 'Every 1 min',
     'Last heartbeat': '12 s ago',
-    'Offline after': '—',
-    'Device status': '—',
+    'Offline after': '3 missed (3 min)',
+    'Device status': 'Not connected',
   };
   for (final MapEntry(key: label, value: value) in rows.entries) {
     testWidgets('row $label shows "$value"', (tester) async {
       await pumpSettings(tester, device: band);
 
       expect(_row(label, value), findsOneWidget);
+    });
+  }
+
+  testWidgets("the heartbeat rows come from the profile's heartbeat block", (tester) async {
+    await pumpSettings(
+      tester,
+      device: band,
+      heartbeat: {'intervalSeconds': 30, 'offlineAfterMissed': 4},
+    );
+
+    expect(_row('Heartbeat interval', 'Every 30 s'), findsOneWidget);
+    expect(_row('Offline after', '4 missed (2 min)'), findsOneWidget);
+  });
+
+  final statuses = <String, (ActiveLink?, String)>{
+    'connected': ((deviceId: 7, status: LiveStatus.streaming, online: true), 'Online'),
+    'missing heartbeats': ((deviceId: 7, status: LiveStatus.streaming, online: false), 'Offline'),
+    'another device connected': (
+      (deviceId: 8, status: LiveStatus.streaming, online: true),
+      'Not connected',
+    ),
+  };
+  for (final MapEntry(key: name, value: (link, text)) in statuses.entries) {
+    testWidgets('device status when $name says "$text"', (tester) async {
+      await pumpSettings(tester, device: band, activeLink: link);
+
+      expect(_row('Device status', text), findsOneWidget);
     });
   }
 

@@ -18,6 +18,7 @@ import '../strings/remove_device_strings.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/labeled_field.dart';
 import 'device_settings_sections.dart';
+import 'heartbeat_card.dart';
 
 /// Device settings (requirements §8, mockup screen 25): rename, connection and heartbeat details,
 /// sampling interval, alert switches and Remove device. Full screen, without the tab bar.
@@ -224,7 +225,11 @@ class _Content extends StatelessWidget {
         gap,
         const SectionHeading(DeviceSettingsStrings.heartbeat),
         const SizedBox(height: 8),
-        HeartbeatCard(device: device, now: now),
+        HeartbeatCard(
+          device: device,
+          settings: profile?.heartbeatOrDefault ?? const HeartbeatSettings(),
+          now: now,
+        ),
         gap,
         const SectionHeading(DeviceSettingsStrings.sampling),
         const SizedBox(height: 8),

@@ -39,7 +39,7 @@ class Sessions extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
-/// Devices a user has added. Readings and heartbeats get their own tables in later tasks.
+/// Devices a user has added. Their readings and heartbeats have their own tables.
 @TableIndex(name: 'devices_user_order', columns: {#userId, #sortOrder})
 class Devices extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -114,4 +114,19 @@ class Readings extends Table {
   /// When it was measured: UTC milliseconds since 1970. Drift date-times keep only whole seconds,
   /// which would merge readings that arrive several times a second.
   IntColumn get atMs => integer()();
+}
+
+/// When each device was heard from (any data counts as a heartbeat), at most once per heartbeat
+/// interval, with its battery level then. Kept for 24 hours.
+/// TODO(phase2): uploaded with the readings.
+@TableIndex(name: 'heartbeats_device_time', columns: {#deviceId, #atMs})
+class Heartbeats extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
+
+  /// UTC milliseconds since 1970.
+  IntColumn get atMs => integer()();
+  IntColumn get batteryPercent =>
+      // ignore: recursive_getters
+      integer().nullable().check(batteryPercent.isBetweenValues(0, 100))();
 }

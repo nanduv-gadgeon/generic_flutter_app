@@ -1,9 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'heartbeat_settings.dart';
 import 'packet_layout.dart';
 import 'streaming_settings.dart';
 import 'wifi_settings.dart';
 
+export 'heartbeat_settings.dart';
 export 'packet_layout.dart';
 export 'streaming_settings.dart';
 export 'wifi_settings.dart';
@@ -41,7 +43,7 @@ enum Transport { ble, wifi }
 
 /// One entry of the config file's `deviceProfiles` list: what a device type is and what it measures.
 ///
-/// `heartbeat` and `dashboard` sections are added by tasks 1.2.8–1.3.5.
+/// The `dashboard` section is added by task 1.3.5.
 @freezed
 abstract class DeviceProfile with _$DeviceProfile {
   const factory DeviceProfile({
@@ -83,9 +85,18 @@ abstract class DeviceProfile with _$DeviceProfile {
 
     /// Automatic LED gain control while streaming.
     AgcSettings? agc,
+
+    /// How often the device is heard from, and when it counts as Offline. Missing: every 60 s,
+    /// Offline after 3 missed.
+    HeartbeatSettings? heartbeat,
   }) = _DeviceProfile;
 
   factory DeviceProfile.fromJson(Map<String, dynamic> json) => _$DeviceProfileFromJson(json);
+}
+
+extension HeartbeatOf on DeviceProfile {
+  /// The profile's heartbeat settings, or the defaults when it has none.
+  HeartbeatSettings get heartbeatOrDefault => heartbeat ?? const HeartbeatSettings();
 }
 
 /// A value the device measures, e.g. heart rate in bpm.

@@ -13,7 +13,9 @@ import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
 import '../../data/devices/cloud_device_registration.dart';
 import '../../data/devices/active_device.dart';
+import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
+import '../../data/heartbeats/local_heartbeat_repository.dart';
 import '../../data/readings/local_reading_repository.dart';
 import '../../data/devices/local_device_service.dart';
 import '../../data/devices/no_device_registration.dart';
@@ -28,6 +30,8 @@ import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
+import '../../domain/models/heartbeat_settings.dart';
+import '../../domain/services/heartbeat_repository.dart';
 import '../../domain/services/live_readings.dart';
 import '../../domain/services/reading_repository.dart';
 import '../../domain/services/password_hasher.dart';
@@ -89,11 +93,22 @@ DeviceService deviceService(Ref ref) => LocalDeviceService(
 ReadingRepository readingRepository(Ref ref) =>
     LocalReadingRepository(ref.watch(appDatabaseProvider).requireValue);
 
-/// Deletes readings older than the config's `history.daysOnPhone`, now and once a day.
+/// Stored heartbeats: the local database in both phases.
+// TODO(phase2): the uploader sends them with the readings.
+@Riverpod(keepAlive: true)
+HeartbeatRepository heartbeatRepository(Ref ref) =>
+    LocalHeartbeatRepository(ref.watch(appDatabaseProvider).requireValue);
+
+/// Deletes readings older than the config's `history.daysOnPhone` and heartbeats older than
+/// 24 hours, now and once a day.
 @Riverpod(keepAlive: true)
 ReadingCleanupJob readingCleanupJob(Ref ref) {
   final days = ref.watch(appConfigProvider).requireValue.history.daysOnPhone;
-  final job = ReadingCleanupJob(ref.watch(readingRepositoryProvider), days)..start();
+  final job = ReadingCleanupJob(
+    ref.watch(readingRepositoryProvider),
+    days,
+    heartbeats: ref.watch(heartbeatRepositoryProvider),
+  )..start();
   ref.onDispose(job.stop);
   return job;
 }
@@ -105,6 +120,7 @@ LiveReadings liveReadings(Ref ref) {
   final profiles = DeviceProfileRegistry(ref.watch(appConfigProvider).requireValue);
   final db = ref.watch(appDatabaseProvider).requireValue;
   final readings = ref.watch(readingRepositoryProvider);
+  final heartbeats = ref.watch(heartbeatRepositoryProvider);
   final active = ActiveDevice(
     db,
     (id) => profiles.contains(id) ? profiles.byId(id) : null,
@@ -112,8 +128,13 @@ LiveReadings liveReadings(Ref ref) {
     (deviceId) => ReadingWriter(
       deviceId,
       readings,
-      (id, {batteryPercent, seenAt}) =>
-          db.devicesDao.updateStatus(id, batteryPercent: batteryPercent, lastHeartbeatAt: seenAt),
+      (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
+    ),
+    (deviceId, settings) => HeartbeatRecorder(
+      deviceId,
+      heartbeats,
+      (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
+      interval: settings.interval,
     ),
   );
   ref.onDispose(active.stop);

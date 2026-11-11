@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import '../../domain/decoder/generic_codec.dart';
+import '../../domain/heartbeat/heartbeat_monitor.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/live_readings.dart';
 import '../../domain/transport/device_link.dart';
 import '../db/app_database.dart';
+import 'heartbeat_recorder.dart';
 import 'live_session.dart';
 import 'reading_writer.dart';
 
@@ -20,15 +22,22 @@ typedef LinkOpener = DeviceLink Function(
 /// Makes the writer that stores a connected device's readings.
 typedef WriterFor = ReadingWriter Function(int deviceId);
 
+/// Makes the recorder that saves a connected device's heartbeats.
+typedef RecorderFor = HeartbeatRecorder Function(int deviceId, HeartbeatSettings settings);
+
 /// [LiveReadings] with at most one device connected at a time: watching a device connects it, and
 /// watching another one disconnects the first. Leaving its screen keeps it connected and storing
 /// readings, until another device is watched, it is removed, or the user logs out ([stop]).
+///
+/// Any data from the device is a heartbeat. After the profile's number of missed intervals it is
+/// Offline (no automatic reconnect: the link's own reconnect keeps running) until data returns.
 class ActiveDevice implements LiveReadings {
   ActiveDevice(
     this._db,
     this._profileFor,
     this._openLink,
-    this._writerFor, {
+    this._writerFor,
+    this._recorderFor, {
     Future<void> Function(Duration)? delay,
     this._now,
   }) : _delay = delay ?? Future.delayed;
@@ -39,6 +48,7 @@ class ActiveDevice implements LiveReadings {
   final DeviceProfile? Function(String id) _profileFor;
   final LinkOpener _openLink;
   final WriterFor _writerFor;
+  final RecorderFor _recorderFor;
   final Future<void> Function(Duration) _delay;
   final DateTime Function()? _now;
 
@@ -122,9 +132,10 @@ class ActiveDevice implements LiveReadings {
   });
 
   Future<_Active> _open(int deviceId) async {
-    final active = _Active(deviceId, (u) {
-      if (u is LiveStatusChanged && _active?.deviceId == deviceId) {
-        _setLink((deviceId: deviceId, status: u.status));
+    late final _Active active;
+    active = _Active(deviceId, (u) {
+      if ((u is LiveStatusChanged || u is LiveHeartbeat) && _active?.deviceId == deviceId) {
+        _setLink(active.link);
       }
       _updates.add((deviceId, u));
     });
@@ -135,6 +146,12 @@ class ActiveDevice implements LiveReadings {
       return active;
     }
     active.writer = _writerFor(deviceId);
+    final heartbeat = profile.heartbeatOrDefault;
+    active.recorder = _recorderFor(deviceId, heartbeat);
+    active.monitor = HeartbeatMonitor(heartbeat, (online, lastAt) {
+      // TODO(1.5.3): raise the "Device offline" alert when [online] turns false.
+      active.emit(LiveHeartbeat(online: online, lastAt: lastAt));
+    }, now: _now)..start();
     _active = active; // Its first statuses already count as the active link.
     unawaited(_connect(active, profile, row, 0));
     return active;
@@ -142,13 +159,17 @@ class ActiveDevice implements LiveReadings {
 
   Future<void> _connect(_Active active, DeviceProfile profile, Device row, int attempt) async {
     final LiveSession session;
+    final DeviceLink link;
     final out = StreamController<LiveUpdate>(sync: true);
     try {
       final codec = codecFor(profile, now: _now);
       final transport = Transport.values.byName(row.transport.name);
-      final link = _openLink(profile, transport, row.address, lastAddress: row.ipAddress);
+      link = _openLink(profile, transport, row.address, lastAddress: row.ipAddress);
       session = LiveSession(profile, link, codec, out, now: _now);
     } on NotConnectableException {
+      // It never connects, so it has no heartbeats to miss.
+      active.monitor?.stop();
+      active.monitor = null;
       active.emit(const LiveFailure(LiveFailureReason.notSupported));
       return;
     }
@@ -158,10 +179,12 @@ class ActiveDevice implements LiveReadings {
       active.emit(u);
     });
     active.session = session;
+    await active.listenTo(link);
     await session.start();
     if (!unreachable || active.closed) return;
 
     await session.stop();
+    await active.stopListening();
     await out.close();
     active.emit(const LiveStatusChanged(LiveStatus.waiting));
     await _delay(retryWaits[attempt.clamp(0, retryWaits.length - 1)]);
@@ -177,16 +200,26 @@ class _Active {
   final void Function(LiveUpdate) _send;
   LiveSession? session;
   ReadingWriter? writer;
+  HeartbeatRecorder? recorder;
+  HeartbeatMonitor? monitor;
   bool closed = false;
+  final _beats = <StreamSubscription<Object?>>[];
 
   LiveStatus? _status;
   SensorContact? _contact;
   LiveFailure? _failure;
   final _values = <String, Sample>{};
 
-  /// The last status, finger contact, value of each key and problem.
+  /// The link as the rest of the app sees it, once there is a status.
+  ActiveLink? get link => switch (_status) {
+    final s? => (deviceId: deviceId, status: s, online: monitor?.online ?? true),
+    null => null,
+  };
+
+  /// The last status, heartbeat, finger contact, value of each key and problem.
   Iterable<LiveUpdate> get replay => [
     if (_status case final s?) LiveStatusChanged(s),
+    if (monitor case final m?) LiveHeartbeat(online: m.online, lastAt: m.lastAt),
     if (_contact case final c?) LiveContactChanged(c),
     for (final v in _values.values) LiveValue(v),
     ?_failure,
@@ -206,13 +239,39 @@ class _Active {
         writer?.add(sample);
       case LiveFailure():
         _failure = update;
+      case LiveHeartbeat():
+        break; // The monitor keeps it, for the replay.
     }
     _send(update);
   }
 
+  /// Any data on [link] is a heartbeat; its battery level is kept with it.
+  Future<void> listenTo(DeviceLink link) async {
+    await stopListening();
+    _beats
+      ..add(link.packets.listen((_) => _beat()))
+      ..add(link.battery.listen((v) => _beat(batteryPercent: v)));
+  }
+
+  Future<void> stopListening() async {
+    for (final sub in _beats) {
+      await sub.cancel();
+    }
+    _beats.clear();
+  }
+
+  void _beat({int? batteryPercent}) {
+    if (closed) return;
+    monitor?.beat();
+    recorder?.beat(batteryPercent: batteryPercent);
+  }
+
   Future<void> close() async {
     closed = true;
+    monitor?.stop();
+    await stopListening();
     await session?.stop();
     await writer?.close();
+    await recorder?.close();
   }
 }

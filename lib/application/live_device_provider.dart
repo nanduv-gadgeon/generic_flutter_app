@@ -22,6 +22,12 @@ abstract class LiveDeviceState with _$LiveDeviceState {
 
     /// The last problem; cleared once the device is streaming again.
     LiveFailure? failure,
+
+    /// False once the device has missed its profile's number of heartbeats in a row.
+    @Default(true) bool online,
+
+    /// When the device was last heard from since it was opened, if it has been.
+    DateTime? lastHeartbeatAt,
   }) = _LiveDeviceState;
 }
 
@@ -63,6 +69,10 @@ class LiveDevice extends _$LiveDevice {
               },
       ),
       LiveFailure() => state.copyWith(failure: update),
+      LiveHeartbeat(:final online, :final lastAt) => state.copyWith(
+        online: online,
+        lastHeartbeatAt: lastAt,
+      ),
     };
   }
 }

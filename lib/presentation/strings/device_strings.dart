@@ -11,6 +11,7 @@ abstract final class DeviceStrings {
   static const waiting = 'Device not found. Trying again…';
   static const battery = 'Battery';
   static const tryAgain = 'Try again';
+  static const offlineNeverHeard = 'Offline · no data from the device yet.';
   static const noValue = '–';
   static const noValueSpoken = 'no reading yet';
   static const note =
@@ -33,6 +34,18 @@ abstract final class DeviceStrings {
     LiveStatus.syncing => syncing,
     LiveStatus.waiting => waiting,
   };
+
+  /// "Offline · last heartbeat 5 min ago." Text, not only the colour, says it is offline.
+  static String offline(Duration? sinceLast) {
+    if (sinceLast == null) return offlineNeverHeard;
+    final s = sinceLast.isNegative ? 0 : sinceLast.inSeconds;
+    final ago = s < 60
+        ? '$s s'
+        : s < 3600
+        ? '${s ~/ 60} min'
+        : '${s ~/ 3600} h';
+    return 'Offline · last heartbeat $ago ago.';
+  }
 
   /// "72 bpm", "1.25 %".
   static String value(double value, int decimals, String unit) {

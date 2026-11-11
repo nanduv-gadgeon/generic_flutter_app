@@ -106,7 +106,7 @@ class ConnectionCard extends StatelessWidget {
           value: address,
           monospace: true,
         ),
-        // TODO(1.2.8): live signal strength once the connection state is available.
+        // TODO: live signal strength (RSSI) once the BLE link reports it; not part of 1.2.8.
         const InfoRow(label: DeviceSettingsStrings.signal, value: DeviceSettingsStrings.none),
         InfoRow(
           label: DeviceSettingsStrings.firmwareRow,
@@ -116,36 +116,6 @@ class ConnectionCard extends StatelessWidget {
           label: DeviceSettingsStrings.batteryRow,
           value: _or(device.batteryPercent, DeviceSettingsStrings.battery),
         ),
-      ],
-    );
-  }
-}
-
-/// Heartbeat interval, last heartbeat, offline rule and device status.
-class HeartbeatCard extends StatelessWidget {
-  const HeartbeatCard({super.key, required this.device, required this.now});
-
-  final DeviceDetails device;
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    final last = device.lastHeartbeatAt;
-    return ProfileCard(
-      children: [
-        // TODO(1.2.8): interval, offline rule and status come from the profile's heartbeat config.
-        const InfoRow(
-          label: DeviceSettingsStrings.heartbeatInterval,
-          value: DeviceSettingsStrings.none,
-        ),
-        InfoRow(
-          label: DeviceSettingsStrings.lastHeartbeat,
-          value: last == null
-              ? DeviceSettingsStrings.none
-              : DeviceSettingsStrings.ago(now.difference(last)),
-        ),
-        const InfoRow(label: DeviceSettingsStrings.offlineAfter, value: DeviceSettingsStrings.none),
-        const InfoRow(label: DeviceSettingsStrings.deviceStatus, value: DeviceSettingsStrings.none),
       ],
     );
   }

@@ -116,7 +116,8 @@
         "streaming": { "$ref": "#/definitions/streaming" },
         "sync": { "$ref": "#/definitions/sync" },
         "signal": { "$ref": "#/definitions/signal" },
-        "agc": { "$ref": "#/definitions/agc" }
+        "agc": { "$ref": "#/definitions/agc" },
+        "heartbeat": { "$ref": "#/definitions/heartbeat" }
       }
     },
     "uuid": {
@@ -146,6 +147,15 @@
     },
     "timeField": {
       "enum": ["year16le", "month", "day", "hour", "minute", "second", "millis16le", "year2", "hour12", "pm", "weekdayMon1", "zero"]
+    },
+    "heartbeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "intervalSeconds": { "type": "integer", "minimum": 5 },
+        "offlineAfterMissed": { "type": "integer", "minimum": 1 },
+        "setInterval": { "$ref": "#/definitions/key" }
+      }
     },
     "sync": {
       "type": "object",

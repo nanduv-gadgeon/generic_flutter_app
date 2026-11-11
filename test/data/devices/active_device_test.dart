@@ -4,8 +4,10 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/devices/active_device.dart';
+import 'package:generic_flutter_app/data/devices/heartbeat_recorder.dart';
 import 'package:generic_flutter_app/data/devices/reading_writer.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
+import 'package:generic_flutter_app/domain/services/heartbeat_repository.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/domain/services/reading_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,6 +18,8 @@ import '../../fixtures/ppg_motion_profile.dart';
 import '../../fixtures/test_db.dart';
 
 class MockReadingRepository extends Mock implements ReadingRepository {}
+
+class MockHeartbeatRepository extends Mock implements HeartbeatRepository {}
 
 const _sensorAddress = 'AA:BB:CC:00:00:09';
 const _patchAddress = 'AA:BB:CC:00:00:0A';
@@ -29,10 +33,21 @@ void main() {
   late List<String> opened;
   late Map<String, DeviceProfile> profiles;
   late MockReadingRepository readings;
+  late MockHeartbeatRepository heartbeats;
   late List<Duration> waits;
   late ActiveDevice active;
 
-  setUpAll(() => registerFallbackValue(<Sample>[]));
+  HeartbeatRecorder recorderFor(int deviceId, HeartbeatSettings settings) => HeartbeatRecorder(
+    deviceId,
+    heartbeats,
+    (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
+    interval: settings.interval,
+  );
+
+  setUpAll(() {
+    registerFallbackValue(<Sample>[]);
+    registerFallbackValue(DateTime.utc(2026));
+  });
 
   setUp(() async {
     db = memoryDatabase();
@@ -48,6 +63,9 @@ void main() {
     profiles = {'ppg_motion_v1': ppgMotionProfile(), 'ief_device_v1': iefProfile()};
     readings = MockReadingRepository();
     when(() => readings.addAll(any(), any())).thenAnswer((_) async {});
+    heartbeats = MockHeartbeatRepository();
+    when(() => heartbeats.add(any(), any(), batteryPercent: any(named: 'batteryPercent')))
+        .thenAnswer((_) async {});
     waits = [];
     active = ActiveDevice(
       db,
@@ -59,9 +77,9 @@ void main() {
       (deviceId) => ReadingWriter(
         deviceId,
         readings,
-        (id, {batteryPercent, seenAt}) =>
-            db.devicesDao.updateStatus(id, batteryPercent: batteryPercent, lastHeartbeatAt: seenAt),
+        (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
       ),
+      recorderFor,
       delay: (d) async => waits.add(d),
     );
     await active.start(userId);
@@ -132,7 +150,7 @@ void main() {
     await other.cancel();
   });
 
-  test('readings are stored and the battery is saved on the device row', () async {
+  test('readings are stored; the battery and "Seen" are saved on the device row', () async {
     final sub = active.watch(patchId).listen((_) {});
     await pumpEventQueue();
     patch()
@@ -144,7 +162,10 @@ void main() {
 
     final stored = verify(() => readings.addAll(patchId, captureAny())).captured.single;
     expect(stored, [Sample('current', 30.07, iefT0)]);
-    expect((await db.devicesDao.byId(patchId))!.batteryPercent, 64);
+    final row = (await db.devicesDao.byId(patchId))!;
+    expect(row.batteryPercent, 64);
+    expect(row.lastHeartbeatAt, isNotNull);
+    verify(() => heartbeats.add(patchId, any(), batteryPercent: any(named: 'batteryPercent')));
     await sub.cancel();
   });
 
@@ -180,7 +201,8 @@ void main() {
       db,
       (id) => profiles[id],
       (profile, transport, address, {lastAddress}) => links[address]!,
-      (deviceId) => ReadingWriter(deviceId, readings, (_, {batteryPercent, seenAt}) async {}),
+      (deviceId) => ReadingWriter(deviceId, readings, (_, _) async {}),
+      recorderFor,
       delay: (d) async {
         waits.add(d);
         if (++attempts == 5) {
@@ -257,9 +279,9 @@ void main() {
     await active.stop();
 
     expect(links.first, isNull);
-    expect(links, contains((deviceId: sensorId, status: LiveStatus.streaming)));
+    expect(links, contains((deviceId: sensorId, status: LiveStatus.streaming, online: true)));
     expect(links.indexOf(null, 1), lessThan(links.indexWhere((l) => l?.deviceId == patchId)));
-    expect(links, contains((deviceId: patchId, status: LiveStatus.syncing)));
+    expect(links, contains((deviceId: patchId, status: LiveStatus.syncing, online: true)));
     expect(links.last, isNull);
     await watching.cancel();
     await a.cancel();

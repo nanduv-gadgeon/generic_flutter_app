@@ -155,7 +155,8 @@
         "idleTimeoutMs": 30000,
         "everySeconds": 60,
         "repeat": ["request_logs"]
-      }
+      },
+      "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 }
     },
     {
       "id": "ppg_motion_v1",
@@ -266,7 +267,8 @@
         "max": 32,
         "step": 1,
         "commands": ["led_ir", "led_red"]
-      }
+      },
+      "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 }
     }
   ]
 }

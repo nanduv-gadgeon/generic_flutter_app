@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../application/app_config_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
@@ -11,13 +10,14 @@ import '../../core/theme/app_tokens.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/device_service.dart';
 import '../add_device/add_device_screen.dart';
+import '../devices/remove_device_sheet.dart';
 import '../strings/add_device_strings.dart';
 import '../strings/common_strings.dart';
 import '../strings/device_settings_strings.dart';
+import '../strings/remove_device_strings.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/labeled_field.dart';
 import 'device_settings_sections.dart';
-import 'remove_device_sheet.dart';
 
 /// Device settings (requirements §8, mockup screen 25): rename, connection and heartbeat details,
 /// sampling interval, alert switches and Remove device. Full screen, without the tab bar.
@@ -88,12 +88,7 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
   }
 
   Future<void> _remove(DeviceDetails device) async {
-    final days = ref.read(appConfigProvider).requireValue.history.daysOnPhone;
-    final confirmed = await confirmRemoveFromSettings(
-      context,
-      name: device.name,
-      historyDays: days,
-    );
+    final confirmed = await confirmRemoveDevice(context, name: device.name);
     if (!confirmed || !mounted) return;
     setState(() => _removing = true);
     final messenger = ScaffoldMessenger.of(context);
@@ -102,12 +97,12 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _removing = false);
-      messenger.showSnackBar(const SnackBar(content: Text(DeviceSettingsStrings.removeFailed)));
+      messenger.showSnackBar(const SnackBar(content: Text(RemoveDeviceStrings.removeFailed)));
       return;
     }
     if (!mounted) return;
     context.go('/home');
-    messenger.showSnackBar(const SnackBar(content: Text(DeviceSettingsStrings.removed)));
+    messenger.showSnackBar(const SnackBar(content: Text(RemoveDeviceStrings.removed)));
   }
 
   @override
@@ -248,7 +243,7 @@ class _Content extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onRemove,
           icon: const Icon(Icons.delete_outline),
-          label: const Text(DeviceSettingsStrings.remove),
+          label: const Text(RemoveDeviceStrings.remove),
           style: OutlinedButton.styleFrom(
             foregroundColor: danger,
             side: BorderSide(color: danger, width: 1.5),

@@ -26,10 +26,8 @@ void main() {
     expect(DeviceSettingsStrings.addressLabel(Transport.wifi), 'IP address');
   });
 
-  test('firmware, battery and the remove texts', () {
+  test('firmware and battery', () {
     expect(DeviceSettingsStrings.firmware('1.4.2'), 'v1.4.2');
     expect(DeviceSettingsStrings.battery(78), '78%');
-    expect(DeviceSettingsStrings.removeTitle('Test band'), 'Remove Test band?');
-    expect(DeviceSettingsStrings.removeBody(7), contains('its 7-day history deleted'));
   });
 }

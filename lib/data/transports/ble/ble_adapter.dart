@@ -31,6 +31,10 @@ abstract interface class BleAdapter {
   /// when already paired. Does nothing on iOS, which pairs on its own. Throws if pairing fails.
   Future<void> pair(String deviceId);
 
+  /// Removes the phone's pairing (bond) with the device. Does nothing when it is not paired, or
+  /// on iOS, which has no call for it.
+  Future<void> unpair(String deviceId);
+
   /// Asks for a larger packet size; returns the size agreed.
   Future<int> requestMtu(String deviceId, int mtu);
 

@@ -4,8 +4,12 @@ import 'package:generic_flutter_app/data/devices/local_device_service.dart';
 import 'package:generic_flutter_app/data/devices/no_device_registration.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
+import 'package:generic_flutter_app/domain/transport/device_pairing.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/test_db.dart';
+
+class _MockDevicePairing extends Mock implements DevicePairing {}
 
 /// LocalDeviceService for Device settings (task 1.2.9). Fake data only.
 void main() {
@@ -15,7 +19,9 @@ void main() {
 
   setUp(() async {
     db = memoryDatabase();
-    service = LocalDeviceService(db, const NoDeviceRegistration());
+    final pairing = _MockDevicePairing();
+    when(() => pairing.unpair(any())).thenAnswer((_) async {});
+    service = LocalDeviceService(db, const NoDeviceRegistration(), pairing);
     userId = await db.usersDao.insertUser(fakeUser());
   });
 

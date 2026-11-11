@@ -2,30 +2,23 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
 import '../strings/common_strings.dart';
-import '../strings/device_settings_strings.dart';
+import '../strings/remove_device_strings.dart';
 
 /// The mockup's "Remove {name}?" bottom sheet (screen 26). True when the user confirms.
-///
-/// [historyDays]: how long readings stay on the phone (config `history.daysOnPhone`).
-Future<bool> confirmRemoveFromSettings(
-  BuildContext context, {
-  required String name,
-  required int historyDays,
-}) async {
+Future<bool> confirmRemoveDevice(BuildContext context, {required String name}) async {
   final confirmed = await showModalBottomSheet<bool>(
     context: context,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (context) => _RemoveSheet(name: name, historyDays: historyDays),
+    builder: (context) => _RemoveSheet(name: name),
   );
   return confirmed ?? false;
 }
 
 class _RemoveSheet extends StatelessWidget {
-  const _RemoveSheet({required this.name, required this.historyDays});
+  const _RemoveSheet({required this.name});
 
   final String name;
-  final int historyDays;
 
   @override
   Widget build(BuildContext context) {
@@ -51,12 +44,12 @@ class _RemoveSheet extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              DeviceSettingsStrings.removeTitle(name),
+              RemoveDeviceStrings.removeTitle(name),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             Text(
-              DeviceSettingsStrings.removeBody(historyDays),
+              RemoveDeviceStrings.removeBody,
               style: TextStyle(fontSize: 15, height: 1.45, color: tokens?.muted),
             ),
             const SizedBox(height: 14),
@@ -68,7 +61,7 @@ class _RemoveSheet extends StatelessWidget {
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(borderRadius: radius),
               ),
-              child: const Text(DeviceSettingsStrings.remove),
+              child: const Text(RemoveDeviceStrings.remove),
             ),
             const SizedBox(height: 14),
             OutlinedButton(

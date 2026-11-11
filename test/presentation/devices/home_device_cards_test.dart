@@ -70,14 +70,10 @@ void main() {
 
     final links = <String, (ActiveLink?, String, int)>{
       'nothing connected': (null, 'Offline', 0),
-      'the sensor connected': (
-        (deviceId: 2, status: LiveStatus.streaming),
-        'Bluetooth · Connected',
-        1,
-      ),
+      'the sensor connected': ((deviceId: 2, status: LiveStatus.streaming), 'BLE · Connected', 1),
       'the patch connecting': (
         (deviceId: 1, status: LiveStatus.connecting),
-        'Bluetooth · Connecting…',
+        'BLE · Connecting…',
         1,
       ),
       'the sensor out of reach': ((deviceId: 2, status: LiveStatus.waiting), 'Offline', 0),
@@ -118,7 +114,7 @@ void main() {
 
       expect(
         find.bySemanticsLabel(
-          'Test sensor, SpO₂ 97 % · HR 72 bpm, Bluetooth · Connected, Battery 81%, '
+          'Test sensor, SpO₂ 97 % · HR 72 bpm, BLE · Connected, Battery 81%, '
           'Seen 12 s ago. Opens the device',
         ),
         findsOneWidget,
@@ -138,7 +134,7 @@ void main() {
     testWidgets('link, battery and Seen are on one line', (tester) async {
       await pump(tester, active: (deviceId: 2, status: LiveStatus.streaming));
 
-      expectStatusOnOneLine(tester, 'Bluetooth · Connected', '81%', 'Seen 12 s ago');
+      expectStatusOnOneLine(tester, 'BLE · Connected', '81%', 'Seen 12 s ago');
     });
 
     testWidgets('they stay on one line on a small phone with double text size', (tester) async {
@@ -151,7 +147,7 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expectStatusOnOneLine(tester, 'Bluetooth · Connected', '81%', 'Seen 12 s ago');
+      expectStatusOnOneLine(tester, 'BLE · Connected', '81%', 'Seen 12 s ago');
     });
 
     testWidgets('a device that is not connected says Offline in red', (tester) async {

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:generic_flutter_app/application/app_config_provider.dart';
 import 'package:generic_flutter_app/application/auth_controller.dart';
 import 'package:generic_flutter_app/application/device_profiles_provider.dart';
 import 'package:generic_flutter_app/application/devices_provider.dart';
@@ -28,12 +29,11 @@ class MockLiveReadings extends Mock implements LiveReadings {}
 
 class MockReadingRepository extends Mock implements ReadingRepository {}
 
-final _registry = DeviceProfileRegistry(
-  AppConfig.fromJson(
-    jsonDecode(File('assets/config/vitacare/app_config.json').readAsStringSync())
-        as Map<String, dynamic>,
-  ),
+final _config = AppConfig.fromJson(
+  jsonDecode(File('assets/config/vitacare/app_config.json').readAsStringSync())
+      as Map<String, dynamic>,
 );
+final _registry = DeviceProfileRegistry(_config);
 
 const _theme = ThemeConfig(
   primary: '#123456',
@@ -45,7 +45,7 @@ const _theme = ThemeConfig(
 );
 
 /// Pumps My devices with fakes for the user, devices, stored readings and the linked device.
-/// Returns the device service, e.g. to check what was saved.
+/// Returns the device service, e.g. to check what was saved or removed.
 Future<MockDeviceService> pumpHome(
   WidgetTester tester, {
   List<UserDevice> devices = const [],
@@ -66,6 +66,7 @@ Future<MockDeviceService> pumpHome(
   when(() => auth.currentUser()).thenAnswer((_) async => user);
   when(() => deviceService.watchDevices(any())).thenAnswer((_) => Stream.value(devices));
   when(() => deviceService.reorder(any(), any())).thenAnswer((_) async {});
+  when(() => deviceService.removeById(any(), any())).thenAnswer((_) async {});
   final live = MockLiveReadings();
   when(live.watchActive).thenAnswer((_) => Stream.value(active));
   final readings = MockReadingRepository();
@@ -92,12 +93,14 @@ Future<MockDeviceService> pumpHome(
       deviceServiceProvider.overrideWithValue(deviceService),
       liveReadingsProvider.overrideWithValue(live),
       readingRepositoryProvider.overrideWithValue(readings),
+      appConfigProvider.overrideWith((ref) async => _config),
       deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
       clockProvider.overrideWithValue(() => now ?? DateTime(2026, 1, 1, 9)),
     ],
   );
   addTearDown(container.dispose);
   await container.read(authControllerProvider.future);
+  await container.read(appConfigProvider.future);
 
   await tester.pumpWidget(
     UncontrolledProviderScope(

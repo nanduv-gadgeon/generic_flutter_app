@@ -82,6 +82,14 @@ class UniversalBleAdapter implements BleAdapter {
   }
 
   @override
+  Future<void> unpair(String deviceId) async {
+    if (!BleCapabilities.hasSystemPairingApi) return;
+    // Unpairing a device that is not paired throws, so check first.
+    if (!(await UniversalBle.isPaired(deviceId) ?? false)) return;
+    await UniversalBle.unpair(deviceId);
+  }
+
+  @override
   Future<int> requestMtu(String deviceId, int mtu) => UniversalBle.requestMtu(deviceId, mtu);
 
   @override

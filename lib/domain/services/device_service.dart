@@ -35,9 +35,14 @@ abstract interface class DeviceService {
   /// Whether the user already has a device at [address].
   Future<bool> isAdded(int userId, String address);
 
-  /// Deletes the user's device at [address] and its alert limits from the phone, then tells the
-  /// cloud when there is one. Does nothing when there is no such device.
+  /// Deletes the user's device at [address] with its alert limits and stored readings, unpairs it
+  /// from the phone (BLE), then tells the cloud when there is one. Does nothing when there is no
+  /// such device.
   Future<void> removeDevice(int userId, String address);
+
+  /// [removeDevice] for the device with id [deviceId] (Swipe to delete on home). Does nothing when
+  /// there is no such device or it belongs to another user.
+  Future<void> removeById(int userId, int deviceId);
 }
 
 class DeviceAlreadyAddedException implements Exception {

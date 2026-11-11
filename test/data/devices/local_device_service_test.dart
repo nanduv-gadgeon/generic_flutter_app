@@ -5,6 +5,7 @@ import 'package:generic_flutter_app/data/devices/no_device_registration.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/device_registration.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
+import 'package:generic_flutter_app/domain/transport/device_pairing.dart';
 
 import 'package:mocktail/mocktail.dart';
 
@@ -12,16 +13,21 @@ import '../../fixtures/test_db.dart';
 
 class MockDeviceRegistration extends Mock implements DeviceRegistration {}
 
+class MockDevicePairing extends Mock implements DevicePairing {}
+
 const _defaults = [AlertRule(key: 'current', above: 120), AlertRule(key: 'battery', below: 15)];
 
 void main() {
   late AppDatabase db;
   late LocalDeviceService service;
   late int userId;
+  late MockDevicePairing pairing;
 
   setUp(() async {
+    pairing = MockDevicePairing();
+    when(() => pairing.unpair(any())).thenAnswer((_) async {});
     db = memoryDatabase();
-    service = LocalDeviceService(db, const NoDeviceRegistration());
+    service = LocalDeviceService(db, const NoDeviceRegistration(), pairing);
     userId = await db.usersDao.insertUser(fakeUser());
   });
 
@@ -136,7 +142,7 @@ void main() {
       when(() => registration.register(newDevice())).thenAnswer(
         (_) async => const CloudRegistration(deviceKey: 'DK-TEST-0000', alerts: suggested),
       );
-      service = LocalDeviceService(db, registration);
+      service = LocalDeviceService(db, registration, pairing);
 
       final added = await service.addDevice(newDevice(), _defaults);
 
@@ -151,7 +157,7 @@ void main() {
       final registration = MockDeviceRegistration();
       when(() => registration.register(newDevice()))
           .thenAnswer((_) async => const CloudRegistration(deviceKey: 'DK-TEST-0000'));
-      service = LocalDeviceService(db, registration);
+      service = LocalDeviceService(db, registration, pairing);
 
       final added = await service.addDevice(newDevice(), _defaults);
 
@@ -164,7 +170,7 @@ void main() {
       final registration = MockDeviceRegistration();
       when(() => registration.register(newDevice())).thenAnswer((_) async => null);
       when(() => registration.unregister(any())).thenAnswer((_) async {});
-      service = LocalDeviceService(db, registration);
+      service = LocalDeviceService(db, registration, pairing);
       await service.addDevice(newDevice(), _defaults);
 
       await service.removeDevice(userId, 'AA:BB:CC:00:00:09');

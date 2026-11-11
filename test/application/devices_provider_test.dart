@@ -102,4 +102,23 @@ void main() {
 
     verifyNever(() => devices.reorder(any(), any()));
   });
+
+  test('removeDevice removes for the logged-in user', () async {
+    when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
+    when(() => devices.removeById(any(), any())).thenAnswer((_) async {});
+    await container.read(authControllerProvider.future);
+
+    await container.read(removeDeviceProvider)(2);
+
+    verify(() => devices.removeById(fakeUser.id, 2)).called(1);
+  });
+
+  test('removeDevice removes nothing when nobody is logged in', () async {
+    when(() => auth.currentUser()).thenAnswer((_) async => null);
+    await container.read(authControllerProvider.future);
+
+    await container.read(removeDeviceProvider)(2);
+
+    verifyNever(() => devices.removeById(any(), any()));
+  });
 }

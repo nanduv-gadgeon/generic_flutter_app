@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/device_profiles_provider.dart';
@@ -9,15 +10,19 @@ import '../../domain/services/device_service.dart';
 import '../../domain/services/live_readings.dart';
 import '../strings/device_strings.dart';
 import '../strings/devices_strings.dart';
+import '../strings/remove_device_strings.dart';
 import '../widgets/device_icons.dart';
 
 /// One added device on My devices (mockup `06_home.png`): icon, name, the newest stored readings,
 /// whether it is the connected device, battery and when it was last seen. Tapping opens it.
 class HomeDeviceCard extends ConsumerWidget {
-  const HomeDeviceCard({super.key, required this.device, required this.onOpen});
+  const HomeDeviceCard({super.key, required this.device, required this.onOpen, this.onDelete});
 
   final UserDevice device;
   final VoidCallback onOpen;
+
+  /// Screen readers' "Delete {name}" action, in place of the swipe; none when null.
+  final VoidCallback? onDelete;
 
   /// How many readings the card shows.
   static const quickReadings = 2;
@@ -52,6 +57,12 @@ class HomeDeviceCard extends ConsumerWidget {
         if (battery != null) DevicesStrings.batterySpoken(battery),
         seen,
       ]),
+      customSemanticsActions: onDelete == null
+          ? null
+          : {
+              CustomSemanticsAction(label: RemoveDeviceStrings.deleteAction(device.name)):
+                  onDelete!,
+            },
       excludeSemantics: true,
       child: Material(
         color: tokens?.surface,

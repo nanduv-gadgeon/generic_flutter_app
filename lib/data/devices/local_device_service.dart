@@ -1,17 +1,21 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
+import '../../domain/transport/device_pairing.dart';
 import '../db/app_database.dart';
 
 /// Devices kept in the encrypted local database (both phases). New devices are also passed to
-/// [_registration], which only reaches the cloud in Phase 2.
+/// [_registration], which only reaches the cloud in Phase 2. Removed BLE devices are unpaired
+/// through [_pairing].
 class LocalDeviceService implements DeviceService {
-  LocalDeviceService(this._db, this._registration);
+  LocalDeviceService(this._db, this._registration, this._pairing);
 
   final AppDatabase _db;
   final DeviceRegistration _registration;
+  final DevicePairing _pairing;
 
   @override
   Stream<List<UserDevice>> watchDevices(int userId) => _db.devicesDao
@@ -67,8 +71,30 @@ class LocalDeviceService implements DeviceService {
 
   @override
   Future<void> removeDevice(int userId, String address) async {
-    if (await _db.devicesDao.deleteForUser(userId, address) == 0) return;
-    await _registration.unregister(address);
+    final row = await _db.devicesDao.findForUser(userId, address);
+    if (row != null) await _remove(row);
+  }
+
+  @override
+  Future<void> removeById(int userId, int deviceId) async {
+    final row = await _db.devicesDao.byId(deviceId);
+    if (row != null && row.userId == userId) await _remove(row);
+  }
+
+  /// Deletes the row (its alerts and readings go with it), so a connected device is disconnected
+  /// too, then unpairs it and tells the cloud.
+  Future<void> _remove(Device row) async {
+    await _db.devicesDao.deleteDevice(row.id);
+    if (row.transport == DeviceTransport.ble) {
+      try {
+        await _pairing.unpair(row.address);
+      } catch (e) {
+        // The device is already gone from the app; a pairing left behind can be removed in the
+        // phone's Bluetooth settings.
+        if (kDebugMode) debugPrint('Remove device: unpair failed (${e.runtimeType})');
+      }
+    }
+    await _registration.unregister(row.address);
   }
 
   static List<DeviceAlertsCompanion> _toRows(List<AlertRule> alerts) => [

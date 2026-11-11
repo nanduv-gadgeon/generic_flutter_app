@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../data/transports/ble/ble_adapter.dart';
 import '../../data/transports/ble/ble_device_link.dart';
+import '../../data/transports/ble/ble_device_pairing.dart';
 import '../../data/transports/ble/ble_scanner_impl.dart';
 import '../../data/transports/ble/universal_ble_adapter.dart';
 import '../../data/transports/wifi/ble_wifi_provisioner.dart';
@@ -16,6 +17,7 @@ import '../../data/transports/wifi/ws_channel.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/transport/ble_scanner.dart';
 import '../../domain/transport/device_link.dart';
+import '../../domain/transport/device_pairing.dart';
 import '../../domain/transport/wifi_device_finder.dart';
 import '../../domain/transport/wifi_provisioner.dart';
 
@@ -37,6 +39,10 @@ BleAdapter bleAdapter(Ref ref) => UniversalBleAdapter();
 
 @Riverpod(keepAlive: true)
 BleScanner bleScanner(Ref ref) => BleScannerImpl(ref.watch(bleAdapterProvider));
+
+/// Unpairs removed BLE devices.
+@Riverpod(keepAlive: true)
+DevicePairing devicePairing(Ref ref) => BleDevicePairing(ref.watch(bleAdapterProvider));
 
 /// HTTP client for devices on the local network only (callers check `isLanHost`); never the cloud.
 /// No logging interceptors: bodies hold Wi‑Fi passwords and readings.

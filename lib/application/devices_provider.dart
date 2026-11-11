@@ -59,3 +59,14 @@ Future<void> Function(List<int> orderedIds) saveDeviceOrder(Ref ref) {
     if (user != null) await service.reorder(user.id, orderedIds);
   };
 }
+
+/// Removes one of the logged-in user's devices: its readings and alert limits are deleted, it is
+/// disconnected and unpaired (Swipe to delete on home).
+@riverpod
+Future<void> Function(int deviceId) removeDevice(Ref ref) {
+  final user = ref.watch(authControllerProvider).value;
+  final service = ref.watch(deviceServiceProvider);
+  return (deviceId) async {
+    if (user != null) await service.removeById(user.id, deviceId);
+  };
+}

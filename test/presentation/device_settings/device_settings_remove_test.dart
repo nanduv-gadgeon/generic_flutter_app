@@ -20,16 +20,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('asks first, with the history length from the config', (tester) async {
-    await pumpSettings(tester, device: band, historyDays: 3);
+  testWidgets('asks first, naming the device', (tester) async {
+    await pumpSettings(tester, device: band);
 
     await openSheet(tester);
 
     expect(find.text('Remove Test band?'), findsOneWidget);
     expect(
       find.text(
-        'The device will be unpaired and its 3-day history deleted from this phone. '
-        'You can add it again later.',
+        'The device will be unpaired and removed from this app. You can add it again later.',
       ),
       findsOneWidget,
     );

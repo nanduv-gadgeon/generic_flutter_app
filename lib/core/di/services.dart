@@ -80,6 +80,7 @@ bool cloudRegistrationAvailable(Ref ref) => ref.watch(appConfigProvider).require
 DeviceService deviceService(Ref ref) => LocalDeviceService(
   ref.watch(appDatabaseProvider).requireValue,
   ref.watch(deviceRegistrationProvider),
+  ref.watch(devicePairingProvider),
 );
 
 /// Stored readings: the local database in both phases.

@@ -140,8 +140,15 @@ class FakeDeviceService implements DeviceService {
     devices.sort((a, b) => orderedIds.indexOf(a.id).compareTo(orderedIds.indexOf(b.id)));
   }
 
-  /// Makes [removeDevice] throw.
+  /// Makes [removeDevice] and [removeById] throw.
   bool removeFails = false;
+
+  @override
+  Future<void> removeById(int userId, int deviceId) async {
+    final address = _addresses[deviceId];
+    if (removeFails) throw StateError('remove failed');
+    if (address != null) await removeDevice(userId, address);
+  }
 
   @override
   Future<void> removeDevice(int userId, String address) async {

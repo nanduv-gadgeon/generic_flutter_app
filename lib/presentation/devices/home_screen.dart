@@ -8,9 +8,11 @@ import '../../application/debug_dummy_devices.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../strings/devices_strings.dart';
+import '../strings/remove_device_strings.dart';
 import 'home_device_card.dart';
 import 'home_list_parts.dart';
 import 'home_reorder_list.dart';
+import 'swipe_to_delete.dart';
 
 /// My devices (home): greeting, totals and one card per added device, then "Add a device". With
 /// no devices it shows the "No devices yet" card instead.
@@ -42,12 +44,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  /// Devices swiped away whose removal the device list has not shown yet; a dismissed card must
+  /// leave the list at once.
+  final _removed = <int>{};
+
   @override
   Widget build(BuildContext context) {
     final name = ref.watch(authControllerProvider).value?.name ?? '';
     final now = ref.watch(clockProvider)();
     final summary = ref.watch(homeSummaryProvider);
-    final devices = ref.watch(myDevicesProvider).value ?? const [];
+    final stored = ref.watch(myDevicesProvider).value ?? const [];
+    // Once the list no longer has a removed device, it need not be hidden any more.
+    _removed.removeWhere((id) => !stored.any((d) => d.id == id));
+    final devices = [
+      for (final d in stored)
+        if (!_removed.contains(d.id)) d,
+    ];
     void addDevice() => context.push(HomeScreen.addDeviceRoute);
     // Reordering needs at least two devices; leave the mode when that is no longer so.
     final canReorder = devices.length >= 2;
@@ -73,10 +85,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onToggle: canReorder ? () => setState(() => _reordering = !reordering) : null,
               onDebugLongPress: kDebugMode ? _toggleDummies : null,
             ),
-            if (reordering) ...[
+            // While reordering: how to move devices; otherwise how to delete one (mockup 07).
+            if (devices.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                DevicesStrings.reorderHint,
+                reordering ? DevicesStrings.reorderHint : RemoveDeviceStrings.swipeHint,
                 style: TextStyle(
                   fontSize: 14,
                   color: Theme.of(context).extension<AppTokens>()?.muted,
@@ -87,13 +100,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (devices.isEmpty)
               EmptyDevicesCard(onAdd: addDevice)
             else ...[
+              // Reorder mode shows compact rows with handles; swiping to delete is off there.
               if (reordering)
                 HomeReorderList(devices: devices, onReorder: ref.read(saveDeviceOrderProvider))
               else
                 for (final device in devices) ...[
-                  HomeDeviceCard(
+                  SwipeToDelete(
                     device: device,
-                    onOpen: () => context.push(HomeScreen.deviceRoute(device.id)),
+                    onRemoved: (id) => setState(() => _removed.add(id)),
+                    builder: (onDelete) => HomeDeviceCard(
+                      device: device,
+                      onOpen: () => context.push(HomeScreen.deviceRoute(device.id)),
+                      onDelete: onDelete,
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],

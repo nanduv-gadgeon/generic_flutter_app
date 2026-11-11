@@ -58,15 +58,6 @@ abstract final class DeviceSettingsStrings {
   static const batteryAlert = 'Battery';
   static const batteryUnit = '%';
 
-  // Remove
-  static const remove = 'Remove device';
-  static String removeTitle(String name) => 'Remove $name?';
-
-  /// [days]: how long readings stay on the phone (config `history.daysOnPhone`).
-  static String removeBody(int days) =>
-      'The device will be unpaired and its $days-day history deleted from this phone. '
-      'You can add it again later.';
-  static const removed = 'Device removed';
-  static const removeFailed = 'Could not remove the device. Try again.';
+  // Remove: the sheet and its messages are shared with home (RemoveDeviceStrings).
   static const removing = 'Removing device';
 }

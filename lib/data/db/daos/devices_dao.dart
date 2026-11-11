@@ -124,6 +124,13 @@ class DevicesDao extends DatabaseAccessor<AppDatabase> with _$DevicesDaoMixin {
   Future<Device?> byId(int id) =>
       (select(devices)..where((d) => d.id.equals(id))).getSingleOrNull();
 
+  /// The user's device at [address], or null when they have none there.
+  Future<Device?> findForUser(int userId, String address) =>
+      (select(devices)
+            ..where((d) => d.userId.equals(userId) & d.address.equals(address))
+            ..limit(1))
+          .getSingleOrNull();
+
   Future<void> deleteDevice(int id) => (delete(devices)..where((d) => d.id.equals(id))).go();
 
   /// Deletes the user's device at [address] (its alerts go with it) and returns how many rows

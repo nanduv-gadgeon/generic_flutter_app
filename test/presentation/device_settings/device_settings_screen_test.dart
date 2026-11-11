@@ -94,15 +94,17 @@ void main() {
     verify(() => devices.rename(7, 'Kitchen band')).called(1);
   });
 
-  for (final bad in ['', '   ', 'B' * 41]) {
-    testWidgets('a ${bad.trim().isEmpty ? 'blank' : 'too long'} name is not saved', (tester) async {
+  for (final bad in ['', '   ', 'B' * 41, '"', "'", r'#$%']) {
+    testWidgets('the name "${bad.length > 12 ? '${bad.length} chars' : bad}" is not saved', (
+      tester,
+    ) async {
       await pumpSettings(tester, device: band);
 
       await tester.enterText(find.byType(TextField), bad);
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
 
-      expect(find.text('Enter a name of up to 40 characters.'), findsOneWidget);
+      expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
       verifyNever(() => devices.rename(any(), any()));
     });
   }
@@ -145,6 +147,71 @@ void main() {
 
     expect(find.text('This device is no longer on this phone.'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);
+  });
+
+  // TC-DST-003: a blank name is never saved, and leaving does not hide the message.
+  for (final blank in ['', '   ']) {
+    testWidgets('Back with the name "$blank" stays, shows the message and keeps the old name', (
+      tester,
+    ) async {
+      await pumpSettings(tester, device: band);
+
+      await tester.enterText(find.byType(TextField), blank);
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('home page'), findsNothing);
+      expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
+      verifyNever(() => devices.rename(any(), any()));
+    });
+
+    testWidgets("the phone's back with the name \"$blank\" stays too", (tester) async {
+      await pumpSettings(tester, device: band);
+
+      await tester.enterText(find.byType(TextField), blank);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(find.text('home page'), findsNothing);
+      expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
+      verifyNever(() => devices.rename(any(), any()));
+    });
+  }
+
+  testWidgets("the phone's back saves a changed name and returns", (tester) async {
+    await pumpSettings(tester, device: band);
+
+    await tester.enterText(find.byType(TextField), 'Kitchen band');
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    verify(() => devices.rename(7, 'Kitchen band')).called(1);
+    expect(find.text('home page'), findsOneWidget);
+  });
+
+  testWidgets('after fixing a blank name, Back saves it and returns', (tester) async {
+    await pumpSettings(tester, device: band);
+    await tester.enterText(find.byType(TextField), '');
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Kitchen band');
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    verify(() => devices.rename(7, 'Kitchen band')).called(1);
+    expect(find.text('home page'), findsOneWidget);
+  });
+
+  testWidgets('Done then focus loss saves the new name once', (tester) async {
+    await pumpSettings(tester, device: band);
+
+    await tester.enterText(find.byType(TextField), 'Kitchen band');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+
+    verify(() => devices.rename(7, 'Kitchen band')).called(1);
   });
 
   testWidgets('Back saves a changed name and returns', (tester) async {

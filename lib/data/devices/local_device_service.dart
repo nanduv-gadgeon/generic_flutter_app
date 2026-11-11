@@ -59,6 +59,10 @@ class LocalDeviceService implements DeviceService {
       _db.devicesDao.setAlertEnabled(deviceId, readingKey, enabled: enabled);
 
   @override
+  Future<void> reorder(int userId, List<int> orderedIds) =>
+      _db.devicesDao.reorder(userId, orderedIds);
+
+  @override
   Future<bool> isAdded(int userId, String address) => _db.devicesDao.existsForUser(userId, address);
 
   @override

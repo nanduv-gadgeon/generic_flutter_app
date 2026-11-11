@@ -45,7 +45,8 @@ const _theme = ThemeConfig(
 );
 
 /// Pumps My devices with fakes for the user, devices, stored readings and the linked device.
-Future<void> pumpHome(
+/// Returns the device service, e.g. to check what was saved.
+Future<MockDeviceService> pumpHome(
   WidgetTester tester, {
   List<UserDevice> devices = const [],
   DateTime? now,
@@ -64,6 +65,7 @@ Future<void> pumpHome(
   final deviceService = MockDeviceService();
   when(() => auth.currentUser()).thenAnswer((_) async => user);
   when(() => deviceService.watchDevices(any())).thenAnswer((_) => Stream.value(devices));
+  when(() => deviceService.reorder(any(), any())).thenAnswer((_) async {});
   final live = MockLiveReadings();
   when(live.watchActive).thenAnswer((_) => Stream.value(active));
   final readings = MockReadingRepository();
@@ -104,4 +106,5 @@ Future<void> pumpHome(
     ),
   );
   await tester.pumpAndSettle();
+  return deviceService;
 }

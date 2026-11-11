@@ -107,26 +107,46 @@ class HomeDeviceCard extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    _Chip(
-                      icon: device.transport == Transport.wifi ? Icons.wifi : Icons.bluetooth,
-                      text: linkText,
-                      color: linked ? tokens?.ok : tokens?.muted,
-                      background: linked ? tokens?.okBg : tokens?.chipBg,
-                    ),
-                    if (battery != null)
-                      _Chip(
-                        icon: Icons.battery_std,
-                        text: DevicesStrings.battery(battery),
-                        color: tokens?.muted,
-                        background: tokens?.chipBg,
+                // One line, like the mockup: Seen sits at the right end and, when space runs
+                // out, ends with an ellipsis. The chips keep their size up to 55% and 35% of the
+                // row, so all three always fit; only very large text sizes shorten them.
+                LayoutBuilder(
+                  builder: (context, constraints) => Row(
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.55),
+                        child: _Chip(
+                          icon: device.transport == Transport.wifi ? Icons.wifi : Icons.bluetooth,
+                          text: linkText,
+                          // Offline in red; the word says it too, not just the colour.
+                          color: linked ? tokens?.ok : tokens?.danger,
+                          background: linked ? tokens?.okBg : tokens?.dangerBg,
+                        ),
                       ),
-                    Text(seen, style: TextStyle(fontSize: 13, color: tokens?.muted)),
-                  ],
+                      if (battery != null) ...[
+                        const SizedBox(width: 8),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.35),
+                          child: _Chip(
+                            icon: Icons.battery_std,
+                            text: DevicesStrings.battery(battery),
+                            color: tokens?.muted,
+                            background: tokens?.chipBg,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          seen,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(fontSize: 13, color: tokens?.muted),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -136,19 +156,27 @@ class HomeDeviceCard extends ConsumerWidget {
     );
   }
 
-  /// The newest stored values of the profile's first readings, or "No readings yet".
+  /// The newest stored values of the profile's quick readings (or its first readings), with their
+  /// short labels, e.g. "SpO₂ 97 % · HR 72 bpm"; or "No readings yet".
   String _quickReading(DeviceProfile? profile, Map<String, Sample> latest) {
+    final readings = profile?.readings ?? const <Reading>[];
+    final chosen = profile == null || profile.quickReadings.isEmpty
+        ? readings
+        : [
+            for (final key in profile.quickReadings)
+              ?readings.where((r) => r.key == key).firstOrNull,
+          ];
     final parts = [
-      for (final r in profile?.readings ?? const <Reading>[])
+      for (final r in chosen)
         if (latest[r.key] case final s?)
-          '${r.label} ${DeviceStrings.value(s.value, r.decimals, r.unit)}',
+          '${r.shortLabel ?? r.label} ${DeviceStrings.value(s.value, r.decimals, r.unit)}',
     ].take(quickReadings).toList();
     return parts.isEmpty ? DevicesStrings.noReadings : DevicesStrings.quickReading(parts);
   }
 
   String _linkText(ActiveLink? link) {
     if (link == null || link.deviceId != device.id || !isLinked(link)) {
-      return DevicesStrings.notConnected;
+      return DevicesStrings.offline;
     }
     final transport = device.transport == Transport.wifi
         ? DevicesStrings.wifi
@@ -181,6 +209,8 @@ class _Chip extends StatelessWidget {
         Flexible(
           child: Text(
             text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color),
           ),
         ),

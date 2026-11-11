@@ -56,6 +56,19 @@ void main() {
     expect([for (final d in await service.watchDevices(userId).first) d.id], [b, a]);
   });
 
+  test("reorder saves the order and leaves other users' devices alone", () async {
+    final other = await db.usersDao.insertUser(fakeUser(email: 'other@example.com'));
+    final theirs = await db.devicesDao.addDevice(fakeDevice(other, address: 'X'));
+    final a = await db.devicesDao.addDevice(fakeDevice(userId, address: 'A'));
+    final b = await db.devicesDao.addDevice(fakeDevice(userId, address: 'B'));
+    final c = await db.devicesDao.addDevice(fakeDevice(userId, address: 'C'));
+
+    await service.reorder(userId, [c, theirs, a, b]);
+
+    expect([for (final d in await service.watchDevices(userId).first) d.id], [c, a, b]);
+    expect([for (final d in await service.watchDevices(other).first) d.id], [theirs]);
+  });
+
   test('only lists the given user\'s devices', () async {
     final other = await db.usersDao.insertUser(fakeUser(email: 'other@example.com'));
     await db.devicesDao.addDevice(fakeDevice(other));

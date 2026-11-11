@@ -55,6 +55,9 @@ abstract class DeviceProfile with _$DeviceProfile {
     required List<Reading> readings,
     required List<AlertRule> alerts,
 
+    /// Reading keys shown on the device's card on home, in order. Empty: its first two readings.
+    @Default([]) List<String> quickReadings,
+
     /// How to reach the device over BLE. Missing until its protocol is known; the type then
     /// cannot connect over BLE yet.
     BleSettings? ble,
@@ -91,6 +94,9 @@ abstract class Reading with _$Reading {
   const factory Reading({
     required String key,
     required String label,
+
+    /// A shorter label where space is tight, e.g. "HR" on a device card; [label] when not set.
+    String? shortLabel,
     required String unit,
     required ReadingIcon icon,
     @Default(0) int decimals,

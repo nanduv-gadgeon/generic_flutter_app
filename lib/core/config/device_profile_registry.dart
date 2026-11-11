@@ -64,6 +64,12 @@ List<String> checkDeviceProfiles(AppConfig config) {
       }
     }
 
+    for (final (j, key) in profile.quickReadings.indexed) {
+      if (!keys.contains(key)) {
+        errors.add('$path/quickReadings/$j: "$key" is not a reading of ${profile.id}');
+      }
+    }
+
     for (final (j, alert) in profile.alerts.indexed) {
       if (alert.key != batteryKey && !keys.contains(alert.key)) {
         errors.add('$path/alerts/$j/key: "${alert.key}" is not a reading of ${profile.id}');

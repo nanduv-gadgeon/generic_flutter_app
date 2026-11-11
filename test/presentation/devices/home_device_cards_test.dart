@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:generic_flutter_app/core/theme/app_tokens.dart';
+import 'package:generic_flutter_app/presentation/devices/home_device_card.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
@@ -54,7 +56,7 @@ void main() {
     testWidgets('shows the newest stored readings, or none yet', (tester) async {
       await pump(tester);
 
-      expect(find.text('Heart rate 72 bpm · Blood oxygen 97 %'), findsOneWidget);
+      expect(find.text('SpO₂ 97 % · HR 72 bpm'), findsOneWidget);
       expect(find.text('No readings yet'), findsNWidgets(2));
     });
 
@@ -67,7 +69,7 @@ void main() {
     });
 
     final links = <String, (ActiveLink?, String, int)>{
-      'nothing connected': (null, 'Not connected', 0),
+      'nothing connected': (null, 'Offline', 0),
       'the sensor connected': (
         (deviceId: 2, status: LiveStatus.streaming),
         'Bluetooth · Connected',
@@ -78,7 +80,7 @@ void main() {
         'Bluetooth · Connecting…',
         1,
       ),
-      'the sensor out of reach': ((deviceId: 2, status: LiveStatus.waiting), 'Not connected', 0),
+      'the sensor out of reach': ((deviceId: 2, status: LiveStatus.waiting), 'Offline', 0),
     };
     for (final MapEntry(key: name, value: (active, text, count)) in links.entries) {
       testWidgets('with $name, says "$text" and counts $count connected', (tester) async {
@@ -86,7 +88,7 @@ void main() {
         await pump(tester, active: active);
 
         expect(find.text(text), findsAtLeastNWidgets(1));
-        expect(find.text('Not connected'), findsNWidgets(count == 1 ? 2 : 3));
+        expect(find.text('Offline'), findsNWidgets(count == 1 ? 2 : 3));
         expect(find.bySemanticsLabel('$count Connected'), findsOneWidget);
         semantics.dispose();
       });
@@ -116,12 +118,61 @@ void main() {
 
       expect(
         find.bySemanticsLabel(
-          'Test sensor, Heart rate 72 bpm · Blood oxygen 97 %, Bluetooth · Connected, Battery 81%, '
+          'Test sensor, SpO₂ 97 % · HR 72 bpm, Bluetooth · Connected, Battery 81%, '
           'Seen 12 s ago. Opens the device',
         ),
         findsOneWidget,
       );
       semantics.dispose();
+    });
+
+    /// The link chip, battery chip and Seen text of the sensor's card share one line.
+    void expectStatusOnOneLine(WidgetTester tester, String link, String battery, String seen) {
+      final card = find.ancestor(of: find.text(sensor.name), matching: find.byType(HomeDeviceCard));
+      Finder inCard(String text) => find.descendant(of: card, matching: find.text(text));
+      final y = tester.getCenter(inCard(link)).dy;
+      expect(tester.getCenter(inCard(battery)).dy, moreOrLessEquals(y, epsilon: 1));
+      expect(tester.getCenter(inCard(seen)).dy, moreOrLessEquals(y, epsilon: 1));
+    }
+
+    testWidgets('link, battery and Seen are on one line', (tester) async {
+      await pump(tester, active: (deviceId: 2, status: LiveStatus.streaming));
+
+      expectStatusOnOneLine(tester, 'Bluetooth · Connected', '81%', 'Seen 12 s ago');
+    });
+
+    testWidgets('they stay on one line on a small phone with double text size', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pump(
+        tester,
+        active: (deviceId: 2, status: LiveStatus.streaming),
+        size: const Size(320, 1400),
+      );
+
+      expect(tester.takeException(), isNull);
+      expectStatusOnOneLine(tester, 'Bluetooth · Connected', '81%', 'Seen 12 s ago');
+    });
+
+    testWidgets('a device that is not connected says Offline in red', (tester) async {
+      await pump(tester);
+
+      final offline = find.text('Offline').first;
+      final danger = Theme.of(tester.element(offline)).extension<AppTokens>()!.danger;
+      expect(tester.widget<Text>(offline).style?.color, danger);
+    });
+
+    testWidgets('without quickReadings the first readings show, with short labels', (tester) async {
+      await pumpHome(
+        tester,
+        devices: const [UserDevice(id: 5, name: 'Test band', profileId: 'smart_band_v1')],
+        now: now,
+        latest: {
+          5: {'hr': Sample('hr', 72, now), 'spo2': Sample('spo2', 98, now)},
+        },
+      );
+
+      expect(find.text('HR 72 bpm · SpO₂ 98 %'), findsOneWidget);
     });
 
     for (final brightness in Brightness.values) {

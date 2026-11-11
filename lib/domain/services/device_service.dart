@@ -28,6 +28,10 @@ abstract interface class DeviceService {
   /// Turns one of the device's alert limits on or off (Device settings). The limit stays as it is.
   Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled});
 
+  /// Saves the order of [userId]'s devices (Reorder on home): device ids, first to last. Ids of
+  /// other users' devices are ignored.
+  Future<void> reorder(int userId, List<int> orderedIds);
+
   /// Whether the user already has a device at [address].
   Future<bool> isAdded(int userId, String address);
 

@@ -83,4 +83,23 @@ void main() {
 
     expect(await devicesNow(), isEmpty);
   });
+
+  test('saveDeviceOrder saves for the logged-in user', () async {
+    when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
+    when(() => devices.reorder(any(), any())).thenAnswer((_) async {});
+    await container.read(authControllerProvider.future);
+
+    await container.read(saveDeviceOrderProvider)([2, 1]);
+
+    verify(() => devices.reorder(fakeUser.id, [2, 1])).called(1);
+  });
+
+  test('saveDeviceOrder saves nothing when nobody is logged in', () async {
+    when(() => auth.currentUser()).thenAnswer((_) async => null);
+    await container.read(authControllerProvider.future);
+
+    await container.read(saveDeviceOrderProvider)([2, 1]);
+
+    verifyNever(() => devices.reorder(any(), any()));
+  });
 }

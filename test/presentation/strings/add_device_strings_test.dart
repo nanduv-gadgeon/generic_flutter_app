@@ -58,12 +58,6 @@ void main() {
   test('type badge lists Wi‑Fi first, as in the mockup', () {
     expect(AddDeviceStrings.transports([Transport.ble, Transport.wifi]), 'Wi‑Fi · BLE');
     expect(AddDeviceStrings.transports([Transport.ble]), 'BLE');
-    expect(AddDeviceStrings.transports([Transport.ble], DeviceTier.medium), 'BLE · Medium');
-    expect(
-      AddDeviceStrings.transports([Transport.wifi, Transport.ble], DeviceTier.huge),
-      'Wi‑Fi · BLE · Huge',
-    );
-    expect(AddDeviceStrings.transports([Transport.ble], DeviceTier.minimum), 'BLE · Minimum');
   });
 
   test('done subtitle depends on the cloud', () {

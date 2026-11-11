@@ -14,18 +14,11 @@ abstract final class AddDeviceStrings {
   static const comingSoon = 'Coming soon';
   static const loadingTypes = 'Loading device types';
 
-  /// The type card badge, e.g. "Wi‑Fi · BLE", then the type's tier when it has one: "BLE · Medium".
-  static String transports(List<Transport> transports, [DeviceTier? tier]) => [
+  /// The type card badge, e.g. "Wi‑Fi · BLE".
+  static String transports(List<Transport> transports) => [
     if (transports.contains(Transport.wifi)) 'Wi‑Fi',
     if (transports.contains(Transport.ble)) 'BLE',
-    if (tier != null) _tiers[tier]!,
   ].join(' · ');
-
-  static const _tiers = {
-    DeviceTier.minimum: 'Minimum',
-    DeviceTier.medium: 'Medium',
-    DeviceTier.huge: 'Huge',
-  };
 
   // Step 2
   static const connectionHeading = 'How does it connect?';

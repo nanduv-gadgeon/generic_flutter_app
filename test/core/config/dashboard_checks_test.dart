@@ -53,7 +53,6 @@ void main() {
   test('a full dashboard passes and is read', () {
     final json = _config((p) {
       _withExtras(p);
-      p['tier'] = 'huge';
       p['dashboard'] = {
         'strip': 'streamRate',
         'views': [
@@ -124,7 +123,6 @@ void main() {
     'a state code that is not a number': (p) => _readings(p)[0]['states'] = {
       'on': {'label': 'On', 'kind': 'ok'},
     },
-    'an unknown tier': (p) => p['tier'] = 'large',
   };
   for (final MapEntry(key: name, value: edit) in schemaCases.entries) {
     test('the schema refuses $name', () => expect(_schemaErrors(_config(edit)), isNotEmpty));

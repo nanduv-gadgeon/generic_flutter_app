@@ -43,7 +43,6 @@
       "label": "Smart band",
       "summary": "Heart rate, SpO₂, BP, steps, sleep",
       "icon": "watch",
-      "tier": "medium",
       "transports": ["ble"],
       "readings": [
         { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] },
@@ -68,7 +67,6 @@
       "label": "Environment sensor",
       "summary": "Temperature, humidity, CO₂, PM2.5",
       "icon": "chip",
-      "tier": "medium",
       "transports": ["wifi", "ble"],
       "readings": [
         { "key": "temp", "label": "Temperature", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [20, 26], "scale": [10, 40] },
@@ -86,7 +84,6 @@
       "label": "Wearable patch",
       "summary": "Continuous heart rate, skin temp, breathing",
       "icon": "patch",
-      "tier": "medium",
       "transports": ["ble"],
       "readings": [
         { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] },
@@ -102,7 +99,6 @@
       "label": "Health kit",
       "summary": "BP monitor, glucometer, scale, oximeter",
       "icon": "kit",
-      "tier": "medium",
       "transports": ["ble"],
       "readings": [
         { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120], "scale": [80, 180], "pair": "bp_dia" },
@@ -126,7 +122,6 @@
       "label": "Therapy device",
       "summary": "Event log (START / STOP / DATA / ERROR), battery, versions, sync status",
       "icon": "bolt",
-      "tier": "minimum",
       "transports": ["ble"],
       "readings": [
         { "key": "current", "label": "Current", "unit": "mA", "icon": "bolt", "decimals": 1, "normal": [8, 16], "scale": [0, 25] },
@@ -200,7 +195,6 @@
       "label": "Smart thermometer",
       "summary": "One temperature reading each time it is used",
       "icon": "thermo",
-      "tier": "minimum",
       "transports": ["ble"],
       "readings": [
         {
@@ -236,7 +230,6 @@
       "label": "ECG monitor",
       "summary": "Live ECG waveform (250 Hz), heart rate, rhythm, episodes",
       "icon": "ecg",
-      "tier": "huge",
       "transports": ["ble"],
       "readings": [
         { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] },
@@ -294,7 +287,6 @@
       "label": "Multi-sensor hub",
       "summary": "24 channels: temperature, pressure, vibration, humidity, power",
       "icon": "hub",
-      "tier": "huge",
       "transports": ["ble"],
       "readings": [
         { "key": "ch01", "label": "CH01 Boiler inlet", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [50, 70] },
@@ -330,7 +322,6 @@
       "label": "PPG + motion sensor",
       "summary": "SpO₂, heart rate, perfusion index and motion (accelerometer, gyroscope); selectable channels",
       "icon": "heart",
-      "tier": "huge",
       "transports": ["ble"],
       "readings": [
         { "key": "heart_rate", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 120] },

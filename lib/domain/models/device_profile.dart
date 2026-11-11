@@ -23,9 +23,6 @@ const batteryKey = 'battery';
 /// Icon on the Add device type list (mockup `10_add_p1.png`).
 enum DeviceIcon { watch, chip, patch, kit, bolt, thermo, ecg, hub, heart }
 
-/// How much data a device type sends, shown after its transports on Add device ("BLE · Medium").
-enum DeviceTier { minimum, medium, huge }
-
 /// How the phone reaches the device.
 enum Transport { ble, wifi }
 
@@ -40,8 +37,6 @@ abstract class DeviceProfile with _$DeviceProfile {
     required String summary,
     required DeviceIcon icon,
 
-    /// How much data the type sends; not shown when missing.
-    DeviceTier? tier,
     required List<Transport> transports,
     required List<Reading> readings,
     required List<AlertRule> alerts,

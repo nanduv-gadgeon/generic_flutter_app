@@ -80,7 +80,7 @@ void main() {
         db,
         (id) => profiles[id],
         (profile, transport, address, {lastAddress}) => links[address]!,
-        (id) => ReadingWriter(id, readings, (_, _) async {}),
+        (id, _) => ReadingWriter(id, readings, (_, _) async {}),
         (id, settings) => HeartbeatRecorder(
           id,
           heartbeats,

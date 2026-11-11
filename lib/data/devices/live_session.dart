@@ -187,8 +187,10 @@ class LiveSession {
           _onSample(decoded);
         case BatchEnd():
           _sync?.onBatchEnd();
-        case DeviceEvent() || InvalidPacket():
-          break; // Device events are not stored yet.
+        case DeviceEvent():
+          _emit(LiveEvent(decoded));
+        case InvalidPacket():
+          break;
       }
     }
   }
@@ -263,8 +265,8 @@ class LiveSession {
           );
         case LiveContactChanged(:final contact):
           debugPrint('Live device: contact ${contact.name}');
-        case LiveValue() || LiveHeartbeat():
-          break; // A reading: never logged. Heartbeats are not the session's.
+        case LiveValue() || LiveEvent() || LiveHeartbeat():
+          break; // Readings and events: never logged. Heartbeats are not the session's.
       }
     }
     if (!_out.isClosed && !_stopped) _out.add(update);

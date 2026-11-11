@@ -26,39 +26,58 @@
   },
   "history": { "daysOnPhone": 7 },
   "cloud": { "baseUrl": "https://api.example", "environment": "dev", "uploader": "flutterModule", "autoSyncDefault": "15m" },
-  "deviceTypes": ["smart_band_v1", "env_sensor_v1", "wearable_patch_v1", "health_kit_v1", "ief_device_v1", "ppg_motion_v1"],
+  "deviceTypes": [
+    "smart_band_v1",
+    "env_sensor_v1",
+    "wearable_patch_v1",
+    "health_kit_v1",
+    "ief_device_v1",
+    "thermometer_v1",
+    "ecg_monitor_v1",
+    "sensor_hub_v1",
+    "ppg_motion_v1"
+  ],
   "deviceProfiles": [
     {
       "id": "smart_band_v1",
       "label": "Smart band",
       "summary": "Heart rate, SpO₂, BP, steps, sleep",
       "icon": "watch",
+      "tier": "medium",
       "transports": ["ble"],
       "readings": [
-        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
-        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100] },
-        { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120] },
-        { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2] },
-        { "key": "steps", "label": "Steps", "unit": "steps", "icon": "trend", "goal": 10000 },
-        { "key": "sleep", "label": "Sleep", "unit": "h", "icon": "moon", "decimals": 1, "goal": 8 },
-        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20] }
+        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] },
+        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100], "scale": [80, 100] },
+        { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120], "scale": [80, 180], "pair": "bp_dia" },
+        { "key": "bp_dia", "label": "Diastolic pressure", "unit": "mmHg", "icon": "heart" },
+        { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2], "scale": [34, 40] },
+        { "key": "steps", "label": "Steps", "unit": "today", "icon": "trend", "goal": 10000 },
+        { "key": "sleep", "label": "Sleep", "unit": "last night", "icon": "moon", "decimals": 1, "goal": 8, "format": "hoursMinutes" },
+        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20], "scale": [8, 30] }
       ],
-      "alerts": [{ "key": "hr", "above": 110 }, { "key": "spo2", "below": 92 }, { "key": "battery", "below": 15 }]
+      "alerts": [{ "key": "hr", "above": 110 }, { "key": "spo2", "below": 92 }, { "key": "battery", "below": 15 }],
+      "dashboard": {
+        "views": [
+          { "type": "gauge", "reading": "hr" },
+          { "type": "tiles", "readings": ["spo2", "bp", "temp", "steps", "sleep", "resp"] }
+        ]
+      }
     },
     {
       "id": "env_sensor_v1",
       "label": "Environment sensor",
       "summary": "Temperature, humidity, CO₂, PM2.5",
       "icon": "chip",
+      "tier": "medium",
       "transports": ["wifi", "ble"],
       "readings": [
-        { "key": "temp", "label": "Temperature", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [20, 26] },
-        { "key": "co2", "label": "CO₂", "unit": "ppm", "icon": "cloud", "normal": [400, 1000] },
-        { "key": "hum", "label": "Humidity", "unit": "%", "icon": "drop", "normal": [40, 60] },
-        { "key": "pm25", "label": "PM2.5", "unit": "µg/m³", "icon": "dots", "normal": [0, 15] },
-        { "key": "press", "label": "Pressure", "unit": "hPa", "icon": "gauge", "normal": [1000, 1025] },
-        { "key": "light", "label": "Light", "unit": "lux", "icon": "sun", "normal": [300, 500] },
-        { "key": "tvoc", "label": "TVOC", "unit": "mg/m³", "icon": "flask", "decimals": 2, "normal": [0, 0.3] }
+        { "key": "temp", "label": "Temperature", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [20, 26], "scale": [10, 40] },
+        { "key": "co2", "label": "CO₂", "unit": "ppm", "icon": "cloud", "normal": [400, 1000], "scale": [400, 2000] },
+        { "key": "hum", "label": "Humidity", "unit": "%", "icon": "drop", "normal": [40, 60], "scale": [0, 100] },
+        { "key": "pm25", "label": "PM2.5", "unit": "µg/m³", "icon": "dots", "normal": [0, 15], "scale": [0, 75] },
+        { "key": "press", "label": "Pressure", "unit": "hPa", "icon": "gauge", "normal": [1000, 1025], "scale": [950, 1050] },
+        { "key": "light", "label": "Light", "unit": "lux", "icon": "sun", "normal": [300, 500], "scale": [0, 1000] },
+        { "key": "tvoc", "label": "TVOC", "unit": "mg/m³", "icon": "flask", "decimals": 2, "normal": [0, 0.3], "scale": [0, 1] }
       ],
       "alerts": [{ "key": "temp", "above": 30 }, { "key": "co2", "above": 1000 }, { "key": "battery", "below": 15 }]
     },
@@ -67,13 +86,14 @@
       "label": "Wearable patch",
       "summary": "Continuous heart rate, skin temp, breathing",
       "icon": "patch",
+      "tier": "medium",
       "transports": ["ble"],
       "readings": [
-        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100] },
-        { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2] },
-        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20] },
-        { "key": "hrv", "label": "HRV", "unit": "ms", "icon": "trend", "normal": [20, 70] },
-        { "key": "active", "label": "Active time", "unit": "min", "icon": "bolt", "goal": 150 }
+        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] },
+        { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2], "scale": [34, 40] },
+        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20], "scale": [8, 30] },
+        { "key": "hrv", "label": "HRV", "unit": "ms", "icon": "trend", "normal": [20, 70], "scale": [0, 100] },
+        { "key": "active", "label": "Active time", "unit": "min today", "icon": "bolt", "goal": 150 }
       ],
       "alerts": [{ "key": "hr", "above": 120 }, { "key": "temp", "above": 37.8 }, { "key": "battery", "below": 15 }]
     },
@@ -82,23 +102,39 @@
       "label": "Health kit",
       "summary": "BP monitor, glucometer, scale, oximeter",
       "icon": "kit",
+      "tier": "medium",
       "transports": ["ble"],
       "readings": [
-        { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120] },
-        { "key": "glucose", "label": "Glucose", "unit": "mg/dL", "icon": "drop", "normal": [70, 140] },
-        { "key": "weight", "label": "Weight", "unit": "kg", "icon": "scale", "decimals": 1, "normal": [60, 80] },
-        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100] },
-        { "key": "pulse", "label": "Pulse", "unit": "bpm", "icon": "pulse", "normal": [60, 100] }
+        { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120], "scale": [80, 180], "pair": "bp_dia" },
+        { "key": "bp_dia", "label": "Diastolic pressure", "unit": "mmHg", "icon": "heart" },
+        { "key": "glucose", "label": "Glucose", "unit": "mg/dL", "icon": "drop", "normal": [70, 140], "scale": [50, 250] },
+        { "key": "weight", "label": "Weight", "unit": "kg", "icon": "scale", "decimals": 1, "normal": [60, 80], "scale": [40, 120] },
+        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100], "scale": [80, 100] },
+        { "key": "pulse", "label": "Pulse", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] }
       ],
-      "alerts": [{ "key": "bp", "above": 130 }, { "key": "glucose", "above": 180 }, { "key": "battery", "below": 15 }]
+      "quickReadings": ["bp", "glucose"],
+      "alerts": [{ "key": "bp", "above": 130 }, { "key": "glucose", "above": 180 }, { "key": "battery", "below": 15 }],
+      "dashboard": {
+        "views": [
+          { "type": "gauge", "reading": "bp" },
+          { "type": "tiles", "readings": ["glucose", "weight", "spo2", "pulse"] }
+        ]
+      }
     },
     {
       "id": "ief_device_v1",
-      "label": "IEF wearable patch",
-      "summary": "Current, battery",
-      "icon": "patch",
+      "label": "Therapy device",
+      "summary": "Event log (START / STOP / DATA / ERROR), battery, versions, sync status",
+      "icon": "bolt",
+      "tier": "minimum",
       "transports": ["ble"],
-      "readings": [{ "key": "current", "label": "Current", "unit": "mA", "icon": "bolt", "decimals": 2 }],
+      "readings": [
+        { "key": "current", "label": "Current", "unit": "mA", "icon": "bolt", "decimals": 1, "normal": [8, 16], "scale": [0, 25] },
+        { "key": "run_time", "label": "Run time", "unit": "h", "icon": "play", "decimals": 1, "source": "eventsRunTimeToday" },
+        { "key": "sessions", "label": "Sessions", "unit": "", "icon": "list", "source": "eventsSessionsToday" },
+        { "key": "errors", "label": "Errors", "unit": "", "icon": "alert", "normal": [0, 0], "scale": [0, 5], "source": "eventsErrorsToday" }
+      ],
+      "quickReadings": ["current"],
       "alerts": [{ "key": "battery", "below": 15 }],
       "ble": {
         "serviceUuid": "1257dd10-6f99-498f-b4a6-04dc1e3591f6",
@@ -156,19 +192,151 @@
         "everySeconds": 60,
         "repeat": ["request_logs"]
       },
-      "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 }
+      "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 },
+      "dashboard": { "strip": "state" }
+    },
+    {
+      "id": "thermometer_v1",
+      "label": "Smart thermometer",
+      "summary": "One temperature reading each time it is used",
+      "icon": "thermo",
+      "tier": "minimum",
+      "transports": ["ble"],
+      "readings": [
+        {
+          "key": "temp",
+          "label": "Temperature",
+          "unit": "°C",
+          "icon": "thermo",
+          "decimals": 1,
+          "scale": [35, 40],
+          "zones": [
+            { "below": 37.5, "label": "Normal", "kind": "ok" },
+            { "below": 38, "label": "High", "kind": "warn" },
+            { "label": "Fever", "kind": "danger" }
+          ]
+        }
+      ],
+      "alerts": [{ "key": "temp", "above": 38 }, { "key": "battery", "below": 15 }],
+      "dashboard": {
+        "strip": "lastReading",
+        "onDemand": true,
+        "views": [
+          { "type": "spotValue", "reading": "temp" },
+          {
+            "type": "note",
+            "text": "This device connects only when a reading is taken. There is no live stream, so the screen shows the latest reading and today’s list."
+          },
+          { "type": "readingList", "reading": "temp" }
+        ]
+      }
+    },
+    {
+      "id": "ecg_monitor_v1",
+      "label": "ECG monitor",
+      "summary": "Live ECG waveform (250 Hz), heart rate, rhythm, episodes",
+      "icon": "ecg",
+      "tier": "huge",
+      "transports": ["ble"],
+      "readings": [
+        { "key": "hr", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 160] },
+        { "key": "hrv", "label": "HRV (RMSSD)", "unit": "ms", "icon": "trend", "normal": [20, 70], "scale": [0, 100] },
+        { "key": "rr", "label": "R-R interval", "unit": "ms", "icon": "ecg", "normal": [600, 1000], "scale": [300, 1500] },
+        { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20], "scale": [8, 30] },
+        { "key": "ecg", "label": "ECG", "unit": "mV", "icon": "ecg", "decimals": 2 },
+        {
+          "key": "rhythm",
+          "label": "Rhythm",
+          "unit": "",
+          "icon": "ecg",
+          "states": { "1": { "label": "Sinus rhythm", "kind": "ok" }, "2": { "label": "Irregular rhythm", "kind": "warn" } }
+        },
+        {
+          "key": "electrodes",
+          "label": "Electrodes",
+          "unit": "",
+          "icon": "ecg",
+          "states": { "0": { "label": "Detached", "kind": "warn" }, "1": { "label": "Attached", "kind": "ok" } }
+        },
+        {
+          "key": "signal",
+          "label": "Signal",
+          "unit": "",
+          "icon": "ecg",
+          "states": {
+            "0": { "label": "No signal", "kind": "danger" },
+            "1": { "label": "Signal weak", "kind": "warn" },
+            "2": { "label": "Signal good", "kind": "ok" }
+          }
+        }
+      ],
+      "alerts": [{ "key": "hr", "above": 120 }, { "key": "battery", "below": 15 }],
+      "dashboard": {
+        "strip": "streamRate",
+        "views": [
+          { "type": "gauge", "reading": "hr" },
+          { "type": "tiles", "readings": ["hrv", "rr", "resp"] },
+          {
+            "type": "waveform",
+            "reading": "ecg",
+            "title": "Live ECG · Lead I · 250 Hz",
+            "scaleLabel": "25 mm/s · 10 mm/mV",
+            "sampleHz": 250,
+            "seconds": 6,
+            "status": "signal",
+            "stats": ["hr", "rhythm", "electrodes"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sensor_hub_v1",
+      "label": "Multi-sensor hub",
+      "summary": "24 channels: temperature, pressure, vibration, humidity, power",
+      "icon": "hub",
+      "tier": "huge",
+      "transports": ["ble"],
+      "readings": [
+        { "key": "ch01", "label": "CH01 Boiler inlet", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [50, 70] },
+        { "key": "ch02", "label": "CH02 Boiler outlet", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [60, 80] },
+        { "key": "ch03", "label": "CH03 Pump bearing", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [30, 60] },
+        { "key": "ch04", "label": "CH04 Motor winding", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [40, 80] },
+        { "key": "ch05", "label": "CH05 Control cabinet", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [20, 40] },
+        { "key": "ch06", "label": "CH06 Ambient", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [15, 35] },
+        { "key": "ch07", "label": "CH07 Line A pressure", "unit": "bar", "icon": "gauge", "decimals": 1, "normal": [4, 8] },
+        { "key": "ch08", "label": "CH08 Line B pressure", "unit": "bar", "icon": "gauge", "decimals": 1, "normal": [4, 8] },
+        { "key": "ch09", "label": "CH09 Filter inlet", "unit": "bar", "icon": "gauge", "decimals": 1, "normal": [2, 5] },
+        { "key": "ch10", "label": "CH10 Filter outlet", "unit": "bar", "icon": "gauge", "decimals": 1, "normal": [2, 5] },
+        { "key": "ch11", "label": "CH11 Tank", "unit": "bar", "icon": "gauge", "decimals": 1, "normal": [1, 3] },
+        { "key": "ch12", "label": "CH12 Return line", "unit": "bar", "icon": "gauge", "decimals": 1, "normal": [1, 3] },
+        { "key": "ch13", "label": "CH13 Pump drive end", "unit": "mm/s", "icon": "vibrate", "decimals": 1, "normal": [0, 4.5] },
+        { "key": "ch14", "label": "CH14 Pump non-drive end", "unit": "mm/s", "icon": "vibrate", "decimals": 1, "normal": [0, 4.5] },
+        { "key": "ch15", "label": "CH15 Motor drive end", "unit": "mm/s", "icon": "vibrate", "decimals": 1, "normal": [0, 4.5] },
+        { "key": "ch16", "label": "CH16 Motor non-drive end", "unit": "mm/s", "icon": "vibrate", "decimals": 1, "normal": [0, 4.5] },
+        { "key": "ch17", "label": "CH17 Cooling fan", "unit": "mm/s", "icon": "vibrate", "decimals": 1, "normal": [0, 4.5] },
+        { "key": "ch18", "label": "CH18 Compressor", "unit": "mm/s", "icon": "vibrate", "decimals": 1, "normal": [0, 4.5] },
+        { "key": "ch19", "label": "CH19 Room 1", "unit": "%RH", "icon": "drop", "normal": [30, 60] },
+        { "key": "ch20", "label": "CH20 Room 2", "unit": "%RH", "icon": "drop", "normal": [30, 60] },
+        { "key": "ch21", "label": "CH21 Store room", "unit": "%RH", "icon": "drop", "normal": [30, 60] },
+        { "key": "ch22", "label": "CH22 Cabinet", "unit": "%RH", "icon": "drop", "normal": [20, 50] },
+        { "key": "ch23", "label": "CH23 Main feed", "unit": "kW", "icon": "bolt", "decimals": 1, "normal": [0, 60] },
+        { "key": "ch24", "label": "CH24 Aux feed", "unit": "kW", "icon": "bolt", "decimals": 1, "normal": [0, 20] }
+      ],
+      "alerts": [{ "key": "battery", "below": 15 }],
+      "dashboard": { "strip": "channels" }
     },
     {
       "id": "ppg_motion_v1",
-      "label": "PPG + Motion sensor",
-      "summary": "SpO₂, heart rate, perfusion",
-      "icon": "chip",
+      "label": "PPG + motion sensor",
+      "summary": "SpO₂, heart rate, perfusion index and motion (accelerometer, gyroscope); selectable channels",
+      "icon": "heart",
+      "tier": "huge",
       "transports": ["ble"],
       "readings": [
-        { "key": "heart_rate", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "heart" },
-        { "key": "spo2", "label": "Blood oxygen", "shortLabel": "SpO₂", "unit": "%", "icon": "drop" },
-        { "key": "pi_red", "label": "PI (Red)", "unit": "%", "icon": "pulse", "decimals": 2 },
-        { "key": "pi_ir", "label": "PI (IR)", "unit": "%", "icon": "pulse", "decimals": 2 }
+        { "key": "heart_rate", "label": "Heart rate", "shortLabel": "HR", "unit": "bpm", "icon": "pulse", "normal": [60, 100], "scale": [40, 120] },
+        { "key": "spo2", "label": "SpO₂", "unit": "%", "icon": "drop", "normal": [95, 100], "scale": [80, 100] },
+        { "key": "pi_red", "label": "PI (Red)", "unit": "", "icon": "trend", "decimals": 3, "normal": [0.05, 1], "scale": [0, 1] },
+        { "key": "pi_ir", "label": "PI (IR)", "unit": "", "icon": "trend", "decimals": 3, "normal": [0.1, 1], "scale": [0, 1] }
       ],
       "quickReadings": ["spo2", "heart_rate"],
       "alerts": [{ "key": "spo2", "below": 92 }, { "key": "heart_rate", "above": 120 }, { "key": "battery", "below": 15 }],
@@ -268,7 +436,13 @@
         "step": 1,
         "commands": ["led_ir", "led_red"]
       },
-      "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 }
+      "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 },
+      "dashboard": {
+        "views": [
+          { "type": "gauge", "reading": "spo2" },
+          { "type": "tiles", "readings": ["heart_rate", "pi_ir", "pi_red"] }
+        ]
+      }
     }
   ]
 }

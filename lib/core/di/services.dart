@@ -15,6 +15,7 @@ import '../../data/devices/cloud_device_registration.dart';
 import '../../data/devices/active_device.dart';
 import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
+import '../../data/events/local_device_event_repository.dart';
 import '../../data/heartbeats/local_heartbeat_repository.dart';
 import '../../data/readings/local_reading_repository.dart';
 import '../../data/devices/local_device_service.dart';
@@ -28,6 +29,7 @@ import '../../domain/services/app_settings_service.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
 import '../../domain/models/heartbeat_settings.dart';
@@ -37,6 +39,7 @@ import '../../domain/services/reading_repository.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/photo_picker.dart';
 import '../../domain/services/uploader.dart';
+import '../config/dashboard_checks.dart';
 import '../config/device_profile_registry.dart';
 import '../jobs/reading_cleanup_job.dart';
 import 'database.dart';
@@ -99,8 +102,14 @@ ReadingRepository readingRepository(Ref ref) =>
 HeartbeatRepository heartbeatRepository(Ref ref) =>
     LocalHeartbeatRepository(ref.watch(appDatabaseProvider).requireValue);
 
-/// Deletes readings older than the config's `history.daysOnPhone` and heartbeats older than
-/// 24 hours, now and once a day.
+/// Stored device events (session start / stop, errors): the local database in both phases.
+// TODO(phase2): the uploader sends them with the readings.
+@Riverpod(keepAlive: true)
+DeviceEventRepository deviceEventRepository(Ref ref) =>
+    LocalDeviceEventRepository(ref.watch(appDatabaseProvider).requireValue);
+
+/// Deletes readings and device events older than the config's `history.daysOnPhone`, and
+/// heartbeats older than 24 hours, now and once a day.
 @Riverpod(keepAlive: true)
 ReadingCleanupJob readingCleanupJob(Ref ref) {
   final days = ref.watch(appConfigProvider).requireValue.history.daysOnPhone;
@@ -108,6 +117,7 @@ ReadingCleanupJob readingCleanupJob(Ref ref) {
     ref.watch(readingRepositoryProvider),
     days,
     heartbeats: ref.watch(heartbeatRepositoryProvider),
+    events: ref.watch(deviceEventRepositoryProvider),
   )..start();
   ref.onDispose(job.stop);
   return job;
@@ -121,14 +131,17 @@ LiveReadings liveReadings(Ref ref) {
   final db = ref.watch(appDatabaseProvider).requireValue;
   final readings = ref.watch(readingRepositoryProvider);
   final heartbeats = ref.watch(heartbeatRepositoryProvider);
+  final events = ref.watch(deviceEventRepositoryProvider);
   final active = ActiveDevice(
     db,
     (id) => profiles.contains(id) ? profiles.byId(id) : null,
     ref.watch(deviceLinkFactoryProvider),
-    (deviceId) => ReadingWriter(
+    (deviceId, profile) => ReadingWriter(
       deviceId,
       readings,
       (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
+      events: events,
+      skip: waveformKeys(profile),
     ),
     (deviceId, settings) => HeartbeatRecorder(
       deviceId,

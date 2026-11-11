@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/devices/live_session.dart';
+import 'package:generic_flutter_app/domain/decoder/decoded_packet.dart';
 import 'package:generic_flutter_app/domain/decoder/generic_codec.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 
@@ -61,6 +62,20 @@ void main() {
     await pumpEventQueue();
 
     expect(updates.whereType<LiveValue>().map((v) => v.sample), [Sample('current', 30.07, iefT0)]);
+    await session.stop();
+  });
+
+  test('log events (START / STOP / ERROR) are passed on with the device time', () async {
+    build();
+    unawaited(session.start());
+    await pumpEventQueue();
+    link.data(iefLogFrame);
+    await pumpEventQueue();
+
+    final events = updates.whereType<LiveEvent>().map((u) => u.event);
+    expect(events.map((e) => (e.kind, e.at)), [
+      (DeviceEventKind.error, iefT0.add(const Duration(minutes: 1))),
+    ]);
     await session.stop();
   });
 

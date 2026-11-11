@@ -1,10 +1,14 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/devices/reading_writer.dart';
+import 'package:generic_flutter_app/domain/decoder/decoded_packet.dart';
+import 'package:generic_flutter_app/domain/services/device_event_repository.dart';
 import 'package:generic_flutter_app/domain/services/reading_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockReadingRepository extends Mock implements ReadingRepository {}
+
+class MockDeviceEventRepository extends Mock implements DeviceEventRepository {}
 
 void main() {
   late MockReadingRepository readings;
@@ -12,7 +16,10 @@ void main() {
   final t = DateTime.utc(2026, 11, 3, 9);
   Sample hr(int s) => Sample('heart_rate', 70, t.add(Duration(seconds: s)));
 
-  setUpAll(() => registerFallbackValue(<Sample>[]));
+  setUpAll(() {
+    registerFallbackValue(<Sample>[]);
+    registerFallbackValue(<DeviceEvent>[]);
+  });
   setUp(() {
     readings = MockReadingRepository();
     when(() => readings.addAll(any(), any())).thenAnswer((_) async {});
@@ -99,5 +106,49 @@ void main() {
     await w.close();
 
     expect(calls, 2);
+  });
+
+  test('waveform readings are not stored; the others are', () {
+    fakeAsync((async) {
+      final w = ReadingWriter(7, readings, (_, _) async {}, skip: {'ecg'})
+        ..add(Sample('ecg', 0.4, t))
+        ..add(hr(0));
+      async.elapse(const Duration(seconds: 2));
+
+      expect(stored(), [
+        [hr(0)],
+      ]);
+      w.close();
+    });
+  });
+
+  test('device events are stored as they arrive', () {
+    fakeAsync((async) {
+      final events = MockDeviceEventRepository();
+      when(() => events.addAll(any(), any())).thenAnswer((_) async {});
+      final start = DeviceEvent(DeviceEventKind.start, t, code: 0);
+      final w = ReadingWriter(7, readings, (_, _) async {}, events: events)..addEvent(start);
+      async.flushMicrotasks();
+
+      verify(() => events.addAll(7, [start])).called(1);
+      w.close();
+    });
+  });
+
+  test('a failed event store does not stop later ones', () {
+    fakeAsync((async) {
+      final events = MockDeviceEventRepository();
+      var calls = 0;
+      when(() => events.addAll(any(), any())).thenAnswer((_) async {
+        if (calls++ == 0) throw StateError('locked');
+      });
+      final w = ReadingWriter(7, readings, (_, _) async {}, events: events)
+        ..addEvent(DeviceEvent(DeviceEventKind.start, t, code: 0))
+        ..addEvent(DeviceEvent(DeviceEventKind.stop, t, code: 0));
+      async.flushMicrotasks();
+
+      expect(calls, 2);
+      w.close();
+    });
   });
 }

@@ -1,12 +1,16 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'dashboard_settings.dart';
 import 'heartbeat_settings.dart';
 import 'packet_layout.dart';
+import 'reading.dart';
 import 'streaming_settings.dart';
 import 'wifi_settings.dart';
 
+export 'dashboard_settings.dart';
 export 'heartbeat_settings.dart';
 export 'packet_layout.dart';
+export 'reading.dart';
 export 'streaming_settings.dart';
 export 'wifi_settings.dart';
 
@@ -16,34 +20,16 @@ part 'device_profile.g.dart';
 /// Every device reports its battery level, so alerts may name it without listing it as a reading.
 const batteryKey = 'battery';
 
-/// Icon on the Add device type list (mockup `10_add.png`).
-enum DeviceIcon { watch, chip, patch, kit }
+/// Icon on the Add device type list (mockup `10_add_p1.png`).
+enum DeviceIcon { watch, chip, patch, kit, bolt, thermo, ecg, hub, heart }
 
-/// Icon on a dashboard tile or main card.
-enum ReadingIcon {
-  pulse,
-  drop,
-  heart,
-  thermo,
-  trend,
-  moon,
-  wind,
-  cloud,
-  dots,
-  gauge,
-  sun,
-  flask,
-  bolt,
-  scale,
-  battery,
-}
+/// How much data a device type sends, shown after its transports on Add device ("BLE · Medium").
+enum DeviceTier { minimum, medium, huge }
 
 /// How the phone reaches the device.
 enum Transport { ble, wifi }
 
 /// One entry of the config file's `deviceProfiles` list: what a device type is and what it measures.
-///
-/// The `dashboard` section is added by task 1.3.5.
 @freezed
 abstract class DeviceProfile with _$DeviceProfile {
   const factory DeviceProfile({
@@ -53,6 +39,9 @@ abstract class DeviceProfile with _$DeviceProfile {
     /// Short list of what the device measures, shown under the label in Add device.
     required String summary,
     required DeviceIcon icon,
+
+    /// How much data the type sends; not shown when missing.
+    DeviceTier? tier,
     required List<Transport> transports,
     required List<Reading> readings,
     required List<AlertRule> alerts,
@@ -89,6 +78,10 @@ abstract class DeviceProfile with _$DeviceProfile {
     /// How often the device is heard from, and when it counts as Offline. Missing: every 60 s,
     /// Offline after 3 missed.
     HeartbeatSettings? heartbeat,
+
+    /// Which views the live dashboard shows and what feeds them. Missing: a gauge for the first
+    /// reading and tiles for the rest.
+    DashboardSettings? dashboard,
   }) = _DeviceProfile;
 
   factory DeviceProfile.fromJson(Map<String, dynamic> json) => _$DeviceProfileFromJson(json);
@@ -99,44 +92,24 @@ extension HeartbeatOf on DeviceProfile {
   HeartbeatSettings get heartbeatOrDefault => heartbeat ?? const HeartbeatSettings();
 }
 
-/// A value the device measures, e.g. heart rate in bpm.
-@freezed
-abstract class Reading with _$Reading {
-  const factory Reading({
-    required String key,
-    required String label,
+extension DashboardOf on DeviceProfile {
+  /// The dashboard's settings with its views filled in: the profile's own, or a gauge for the
+  /// first reading and tiles for the others (mockup screens 13–16).
+  DashboardSettings get dashboardOrDefault {
+    final settings = dashboard ?? const DashboardSettings();
+    if (settings.views.isNotEmpty) return settings;
+    final keys = [for (final r in readings) r.key];
+    return settings.copyWith(
+      views: [
+        DashboardView(type: DashboardViewType.gauge, reading: keys.first),
+        if (keys.length > 1)
+          DashboardView(type: DashboardViewType.tiles, readings: keys.sublist(1)),
+      ],
+    );
+  }
 
-    /// A shorter label where space is tight, e.g. "HR" on a device card; [label] when not set.
-    String? shortLabel,
-    required String unit,
-    required ReadingIcon icon,
-    @Default(0) int decimals,
-
-    /// Normal range; readings outside it show High or Low. Not set together with [goal].
-    @NormalRangeConverter() NormalRange? normal,
-
-    /// Daily target shown as progress (steps, sleep, active time).
-    double? goal,
-  }) = _Reading;
-
-  factory Reading.fromJson(Map<String, dynamic> json) => _$ReadingFromJson(json);
-}
-
-/// Inclusive normal range, written `[low, high]` in the config file.
-@freezed
-abstract class NormalRange with _$NormalRange {
-  const factory NormalRange({required double low, required double high}) = _NormalRange;
-}
-
-class NormalRangeConverter implements JsonConverter<NormalRange, List<dynamic>> {
-  const NormalRangeConverter();
-
-  @override
-  NormalRange fromJson(List<dynamic> json) =>
-      NormalRange(low: (json[0] as num).toDouble(), high: (json[1] as num).toDouble());
-
-  @override
-  List<dynamic> toJson(NormalRange range) => [range.low, range.high];
+  /// The reading with [key], if the profile has one.
+  Reading? readingFor(String key) => readings.where((r) => r.key == key).firstOrNull;
 }
 
 /// Default alert condition for a reading: exactly one of [above] or [below] is set.

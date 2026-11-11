@@ -2,6 +2,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/core/jobs/reading_cleanup_job.dart';
 import 'package:generic_flutter_app/data/readings/local_reading_repository.dart';
+import 'package:generic_flutter_app/domain/services/device_event_repository.dart';
 import 'package:generic_flutter_app/domain/services/heartbeat_repository.dart';
 import 'package:generic_flutter_app/domain/services/reading_repository.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,6 +12,8 @@ import '../../fixtures/test_db.dart';
 class MockReadingRepository extends Mock implements ReadingRepository {}
 
 class MockHeartbeatRepository extends Mock implements HeartbeatRepository {}
+
+class MockDeviceEventRepository extends Mock implements DeviceEventRepository {}
 
 void main() {
   final now = DateTime.utc(2026, 11, 10, 9);
@@ -101,6 +104,41 @@ void main() {
       async.flushMicrotasks();
 
       verify(() => readings.deleteOlderThan(any())).called(1);
+      verify(() => heartbeats.deleteOlderThan(any())).called(1);
+    });
+  });
+
+  test('also deletes device events older than the days kept, on the same runs', () {
+    fakeAsync((async) {
+      final readings = MockReadingRepository();
+      when(() => readings.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      final events = MockDeviceEventRepository();
+      when(() => events.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      final job = ReadingCleanupJob(readings, 7, events: events, now: () => now)..start();
+      async.elapse(const Duration(days: 1));
+
+      verify(() => events.deleteOlderThan(DateTime.utc(2026, 11, 3, 9))).called(2);
+      job.stop();
+    });
+  });
+
+  test('a failed event clean-up does not stop the heartbeat one', () {
+    fakeAsync((async) {
+      final readings = MockReadingRepository();
+      when(() => readings.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      final events = MockDeviceEventRepository();
+      when(() => events.deleteOlderThan(any())).thenThrow(StateError('locked'));
+      final heartbeats = MockHeartbeatRepository();
+      when(() => heartbeats.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      ReadingCleanupJob(
+        readings,
+        7,
+        events: events,
+        heartbeats: heartbeats,
+        now: () => now,
+      ).runOnce();
+      async.flushMicrotasks();
+
       verify(() => heartbeats.deleteOlderThan(any())).called(1);
     });
   });

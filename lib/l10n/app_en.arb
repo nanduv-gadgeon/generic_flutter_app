@@ -1,0 +1,104 @@
+{
+  "@@locale": "en",
+
+  "dashboardLive": "Live",
+  "dashboardHistory": "History",
+  "@dashboardHistory": { "description": "Tab that opens the device's stored readings." },
+  "dashboardHistorySoon": "History for this device is coming in a later update.",
+
+  "stripLink": "Link",
+  "stripBattery": "Battery",
+  "stripHeartbeat": "Heartbeat",
+  "stripState": "State",
+  "stripLastReading": "Last reading",
+  "stripStream": "Stream",
+  "stripChannels": "Channels",
+  "stripCell": "{label}: {value}",
+  "@stripCell": {
+    "description": "Screen reader text for one status strip cell, e.g. 'Battery: 78%'.",
+    "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } }
+  },
+
+  "linkBluetooth": "Bluetooth",
+  "linkWifi": "Wi‑Fi",
+  "linkOnDemand": "On demand",
+  "linkOffline": "Offline",
+
+  "agoSeconds": "{seconds} s ago",
+  "@agoSeconds": { "placeholders": { "seconds": { "type": "int" } } },
+  "agoMinutes": "{minutes} min ago",
+  "@agoMinutes": { "placeholders": { "minutes": { "type": "int" } } },
+  "agoHours": "{hours} h ago",
+  "@agoHours": { "placeholders": { "hours": { "type": "int" } } },
+
+  "stateRunning": "Running",
+  "stateStopped": "Stopped",
+  "channelsLive": "{count} live",
+  "@channelsLive": { "placeholders": { "count": { "type": "int" } } },
+  "streamRate": "{hz} Hz",
+  "@streamRate": { "placeholders": { "hz": { "type": "int" } } },
+  "batteryPercent": "{percent}%",
+  "@batteryPercent": { "placeholders": { "percent": { "type": "int" } } },
+
+  "allReadings": "All readings",
+  "valuesLive": "{count} values · live",
+  "@valuesLive": { "placeholders": { "count": { "type": "int" } } },
+  "valuesCount": "{count} values",
+  "@valuesCount": { "placeholders": { "count": { "type": "int" } } },
+  "todaysReadings": "Today’s readings",
+  "readingsCount": "{count, plural, =1{1 reading} other{{count} readings}}",
+  "@readingsCount": { "placeholders": { "count": { "type": "int" } } },
+  "nothingToShow": "Nothing to show",
+
+  "statusNormal": "Normal",
+  "statusHigh": "High",
+  "statusLow": "Low",
+  "statusNoSignal": "No signal",
+  "normalRange": "Normal {range}",
+  "@normalRange": {
+    "description": "Normal range under a reading, e.g. 'Normal 60–100' or 'Normal 60–100 bpm'.",
+    "placeholders": { "range": { "type": "String" } }
+  },
+  "percentOfGoal": "{percent}% of goal",
+  "@percentOfGoal": { "placeholders": { "percent": { "type": "int" } } },
+  "today": "Today",
+  "hoursMinutes": "{hours}h {minutes}m",
+  "@hoursMinutes": { "placeholders": { "hours": { "type": "int" }, "minutes": { "type": "int" } } },
+  "noValue": "–",
+  "noReadingSpoken": "no reading yet",
+
+  "trendCaption": "Last 30 min · updated {ago}",
+  "@trendCaption": { "placeholders": { "ago": { "type": "String" } } },
+  "trendCaptionEmpty": "Last 30 min · no readings yet",
+  "trendSpoken": "Trend over the last 30 minutes",
+
+  "lastReading": "Last reading",
+  "measuredTodayAt": "Measured today at {time}",
+  "@measuredTodayAt": { "placeholders": { "time": { "type": "String" } } },
+  "noReadingYet": "No reading yet",
+  "zoneBelow": "{label} < {value}",
+  "@zoneBelow": { "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } } },
+  "zoneBetween": "{label} {low}–{high}",
+  "@zoneBetween": {
+    "placeholders": { "label": { "type": "String" }, "low": { "type": "String" }, "high": { "type": "String" } }
+  },
+  "zoneFrom": "{label} ≥ {value}",
+  "@zoneFrom": { "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } } },
+
+  "axisSecondsAgo": "−{seconds} s",
+  "@axisSecondsAgo": { "placeholders": { "seconds": { "type": "int" } } },
+  "axisNow": "now",
+  "waveformSpoken": "{title}, live waveform",
+  "@waveformSpoken": { "placeholders": { "title": { "type": "String" } } },
+
+  "readingSpoken": "{label}, {value}",
+  "@readingSpoken": {
+    "description": "Screen reader text for a reading, e.g. 'Heart rate, 72 bpm'.",
+    "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } }
+  },
+  "readingWithStatusSpoken": "{label}, {value}, {status}",
+  "@readingWithStatusSpoken": {
+    "description": "Screen reader text for a reading and its status, e.g. 'Heart rate, 72 bpm, Normal'.",
+    "placeholders": { "label": { "type": "String" }, "value": { "type": "String" }, "status": { "type": "String" } }
+  }
+}

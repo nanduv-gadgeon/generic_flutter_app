@@ -49,7 +49,7 @@ class TypeStep extends ConsumerWidget {
               body: AddDeviceController.canAdd(profile)
                   ? profile.summary
                   : '${profile.summary}\n${AddDeviceStrings.comingSoon}',
-              badge: AddDeviceStrings.transports(profile.transports),
+              badge: AddDeviceStrings.transports(profile.transports, profile.tier),
               selected: state.profile?.id == profile.id,
               onTap: AddDeviceController.canAdd(profile)
                   ? () => controller.selectType(profile)

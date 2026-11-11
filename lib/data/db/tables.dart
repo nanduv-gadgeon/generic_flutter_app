@@ -130,3 +130,24 @@ class Heartbeats extends Table {
       // ignore: recursive_getters
       integer().nullable().check(batteryPercent.isBetweenValues(0, 100))();
 }
+
+/// What devices logged other than readings (added in schema v6): sessions started and stopped,
+/// and errors. Kept as long as readings. The same event arriving twice (e.g. a log synced again)
+/// is stored once.
+/// TODO(phase2): uploaded with the readings.
+// Named DeviceEventRow so it does not clash with the decoder's DeviceEvent.
+@DataClassName('DeviceEventRow')
+@TableIndex(name: 'device_events_device_time', columns: {#deviceId, #atMs, #kind}, unique: true)
+class DeviceEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
+
+  /// `start`, `stop` or `error`.
+  TextColumn get kind => text()();
+
+  /// The device's error code, or 0.
+  IntColumn get code => integer().withDefault(const Constant(0))();
+
+  /// When the device logged it: UTC milliseconds since 1970.
+  IntColumn get atMs => integer()();
+}

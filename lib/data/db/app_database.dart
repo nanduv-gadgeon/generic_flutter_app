@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.steps.dart';
+import 'daos/device_events_dao.dart';
 import 'daos/devices_dao.dart';
 import 'daos/heartbeats_dao.dart';
 import 'daos/readings_dao.dart';
@@ -18,15 +19,23 @@ part 'app_database.g.dart';
 /// Changing the schema: bump [schemaVersion], run `dart run drift_dev make-migrations`, then
 /// write the migration step and its test.
 @DriftDatabase(
-  tables: [Users, Sessions, Devices, AppSettings, DeviceAlerts, Readings, Heartbeats],
-  daos: [UsersDao, SessionDao, DevicesDao, SettingsDao, ReadingsDao, HeartbeatsDao],
+  tables: [Users, Sessions, Devices, AppSettings, DeviceAlerts, Readings, Heartbeats, DeviceEvents],
+  daos: [
+    UsersDao,
+    SessionDao,
+    DevicesDao,
+    SettingsDao,
+    ReadingsDao,
+    HeartbeatsDao,
+    DeviceEventsDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Use [openEncryptedDatabase] in the app; tests pass `NativeDatabase.memory()`.
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -57,6 +66,11 @@ class AppDatabase extends _$AppDatabase {
       from4To5: (m, schema) async {
         await m.createTable(schema.heartbeats);
         await m.createIndex(schema.heartbeatsDeviceTime);
+      },
+      // v6 (task 1.3.4): device events (session start / stop, errors) for the dashboard.
+      from5To6: (m, schema) async {
+        await m.createTable(schema.deviceEvents);
+        await m.createIndex(schema.deviceEventsDeviceTime);
       },
     ),
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),

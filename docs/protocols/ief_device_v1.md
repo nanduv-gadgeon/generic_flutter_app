@@ -53,6 +53,8 @@ Entry size is fixed at 12 bytes, and trailing bytes that don't fill an entry are
 ## Heartbeat
 There is no heartbeat packet in this protocol. The nearest equivalent is the standard Battery Level characteristic `2A19`, which carries one uint8 (0–100 %). The app reads it on connect and subscribes to notifications. The code comment says the device notifies about once a minute, but that's inferred. The app has no command to change the interval.
 
+How the app uses it (task 1.2.8): any data from the patch counts as a heartbeat, including its answer to the 60 s log poll (`0x91` / `0x92`) and battery notifications. The profile sets every 60 s, Offline after 3 missed.
+
 ## Commands
 Written to `…dd11` (with response, one retry after 100 ms on failure).
 

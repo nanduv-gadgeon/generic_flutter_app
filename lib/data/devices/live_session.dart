@@ -12,9 +12,10 @@ import '../../domain/transport/device_link.dart';
 import 'command_sequencer.dart';
 import 'log_sync.dart';
 
-/// A connection to a saved device: connects, fetches stored data with the profile's `sync`
-/// commands, starts the live data with its `streaming` commands, and passes on the profile's
-/// readings and battery until [stop]. Both run again after a reconnect.
+/// A connection to a saved device: connects, sends the heartbeat interval when the profile has a
+/// `heartbeat.setInterval` command, fetches stored data with the profile's `sync` commands,
+/// starts the live data with its `streaming` commands, and passes on the profile's readings and
+/// battery until [stop]. All of it runs again after a reconnect.
 ///
 /// Values are passed on, never logged.
 class LiveSession {
@@ -108,6 +109,17 @@ class LiveSession {
   DateTime get _at => _now().toUtc();
 
   Future<void> _afterConnect() async {
+    // Tell the device the heartbeat interval, when its profile can.
+    if (_profile.heartbeat case HeartbeatSettings(:final setInterval?, :final intervalSeconds)) {
+      if (_stopped) return;
+      try {
+        await _commands.run(setInterval, value: intervalSeconds);
+      } on CommandFailedException {
+        return _fail(LiveFailureReason.startFailed);
+      } on LinkException {
+        return _fail(LiveFailureReason.startFailed);
+      }
+    }
     final sync = _sync;
     if (sync != null && !_stopped) {
       _emit(const LiveStatusChanged(LiveStatus.syncing));
@@ -251,8 +263,8 @@ class LiveSession {
           );
         case LiveContactChanged(:final contact):
           debugPrint('Live device: contact ${contact.name}');
-        case LiveValue():
-          break; // A reading: never logged.
+        case LiveValue() || LiveHeartbeat():
+          break; // A reading: never logged. Heartbeats are not the session's.
       }
     }
     if (!_out.isClosed && !_stopped) _out.add(update);

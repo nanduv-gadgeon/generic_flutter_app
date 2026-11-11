@@ -19,11 +19,9 @@ Stream<List<UserDevice>> myDevices(Ref ref) {
 @riverpod
 Stream<ActiveLink?> activeLink(Ref ref) => ref.watch(liveReadingsProvider).watchActive();
 
-/// Whether [link] means the device is linked or getting there, rather than waiting to retry.
-bool isLinked(ActiveLink? link) => switch (link?.status) {
-  null || LiveStatus.waiting => false,
-  _ => true,
-};
+/// Whether [link] means the device is linked or getting there, rather than waiting to retry or
+/// Offline after missed heartbeats.
+bool isLinked(ActiveLink? link) => link != null && link.online && link.status != LiveStatus.waiting;
 
 /// The newest stored reading of each key of the saved device [deviceId].
 @riverpod

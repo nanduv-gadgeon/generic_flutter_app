@@ -27,8 +27,9 @@ abstract interface class LiveReadings {
   Future<void> stop();
 }
 
-/// The one device the phone is linked to, and how that is going.
-typedef ActiveLink = ({int deviceId, LiveStatus status});
+/// The one device the phone is linked to, and how that is going. [online] is false once it has
+/// missed the profile's number of heartbeats in a row.
+typedef ActiveLink = ({int deviceId, LiveStatus status, bool online});
 
 enum LiveStatus {
   connecting,
@@ -67,6 +68,15 @@ final class LiveContactChanged extends LiveUpdate {
   const LiveContactChanged(this.contact);
 
   final SensorContact contact;
+}
+
+/// The device went Offline (no data for the profile's number of heartbeat intervals) or came
+/// back Online. [lastAt] is when it was last heard from, if it has been since it was opened.
+final class LiveHeartbeat extends LiveUpdate {
+  const LiveHeartbeat({required this.online, this.lastAt});
+
+  final bool online;
+  final DateTime? lastAt;
 }
 
 /// Why the readings stopped or are unreliable. [problem] is set when the device said why.

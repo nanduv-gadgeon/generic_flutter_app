@@ -118,6 +118,8 @@ Profile block `agc`. Automatic only:
 ## Heartbeat
 There is no heartbeat packet. The nearest equivalent is the standard Battery Level characteristic `2A19`: one uint8, 0–100 % (for example `0x46` = 70 %). The device notifies it every minute, and the app also reads it every 60 s. The app has no command to change the interval.
 
+How the app uses it (task 1.2.8): any data from the sensor counts as a heartbeat: data frames, replies and the battery level. The profile sets every 60 s, Offline after 3 missed.
+
 Firmware version: Device Information Firmware Revision `2A26`. The app doesn't read it yet.
 
 The device also sends these unsolicited responses. The app shows them as problems (profile `streaming.problems`):

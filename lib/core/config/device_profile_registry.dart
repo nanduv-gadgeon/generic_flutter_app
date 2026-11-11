@@ -1,5 +1,6 @@
 import '../../domain/transport/lan_address.dart';
 import 'app_config.dart';
+import 'heartbeat_checks.dart';
 import 'streaming_checks.dart';
 
 /// No profile in the config has this id.
@@ -85,6 +86,7 @@ List<String> checkDeviceProfiles(AppConfig config) {
       errors.add('$path/ble/replyUuid: no packet frame reads source "reply"');
     }
     errors.addAll(_checkWifi(profile, path));
+    errors.addAll(checkHeartbeat(profile, path));
     final commandIds = <String>{};
     for (final (j, command) in profile.commands.indexed) {
       if (!commandIds.add(command.id)) {

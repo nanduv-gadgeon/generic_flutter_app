@@ -70,13 +70,26 @@ void main() {
 
     final links = <String, (ActiveLink?, String, int)>{
       'nothing connected': (null, 'Offline', 0),
-      'the sensor connected': ((deviceId: 2, status: LiveStatus.streaming), 'BLE · Connected', 1),
+      'the sensor connected': (
+        (deviceId: 2, status: LiveStatus.streaming, online: true),
+        'BLE · Connected',
+        1,
+      ),
       'the patch connecting': (
-        (deviceId: 1, status: LiveStatus.connecting),
+        (deviceId: 1, status: LiveStatus.connecting, online: true),
         'BLE · Connecting…',
         1,
       ),
-      'the sensor out of reach': ((deviceId: 2, status: LiveStatus.waiting), 'Offline', 0),
+      'the sensor offline after missed heartbeats': (
+        (deviceId: 2, status: LiveStatus.streaming, online: false),
+        'Offline',
+        0,
+      ),
+      'the sensor out of reach': (
+        (deviceId: 2, status: LiveStatus.waiting, online: true),
+        'Offline',
+        0,
+      ),
     };
     for (final MapEntry(key: name, value: (active, text, count)) in links.entries) {
       testWidgets('with $name, says "$text" and counts $count connected', (tester) async {
@@ -110,7 +123,7 @@ void main() {
 
     testWidgets('each card is one phrase for screen readers', (tester) async {
       final semantics = tester.ensureSemantics();
-      await pump(tester, active: (deviceId: 2, status: LiveStatus.streaming));
+      await pump(tester, active: (deviceId: 2, status: LiveStatus.streaming, online: true));
 
       expect(
         find.bySemanticsLabel(
@@ -132,7 +145,7 @@ void main() {
     }
 
     testWidgets('link, battery and Seen are on one line', (tester) async {
-      await pump(tester, active: (deviceId: 2, status: LiveStatus.streaming));
+      await pump(tester, active: (deviceId: 2, status: LiveStatus.streaming, online: true));
 
       expectStatusOnOneLine(tester, 'BLE · Connected', '81%', 'Seen 12 s ago');
     });
@@ -142,7 +155,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       await pump(
         tester,
-        active: (deviceId: 2, status: LiveStatus.streaming),
+        active: (deviceId: 2, status: LiveStatus.streaming, online: true),
         size: const Size(320, 1400),
       );
 
@@ -182,7 +195,7 @@ void main() {
           devices: devices,
           now: now,
           latest: latest,
-          active: (deviceId: 2, status: LiveStatus.streaming),
+          active: (deviceId: 2, status: LiveStatus.streaming, online: true),
           brightness: brightness,
           size: const Size(320, 568),
         );

@@ -9,8 +9,6 @@ class MockReadingRepository extends Mock implements ReadingRepository {}
 void main() {
   late MockReadingRepository readings;
   late List<int> batteries;
-  late List<DateTime> seen;
-  late DateTime clock;
   final t = DateTime.utc(2026, 11, 3, 9);
   Sample hr(int s) => Sample('heart_rate', 70, t.add(Duration(seconds: s)));
 
@@ -19,20 +17,10 @@ void main() {
     readings = MockReadingRepository();
     when(() => readings.addAll(any(), any())).thenAnswer((_) async {});
     batteries = [];
-    seen = [];
-    clock = t;
   });
 
-  ReadingWriter writer({int maxBatch = 200}) => ReadingWriter(
-    7,
-    readings,
-    (_, {batteryPercent, seenAt}) async {
-      if (batteryPercent != null) batteries.add(batteryPercent);
-      if (seenAt != null) seen.add(seenAt);
-    },
-    maxBatch: maxBatch,
-    now: () => clock,
-  );
+  ReadingWriter writer({int maxBatch = 200}) =>
+      ReadingWriter(7, readings, (_, percent) async => batteries.add(percent), maxBatch: maxBatch);
 
   List<List<Sample>> stored() =>
       verify(() => readings.addAll(7, captureAny())).captured.cast<List<Sample>>();
@@ -111,23 +99,5 @@ void main() {
     await w.close();
 
     expect(calls, 2);
-  });
-
-  test('saves when data last arrived, at most every 10 s', () async {
-    final w = writer();
-    for (final second in [0, 3, 9, 10, 15, 21]) {
-      clock = t.add(Duration(seconds: second));
-      w.add(hr(second));
-    }
-    await w.close();
-
-    expect(seen, [t, t.add(const Duration(seconds: 10)), t.add(const Duration(seconds: 21))]);
-  });
-
-  test('the battery alone also counts as data arriving', () async {
-    final w = writer()..add(Sample('battery', 50, t));
-    await w.close();
-
-    expect(seen, [t]);
   });
 }

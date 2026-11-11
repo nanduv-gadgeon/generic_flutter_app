@@ -38,6 +38,23 @@ abstract final class DeviceSettingsStrings {
   static const lastHeartbeat = 'Last heartbeat';
   static const offlineAfter = 'Offline after';
   static const deviceStatus = 'Device status';
+  static const online = 'Online';
+  static const offline = 'Offline';
+  static const notConnected = 'Not connected';
+
+  /// "Every 1 min", "Every 30 s".
+  static String every(Duration interval) => 'Every ${span(interval)}';
+
+  /// "3 missed (3 min)".
+  static String missed(int count, Duration total) => '$count missed (${span(total)})';
+
+  /// "30 s", "1 min", "90 s", "2 h".
+  static String span(Duration d) {
+    final s = d.inSeconds;
+    if (s < 60 || s % 60 != 0) return '$s s';
+    if (s < 3600 || s % 3600 != 0) return '${s ~/ 60} min';
+    return '${s ~/ 3600} h';
+  }
 
   /// "12 s ago", "5 min ago", "2 h ago", "3 days ago"; a time in the future counts as now.
   static String ago(Duration elapsed) {

@@ -16,6 +16,8 @@ import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/dashboard/live_device_screen.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../fixtures/scripted_live_readings.dart';
+
 const _theme = ThemeConfig(
   primary: '#123456',
   accent: '#ABCDEF',
@@ -24,34 +26,6 @@ const _theme = ThemeConfig(
   cornerRadiusSmall: 12,
   mode: ThemeModeSetting.light,
 );
-
-/// Live readings the test sends by hand; counts who listens.
-class _FakeLiveReadings implements LiveReadings {
-  StreamController<LiveUpdate>? controller;
-  int listens = 0;
-  int cancels = 0;
-  final retried = <int>[];
-
-  @override
-  Stream<LiveUpdate> watch(int deviceId) {
-    controller = StreamController(onListen: () => listens++, onCancel: () => cancels++);
-    return controller!.stream;
-  }
-
-  @override
-  Stream<ActiveLink?> watchActive() => Stream.value(null);
-
-  @override
-  Future<void> retry(int deviceId) async => retried.add(deviceId);
-
-  @override
-  Future<void> start(int userId) async {}
-
-  @override
-  Future<void> stop() async {}
-
-  void send(LiveUpdate update) => controller!.add(update);
-}
 
 final _registry = DeviceProfileRegistry(
   AppConfig.fromJson(
@@ -67,11 +41,11 @@ const _patch = UserDevice(id: 2, name: 'Patch', profileId: 'ief_device_v1');
 const _band = UserDevice(id: 3, name: 'Band', profileId: 'smart_band_v1');
 
 void main() {
-  late _FakeLiveReadings live;
+  late ScriptedLiveReadings live;
   late ValueNotifier<bool> open;
 
   setUp(() {
-    live = _FakeLiveReadings();
+    live = ScriptedLiveReadings();
     open = ValueNotifier(true);
   });
 
@@ -169,6 +143,30 @@ void main() {
     await send(tester, [const LiveStatusChanged(LiveStatus.streaming)]);
     expect(find.textContaining('stopped sending'), findsNothing);
   });
+
+  final offline = <String, (DateTime? Function(), String)>{
+    'heard from 5 min ago': (
+      () => DateTime.now().subtract(const Duration(minutes: 5, seconds: 2)),
+      'Offline · last heartbeat 5 min ago.',
+    ),
+    'never heard from': (() => null, 'Offline · no data from the device yet.'),
+  };
+  for (final MapEntry(key: name, value: (lastAt, text)) in offline.entries) {
+    testWidgets('missed heartbeats, $name: says Offline in words, then Live again', (tester) async {
+      await pump(tester);
+      await send(tester, [
+        const LiveStatusChanged(LiveStatus.streaming),
+        LiveHeartbeat(online: false, lastAt: lastAt()),
+      ]);
+
+      expect(find.text(text), findsOneWidget);
+      expect(find.bySemanticsLabel(text), findsOneWidget);
+      expect(find.text('Live'), findsNothing);
+
+      await send(tester, [LiveHeartbeat(online: true, lastAt: DateTime.now())]);
+      expect(find.text('Live'), findsOneWidget);
+    });
+  }
 
   testWidgets('closing the screen stops listening (the device stays connected)', (tester) async {
     await pump(tester);

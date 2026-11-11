@@ -11,6 +11,7 @@ import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
+import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/device_settings/device_settings_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -57,6 +58,8 @@ Future<void> pumpSettings(
   WidgetTester tester, {
   DeviceDetails? device,
   int historyDays = 7,
+  ActiveLink? activeLink,
+  Map<String, dynamic>? heartbeat,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 1600),
 }) async {
@@ -78,12 +81,16 @@ Future<void> pumpSettings(
   when(() => devices.removeDevice(any(), any())).thenAnswer((_) async => deviceStream.add(null));
 
   final json = validConfigJson()..['history'] = {'daysOnPhone': historyDays};
+  if (heartbeat != null) {
+    ((json['deviceProfiles'] as List).single as Map<String, dynamic>)['heartbeat'] = heartbeat;
+  }
   final container = ProviderContainer(
     overrides: [
       appConfigProvider.overrideWith((_) async => AppConfig.fromJson(json)),
       authServiceProvider.overrideWithValue(auth),
       deviceServiceProvider.overrideWithValue(devices),
       clockProvider.overrideWithValue(() => testNow),
+      activeLinkProvider.overrideWith((_) => Stream.value(activeLink)),
     ],
   );
   addTearDown(container.dispose);

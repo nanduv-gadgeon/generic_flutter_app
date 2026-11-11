@@ -42,6 +42,9 @@ class _NoDevices implements DeviceService {
 
   @override
   Future<void> removeDevice(int userId, String address) async {}
+
+  @override
+  Future<void> reorder(int userId, List<int> orderedIds) async {}
 }
 
 class _DefaultSettings implements AppSettingsService {

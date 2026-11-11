@@ -60,4 +60,28 @@ abstract final class DevicesStrings {
 
   /// One phrase for a whole card, then what tapping does.
   static String card(List<String> parts) => '${parts.join(', ')}. Opens the device';
+
+  // Reorder (mockup 09_home_reorder)
+  static const reorder = 'Reorder';
+  static const reorderLabel = 'Reorder devices';
+  static const done = 'Done';
+  static const doneLabel = 'Done reordering';
+  static const reorderHint = 'Press and drag ≡ to change the order of your devices.';
+
+  /// What a screen reader says for a device's drag handle; arrow keys move it too.
+  static String reorderHandle(String name) => 'Reorder $name. Use the arrow keys to move it';
+
+  /// One row of the reorder list, e.g. "Smart Band S2, Smart band".
+  static String reorderRow(String name, String type) => '$name, $type';
+
+  // Debug builds only: dummy devices for testing the list (long-press "My devices").
+  static String dummyName(String typeLabel) => '$typeLabel (test)';
+
+  static String dummyChanged(int change) => change > 0
+      ? 'Added $change test devices.'
+      : change < 0
+      ? 'Removed ${-change} test devices.'
+      : 'No device types to add.';
+
+  static const dummyFailed = 'Could not change the test devices.';
 }

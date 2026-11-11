@@ -101,6 +101,7 @@ class FakeDeviceService implements DeviceService {
   final devices = <UserDevice>[];
   final added = <(NewDevice, List<AlertRule>)>[];
   final renamed = <(int, String)>[];
+  final reordered = <List<int>>[];
 
   /// Returned by [addDevice] in place of the saved device, e.g. with a cloud key.
   AddedDevice Function(AddedDevice saved)? cloud;
@@ -132,6 +133,12 @@ class FakeDeviceService implements DeviceService {
 
   @override
   Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled}) async {}
+
+  @override
+  Future<void> reorder(int userId, List<int> orderedIds) async {
+    reordered.add(orderedIds);
+    devices.sort((a, b) => orderedIds.indexOf(a.id).compareTo(orderedIds.indexOf(b.id)));
+  }
 
   /// Makes [removeDevice] throw.
   bool removeFails = false;

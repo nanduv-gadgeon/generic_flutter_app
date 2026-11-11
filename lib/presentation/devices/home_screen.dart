@@ -1,17 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/auth_controller.dart';
+import '../../application/debug_dummy_devices.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../strings/devices_strings.dart';
-import '../widgets/dashed_border_box.dart';
 import 'home_device_card.dart';
+import 'home_list_parts.dart';
+import 'home_reorder_list.dart';
 
 /// My devices (home): greeting, totals and one card per added device, then "Add a device". With
 /// no devices it shows the "No devices yet" card instead.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   static const addDeviceRoute = '/add';
@@ -19,12 +22,36 @@ class HomeScreen extends ConsumerWidget {
   static String deviceRoute(int id) => '/device/$id';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  /// Reorder mode (mockup 09): compact rows with drag handles instead of the cards.
+  bool _reordering = false;
+
+  /// Debug builds only: adds or removes dummy devices for trying the list without hardware.
+  Future<void> _toggleDummies() async {
+    final userId = ref.read(authControllerProvider).value?.id;
+    if (userId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final change = await ref.read(dummyDevicesProvider)(DevicesStrings.dummyName).toggle(userId);
+      messenger.showSnackBar(SnackBar(content: Text(DevicesStrings.dummyChanged(change))));
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text(DevicesStrings.dummyFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final name = ref.watch(authControllerProvider).value?.name ?? '';
     final now = ref.watch(clockProvider)();
     final summary = ref.watch(homeSummaryProvider);
     final devices = ref.watch(myDevicesProvider).value ?? const [];
-    void addDevice() => context.push(addDeviceRoute);
+    void addDevice() => context.push(HomeScreen.addDeviceRoute);
+    // Reordering needs at least two devices; leave the mode when that is no longer so.
+    final canReorder = devices.length >= 2;
+    final reordering = _reordering && canReorder;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -41,23 +68,36 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 18),
             _TotalsRow(summary: summary),
             const SizedBox(height: 18),
-            Semantics(
-              header: true,
-              child: Text(
-                DevicesStrings.myDevices,
-                style: Theme.of(context).textTheme.titleLarge
-                    ?.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
+            MyDevicesHeading(
+              reordering: reordering,
+              onToggle: canReorder ? () => setState(() => _reordering = !reordering) : null,
+              onDebugLongPress: kDebugMode ? _toggleDummies : null,
             ),
+            if (reordering) ...[
+              const SizedBox(height: 8),
+              Text(
+                DevicesStrings.reorderHint,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).extension<AppTokens>()?.muted,
+                ),
+              ),
+            ],
             const SizedBox(height: 18),
             if (devices.isEmpty)
-              _EmptyDevicesCard(onAdd: addDevice)
+              EmptyDevicesCard(onAdd: addDevice)
             else ...[
-              for (final device in devices) ...[
-                HomeDeviceCard(device: device, onOpen: () => context.push(deviceRoute(device.id))),
-                const SizedBox(height: 12),
-              ],
-              _AddDeviceTile(onAdd: addDevice),
+              if (reordering)
+                HomeReorderList(devices: devices, onReorder: ref.read(saveDeviceOrderProvider))
+              else
+                for (final device in devices) ...[
+                  HomeDeviceCard(
+                    device: device,
+                    onOpen: () => context.push(HomeScreen.deviceRoute(device.id)),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              AddDeviceTile(onAdd: addDevice),
             ],
           ],
         ),
@@ -173,102 +213,6 @@ class _TotalCard extends StatelessWidget {
             Text(label, style: TextStyle(fontSize: 13, color: tokens?.muted)),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// The dashed "+ Add a device" row under the device cards.
-class _AddDeviceTile extends StatelessWidget {
-  const _AddDeviceTile({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppTokens>();
-    final radius = BorderRadius.circular(tokens?.radius ?? 16);
-    return Semantics(
-      button: true,
-      label: DevicesStrings.addADevice,
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onAdd,
-        borderRadius: radius,
-        child: DashedBorderBox(
-          color: tokens?.border ?? theme.dividerColor,
-          radius: tokens?.radius ?? 16,
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.add, size: 20, color: tokens?.accent),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  DevicesStrings.addADevice,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: tokens?.accent,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyDevicesCard extends StatelessWidget {
-  const _EmptyDevicesCard({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppTokens>();
-    return DashedBorderBox(
-      color: tokens?.border ?? theme.dividerColor,
-      radius: tokens?.radius ?? 16,
-      background: tokens?.surface,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(color: tokens?.soft, shape: BoxShape.circle),
-            child: Icon(Icons.memory_outlined, size: 26, color: tokens?.accent),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            DevicesStrings.noDevices,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            DevicesStrings.noDevicesBody,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: tokens?.muted),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text(DevicesStrings.addDevice),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 46),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
       ),
     );
   }

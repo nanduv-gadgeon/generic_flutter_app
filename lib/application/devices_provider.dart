@@ -48,3 +48,14 @@ HomeSummary homeSummary(Ref ref) {
     alerts: 0,
   );
 }
+
+/// Saves a new order of the logged-in user's devices (Reorder on home): device ids, first to
+/// last. Does nothing when nobody is logged in.
+@riverpod
+Future<void> Function(List<int> orderedIds) saveDeviceOrder(Ref ref) {
+  final user = ref.watch(authControllerProvider).value;
+  final service = ref.watch(deviceServiceProvider);
+  return (orderedIds) async {
+    if (user != null) await service.reorder(user.id, orderedIds);
+  };
+}

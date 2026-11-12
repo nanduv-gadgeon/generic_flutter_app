@@ -36,6 +36,25 @@ List<String> checkDashboard(DeviceProfile profile, String path) {
     }
   }
 
+  if (dashboard.action case final action?) {
+    final at = '$path/dashboard/action';
+    void check(String where, String id, int? value) {
+      final command = profile.commands.where((c) => c.id == id).firstOrNull;
+      if (command == null) {
+        errors.add('$where: "$id" is not a command of ${profile.id}');
+      } else if (command.takesValue != (value != null)) {
+        errors.add(
+          command.takesValue ? '$where: "$id" needs a value' : '$where: "$id" takes no value',
+        );
+      }
+    }
+
+    if (action.command case final id?) check('$at/command', id, null);
+    for (final (i, step) in action.steps.indexed) {
+      check('$at/steps/$i/command', step.command, step.value);
+    }
+  }
+
   final waves = <String>{};
   for (final (v, view) in dashboard.views.indexed) {
     final at = '$path/dashboard/views/$v';

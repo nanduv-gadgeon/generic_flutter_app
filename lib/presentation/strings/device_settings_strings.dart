@@ -66,9 +66,8 @@ abstract final class DeviceSettingsStrings {
     return days == 1 ? '1 day ago' : '$days days ago';
   }
 
-  // Sampling interval (not changeable yet)
-  static const samplingOptions = ['1 s', '5 s', '30 s', '1 min'];
-  static const samplingLater = 'Set by the device for now.';
+  // Sampling interval: a row under Device status, from the config, not changeable
+  static const setByDevice = 'Set by the device';
 
   // Alerts
   /// The battery limit is not one of a profile's readings.

@@ -8,15 +8,25 @@ import '../profile/profile_rows.dart';
 import '../strings/device_settings_strings.dart';
 import 'device_settings_sections.dart';
 
-/// Heartbeat interval, last heartbeat, offline rule and device status (mockup screen 25).
+/// Heartbeat interval, last heartbeat, offline rule, device status and how often readings come
+/// (mockup screen 25).
 class HeartbeatCard extends ConsumerWidget {
-  const HeartbeatCard({super.key, required this.device, required this.settings, required this.now});
+  const HeartbeatCard({
+    super.key,
+    required this.device,
+    required this.settings,
+    required this.now,
+    required this.readingsEvery,
+  });
 
   final DeviceDetails device;
 
   /// The profile's heartbeat block, or the defaults.
   final HeartbeatSettings settings;
   final DateTime now;
+
+  /// How often readings come, from the config; null when the device decides.
+  final Duration? readingsEvery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,6 +55,13 @@ class HeartbeatCard extends ConsumerWidget {
         ),
         // Devices send no status flags yet, so this is whether it is being heard from.
         InfoRow(label: DeviceSettingsStrings.deviceStatus, value: status),
+        InfoRow(
+          label: DeviceSettingsStrings.sampling,
+          value: switch (readingsEvery) {
+            final every? => DeviceSettingsStrings.every(every),
+            null => DeviceSettingsStrings.setByDevice,
+          },
+        ),
       ],
     );
   }

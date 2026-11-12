@@ -6,6 +6,7 @@ import '../../application/dashboard_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../application/live_device_provider.dart';
+import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
 import '../device_settings/device_settings_button.dart';
@@ -14,9 +15,11 @@ import '../strings/device_strings.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/placeholder_screen.dart';
 import 'dashboard_format.dart';
+import 'dashboard_actions.dart';
 import 'dashboard_header.dart';
 import 'dashboard_tabs.dart';
 import 'live_status_line.dart';
+import 'offline_banner.dart';
 import 'status_strip.dart';
 import 'views/view_registry.dart';
 
@@ -36,8 +39,30 @@ class LiveDeviceScreen extends ConsumerStatefulWidget {
   ConsumerState<LiveDeviceScreen> createState() => _LiveDeviceScreenState();
 }
 
+/// Where a Reconnect from the offline banner is: none, trying, or did not connect.
+enum _Reconnect { idle, trying, failed }
+
 class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
   bool _history = false;
+  _Reconnect _reconnect = _Reconnect.idle;
+
+  Future<void> _startReconnect() async {
+    setState(() => _reconnect = _Reconnect.trying);
+    await ref.read(liveDeviceProvider(deviceId).notifier).retry();
+  }
+
+  /// Ends a Reconnect: connected removes the banner; Offline again means it did not connect.
+  void _onLive(LiveDeviceState next, bool onDemand) {
+    if (_reconnect == _Reconnect.idle) return;
+    switch (linkStateOf(next.status, online: next.online, onDemand: onDemand)) {
+      case LinkState.connected || LinkState.onDemand:
+        setState(() => _reconnect = _Reconnect.idle);
+      case LinkState.offline when _reconnect == _Reconnect.trying:
+        setState(() => _reconnect = _Reconnect.failed);
+      case _:
+        break;
+    }
+  }
 
   int get deviceId => widget.deviceId;
 
@@ -55,6 +80,12 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       );
     }
     final live = ref.watch(liveDeviceProvider(deviceId));
+    final dashboard = profile.dashboardOrDefault;
+    ref.listen(liveDeviceProvider(deviceId), (_, next) => _onLive(next, dashboard.onDemand));
+    final linkState = linkStateOf(live.status, online: live.online, onDemand: dashboard.onDemand);
+    // The banner shows whenever the device is Offline (the same moment the home card and the strip
+    // say so), and stays while a Reconnect is trying or after it failed.
+    final showBanner = linkState == LinkState.offline || _reconnect != _Reconnect.idle;
     final now = ref.watch(dashboardNowProvider).value ?? ref.watch(clockProvider)();
     final summary = ref.watch(eventSummaryProvider(deviceId));
     final stored = ref.watch(latestReadingsProvider(deviceId)).value ?? const {};
@@ -67,8 +98,13 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       live: streaming,
       now: now,
     );
-    final failure = live.failure;
-    final views = profile.dashboardOrDefault.views;
+    // "Could not connect" is what the banner says already; other problems (low battery, sensor
+    // not responding…) still show, without Try again, since the banner has Reconnect.
+    final failure = switch (live.failure) {
+      LiveFailure(reason: LiveFailureReason.connectFailed, problem: null) when showBanner => null,
+      final f => f,
+    };
+    final views = dashboard.views;
 
     return Scaffold(
       body: SafeArea(
@@ -82,7 +118,19 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
               action: DeviceSettingsButton(deviceId: deviceId),
             ),
             const SizedBox(height: 14),
-            StatusStrip(cells: stripCells(context, _strip(device, profile, live, data, summary))),
+            StatusStrip(
+              cells: stripCells(context, _strip(device, profile, live, data, summary, linkState)),
+            ),
+            if (showBanner) ...[
+              const SizedBox(height: 14),
+              OfflineBanner(
+                lastHeartbeatAt: live.lastHeartbeatAt ?? device.lastHeartbeatAt,
+                now: now,
+                trying: _reconnect == _Reconnect.trying,
+                failed: _reconnect == _Reconnect.failed,
+                onReconnect: _startReconnect,
+              ),
+            ],
             const SizedBox(height: 14),
             DashboardTabs(history: _history, onChanged: (h) => setState(() => _history = h)),
             if (_history) ...[
@@ -93,7 +141,8 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
                 style: TextStyle(color: context.tokens.muted),
               ),
             ] else ...[
-              if (!streaming) ...[
+              // The banner already says Offline and when; the status line would repeat it.
+              if (!streaming && !showBanner) ...[
                 const SizedBox(height: 14),
                 LiveStatusLine(
                   status: live.status,
@@ -113,15 +162,22 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
               if (failure != null) ...[
                 const SizedBox(height: 12),
                 ErrorMessage(DeviceStrings.failure(failure)),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
-                    child: const Text(DeviceStrings.tryAgain),
+                if (!showBanner)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
+                      child: const Text(DeviceStrings.tryAgain),
+                    ),
                   ),
-                ),
               ],
               for (final view in views) ...[const SizedBox(height: 14), buildView(data, view)],
+              const SizedBox(height: 18),
+              DashboardActions(
+                deviceId: deviceId,
+                action: dashboard.action,
+                connected: linkState == LinkState.connected,
+              ),
             ],
           ],
         ),
@@ -135,6 +191,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
     LiveDeviceState live,
     DashboardData data,
     EventSummary summary,
+    LinkState linkState,
   ) {
     final dashboard = profile.dashboardOrDefault;
     final views = dashboard.views;
@@ -150,6 +207,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       dashboard: dashboard,
       streaming: data.live,
       online: live.online,
+      link: linkState,
       battery: data.values[batteryKey] ?? device.batteryPercent?.toDouble(),
       lastHeartbeatAt: live.lastHeartbeatAt ?? device.lastHeartbeatAt,
       summary: summary,

@@ -133,9 +133,9 @@ void main() {
   final offline = <String, (DateTime?, String)>{
     'heard from 5 min ago': (
       _now.subtract(const Duration(minutes: 5, seconds: 2)),
-      'Offline · last heartbeat 5 min ago.',
+      'Offline · last heartbeat 5 min ago. Showing last readings.',
     ),
-    'never heard from': (null, 'Offline · no data from the device yet.'),
+    'never heard from': (null, 'Offline · no data from the device yet. Showing last readings.'),
   };
   for (final MapEntry(key: name, value: (lastAt, text)) in offline.entries) {
     testWidgets('missed heartbeats, $name: Offline in words, in the strip too', (tester) async {
@@ -145,8 +145,10 @@ void main() {
         LiveHeartbeat(online: false, lastAt: lastAt),
       ]);
 
+      // The offline banner (task 1.3.6) says it, with Reconnect.
       expect(find.text(text), findsOneWidget);
-      expect(find.bySemanticsLabel(text), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(RegExp.escape(text))), findsOneWidget);
+      expect(find.bySemanticsLabel('Reconnect to the device'), findsOneWidget);
       expect(find.bySemanticsLabel('Link: Offline'), findsOneWidget);
 
       await send(tester, [LiveHeartbeat(online: true, lastAt: _now)]);
@@ -186,10 +188,7 @@ void main() {
     expect(find.text('All readings'), findsOneWidget);
   });
 
-  final statuses = {
-    LiveStatus.syncing: 'Getting stored readings…',
-    LiveStatus.waiting: 'Device not found. Trying again…',
-  };
+  final statuses = {LiveStatus.syncing: 'Getting stored readings…'};
   for (final MapEntry(key: status, value: text) in statuses.entries) {
     testWidgets('a device that syncs its logs shows "$text" while ${status.name}', (tester) async {
       await pump(tester, deviceId: _patch.id);

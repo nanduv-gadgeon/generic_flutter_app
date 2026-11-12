@@ -121,57 +121,18 @@ class ConnectionCard extends StatelessWidget {
   }
 }
 
-/// The mockup's 1 s / 5 s / 30 s / 1 min choice. Shown but not changeable yet: devices have no
-/// "set interval" command in their profiles.
-class SamplingControl extends StatelessWidget {
-  const SamplingControl({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = _tokens(context);
-    return Semantics(
-      label: '${DeviceSettingsStrings.sampling}. ${DeviceSettingsStrings.samplingLater}',
-      enabled: false,
-      excludeSemantics: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: tokens?.chipBg,
-              borderRadius: BorderRadius.circular(tokens?.radiusSmall ?? 12),
-            ),
-            child: Row(
-              children: [
-                for (final option in DeviceSettingsStrings.samplingOptions)
-                  Expanded(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 38),
-                      child: Center(
-                        child: Text(
-                          option,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: tokens?.muted.withAlpha(0x99),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            DeviceSettingsStrings.samplingLater,
-            style: TextStyle(fontSize: 12, color: tokens?.muted),
-          ),
-        ],
-      ),
-    );
+/// How often the device type gives readings, from its config (requirement 8.3); null when the
+/// config does not say. Shown under Device status; not changeable, as neither shipped device
+/// accepts a new rate from the app.
+/// - Worked-out readings (`signal.ppgOximetry`): one per `emitEvery` samples at `sampleRateHz`,
+///   e.g. 100 samples at 100 Hz is every 1 s.
+/// - Stored logs fetched while connected (`sync.everySeconds`), e.g. every 60 s.
+Duration? readingsInterval(DeviceProfile? profile) {
+  if (profile?.signal?.ppgOximetry case final ppg?) {
+    return Duration(milliseconds: (ppg.emitEvery / ppg.sampleRateHz * 1000).round());
   }
+  if (profile?.sync?.everySeconds case final seconds?) return Duration(seconds: seconds);
+  return null;
 }
 
 /// One row per alert limit, e.g. "Heart rate above 110 bpm", with an on/off switch.

@@ -100,5 +100,28 @@
   "@readingWithStatusSpoken": {
     "description": "Screen reader text for a reading and its status, e.g. 'Heart rate, 72 bpm, Normal'.",
     "placeholders": { "label": { "type": "String" }, "value": { "type": "String" }, "status": { "type": "String" } }
-  }
+  },
+  "offlineBanner": "Offline · last heartbeat {ago}. Showing last readings.",
+  "@offlineBanner": {
+    "description": "The offline banner (task 1.3.6), e.g. 'Offline · last heartbeat 3 min ago. Showing last readings.'",
+    "placeholders": { "ago": { "type": "String" } }
+  },
+  "offlineBannerNoData": "Offline · no data from the device yet. Showing last readings.",
+  "reconnect": "Reconnect",
+  "reconnectLabel": "Reconnect to the device",
+  "reconnectingSpoken": "Reconnecting to the device",
+  "reconnectFailed": "Could not reconnect. Check the device is on and nearby.",
+  "syncNow": "Sync now",
+  "syncNowLabel": "Sync the device's readings now",
+  "syncNowLater": "Sync now comes with cloud sync.",
+  "actionUnavailable": "{label} isn't available yet.",
+  "@actionUnavailable": { "placeholders": { "label": { "type": "String" } } },
+  "actionDone": "{label}: done.",
+  "@actionDone": { "placeholders": { "label": { "type": "String" } } },
+  "actionFailed": "{label} didn't work. Check the device and try again.",
+  "@actionFailed": { "placeholders": { "label": { "type": "String" } } },
+  "actionRunningSpoken": "Sending {label} to the device",
+  "@actionRunningSpoken": { "placeholders": { "label": { "type": "String" } } },
+  "actionOfflineSpoken": "{label}, available when the device is connected",
+  "@actionOfflineSpoken": { "placeholders": { "label": { "type": "String" } } }
 }

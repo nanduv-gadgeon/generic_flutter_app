@@ -1,8 +1,10 @@
 import '../decoder/decoded_packet.dart';
+import '../models/dashboard_settings.dart';
 import '../models/streaming_settings.dart';
 import '../signal/ppg_oximetry.dart';
 
 export '../decoder/decoded_packet.dart' show Sample;
+export '../models/dashboard_settings.dart' show ActionStep;
 export '../models/streaming_settings.dart' show DeviceProblem;
 export '../signal/ppg_oximetry.dart' show SensorContact;
 
@@ -15,6 +17,11 @@ abstract interface class LiveReadings {
 
   /// Disconnects [deviceId] and connects it again from the start.
   Future<void> retry(int deviceId);
+
+  /// Sends the [steps] of a device action (the dashboard's action button) to [deviceId] in order,
+  /// waiting for each reply. Throws when [deviceId] is not the connected device, the device
+  /// refuses a command or does not answer.
+  Future<void> runAction(int deviceId, List<ActionStep> steps);
 
   /// The device that is connected or connecting, and its status; null when there is none.
   /// Starts with the current one.

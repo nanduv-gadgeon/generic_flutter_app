@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/device_service.dart';
 import '../../domain/services/live_readings.dart';
@@ -40,8 +41,14 @@ class HomeDeviceCard extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
 
     final quick = _quickReading(profile, latest);
-    final linkText = _linkText(link);
-    final linked = link?.deviceId == device.id && isLinked(link);
+    final state = linkStateFor(link, device.id);
+    final linkText = _linkText(state);
+    // Green when linked, amber while (re)connecting, red when Offline; the words say it too.
+    final (chipColor, chipBg) = switch (state) {
+      LinkState.connected => (tokens?.ok, tokens?.okBg),
+      LinkState.connecting || LinkState.reconnecting => (tokens?.warn, tokens?.warnBg),
+      LinkState.offline || LinkState.onDemand => (tokens?.danger, tokens?.dangerBg),
+    };
     final battery = device.batteryPercent;
     final seenAt = device.lastHeartbeatAt;
     final seen = seenAt == null
@@ -129,9 +136,8 @@ class HomeDeviceCard extends ConsumerWidget {
                         child: _Chip(
                           icon: device.transport == Transport.wifi ? Icons.wifi : Icons.bluetooth,
                           text: linkText,
-                          // Offline in red; the word says it too, not just the colour.
-                          color: linked ? tokens?.ok : tokens?.danger,
-                          background: linked ? tokens?.okBg : tokens?.dangerBg,
+                          color: chipColor,
+                          background: chipBg,
                         ),
                       ),
                       if (battery != null) ...[
@@ -185,17 +191,16 @@ class HomeDeviceCard extends ConsumerWidget {
     return parts.isEmpty ? DevicesStrings.noReadings : DevicesStrings.quickReading(parts);
   }
 
-  String _linkText(ActiveLink? link) {
-    if (link == null || link.deviceId != device.id || !isLinked(link)) {
-      return DevicesStrings.offline;
-    }
+  String _linkText(LinkState state) {
     final transport = device.transport == Transport.wifi
         ? DevicesStrings.wifi
         : DevicesStrings.bluetooth;
-    final state = link.status == LiveStatus.connecting
-        ? DevicesStrings.connecting
-        : DevicesStrings.connected;
-    return DevicesStrings.link(transport, state);
+    return switch (state) {
+      LinkState.connected => DevicesStrings.link(transport, DevicesStrings.connected),
+      LinkState.connecting => DevicesStrings.link(transport, DevicesStrings.connecting),
+      LinkState.reconnecting => DevicesStrings.link(transport, DevicesStrings.reconnecting),
+      LinkState.offline || LinkState.onDemand => DevicesStrings.offline,
+    };
   }
 }
 

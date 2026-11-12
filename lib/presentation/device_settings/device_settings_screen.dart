@@ -242,11 +242,8 @@ class _Content extends StatelessWidget {
           device: device,
           settings: profile?.heartbeatOrDefault ?? const HeartbeatSettings(),
           now: now,
+          readingsEvery: readingsInterval(profile),
         ),
-        gap,
-        const SectionHeading(DeviceSettingsStrings.sampling),
-        const SizedBox(height: 8),
-        const SamplingControl(),
         if (device.alerts.isNotEmpty) ...[
           gap,
           const SectionHeading(DeviceSettingsStrings.alerts),

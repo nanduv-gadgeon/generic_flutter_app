@@ -173,9 +173,9 @@ void main() {
     test('readings interval of $name', () => expect(readingsInterval(profile), every));
   }
 
-  test('the row reads "Readings every 1 s"', () {
-    expect(DeviceSettingsStrings.readingsEvery(const Duration(seconds: 1)), 'Readings every 1 s');
-    expect(DeviceSettingsStrings.readingsEvery(const Duration(minutes: 1)), 'Readings every 1 min');
+  test('the row reads "Every 1 s"', () {
+    expect(DeviceSettingsStrings.every(const Duration(seconds: 1)), 'Every 1 s');
+    expect(DeviceSettingsStrings.every(const Duration(minutes: 1)), 'Every 1 min');
   });
 
   testWidgets('screen readers hear each alert switch with its limit', (tester) async {

@@ -58,7 +58,7 @@ class HeartbeatCard extends ConsumerWidget {
         InfoRow(
           label: DeviceSettingsStrings.sampling,
           value: switch (readingsEvery) {
-            final every? => DeviceSettingsStrings.readingsEvery(every),
+            final every? => DeviceSettingsStrings.every(every),
             null => DeviceSettingsStrings.setByDevice,
           },
         ),

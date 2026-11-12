@@ -69,9 +69,6 @@ abstract final class DeviceSettingsStrings {
   // Sampling interval: a row under Device status, from the config, not changeable
   static const setByDevice = 'Set by the device';
 
-  /// "Readings every 1 s", "Readings every 1 min".
-  static String readingsEvery(Duration interval) => 'Readings every ${span(interval)}';
-
   // Alerts
   /// The battery limit is not one of a profile's readings.
   static const batteryAlert = 'Battery';

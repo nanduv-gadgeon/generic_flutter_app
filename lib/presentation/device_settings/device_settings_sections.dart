@@ -6,6 +6,7 @@ import '../../domain/models/device_profile.dart';
 import '../profile/profile_rows.dart';
 import '../strings/add_device_strings.dart';
 import '../strings/device_settings_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// The cards of Device settings (mockup screen 25), top to bottom.
 
@@ -96,25 +97,25 @@ class ConnectionCard extends StatelessWidget {
         : device.address;
     return ProfileCard(
       children: [
-        InfoRow(label: DeviceSettingsStrings.type, value: typeLabel),
+        InfoRow(label: context.l10n.deviceSettingsType, value: typeLabel),
         InfoRow(
-          label: DeviceSettingsStrings.connectionRow,
-          value: DeviceSettingsStrings.transport(device.transport),
+          label: context.l10n.deviceSettingsConnectionRow,
+          value: context.l10n.deviceSettingsTransport(device.transport),
         ),
         InfoRow(
-          label: DeviceSettingsStrings.addressLabel(device.transport),
+          label: context.l10n.deviceSettingsAddressLabel(device.transport),
           value: address,
           monospace: true,
         ),
         // TODO: live signal strength (RSSI) once the BLE link reports it; not part of 1.2.8.
-        const InfoRow(label: DeviceSettingsStrings.signal, value: DeviceSettingsStrings.none),
+        InfoRow(label: context.l10n.deviceSettingsSignal, value: context.l10n.deviceSettingsNone),
         InfoRow(
-          label: DeviceSettingsStrings.firmwareRow,
-          value: _or(device.firmware, DeviceSettingsStrings.firmware),
+          label: context.l10n.deviceSettingsFirmwareRow,
+          value: _or(context, device.firmware, context.l10n.deviceSettingsFirmware),
         ),
         InfoRow(
-          label: DeviceSettingsStrings.batteryRow,
-          value: _or(device.batteryPercent, DeviceSettingsStrings.battery),
+          label: context.l10n.deviceSettingsBatteryRow,
+          value: _or(context, device.batteryPercent, context.l10n.deviceSettingsBattery),
         ),
       ],
     );
@@ -176,8 +177,8 @@ class _AlertRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final rule = alert.rule;
     final isBattery = reading == null && rule.key == 'battery';
-    final name = reading?.label ?? (isBattery ? DeviceSettingsStrings.batteryAlert : rule.key);
-    final unit = reading?.unit ?? (isBattery ? DeviceSettingsStrings.batteryUnit : '');
+    final name = reading?.label ?? (isBattery ? context.l10n.deviceSettingsBatteryAlert : rule.key);
+    final unit = reading?.unit ?? (isBattery ? context.l10n.deviceSettingsBatteryUnit : '');
     // The whole row toggles and is read as one switch: "Heart rate above 110 bpm, on".
     return MergeSemantics(
       child: InkWell(
@@ -191,10 +192,10 @@ class _AlertRow extends StatelessWidget {
                 Expanded(
                   child: Text.rich(
                     TextSpan(
-                      text: '${AddDeviceStrings.alertLabel(name, rule)} ',
+                      text: '${context.l10n.addDeviceAlertLabel(name, rule)} ',
                       children: [
                         TextSpan(
-                          text: AddDeviceStrings.alertValue(rule, unit),
+                          text: context.l10n.addDeviceAlertValue(rule, unit),
                           style: TextStyle(color: _tokens(context)?.accent),
                         ),
                       ],
@@ -214,5 +215,5 @@ class _AlertRow extends StatelessWidget {
 }
 
 /// [value] formatted, or "—" when the app does not have it.
-String _or<T extends Object>(T? value, String Function(T) format) =>
-    value == null ? DeviceSettingsStrings.none : format(value);
+String _or<T extends Object>(BuildContext context, T? value, String Function(T) format) =>
+    value == null ? context.l10n.deviceSettingsNone : format(value);

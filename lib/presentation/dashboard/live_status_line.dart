@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../application/live_device_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../strings/device_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// How the connection is doing, or Offline after missed heartbeats, with an icon or spinner.
 class LiveStatusLine extends StatelessWidget {
@@ -17,7 +18,7 @@ class LiveStatusLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppTokens>();
     final offline = this.offline;
-    final text = offline ?? DeviceStrings.status(status);
+    final text = offline ?? context.l10n.deviceStatus(status);
     final live = offline == null && status == LiveStatus.streaming;
     final color = offline != null
         ? Theme.of(context).colorScheme.error

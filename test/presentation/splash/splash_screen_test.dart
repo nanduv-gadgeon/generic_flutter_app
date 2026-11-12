@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/test_config.dart';
+import '../../fixtures/l10n.dart';
 
 class MockBackendHealth extends Mock implements BackendHealth {}
 
@@ -38,7 +39,11 @@ Widget _app({
       appDatabaseProvider.overrideWith((ref) => (database ?? _memoryDatabase)()),
       if (health != null) backendHealthProvider.overrideWithValue(health),
     ],
-    child: MaterialApp.router(routerConfig: router),
+    child: MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
   );
 }
 

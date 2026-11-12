@@ -7,8 +7,8 @@ import '../../application/device_profiles_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/devices/device_order.dart';
 import '../../domain/services/device_service.dart';
-import '../strings/devices_strings.dart';
 import '../widgets/device_icons.dart';
+import '../../l10n/l10n.dart';
 
 /// Home in reorder mode (mockup `09_home_reorder.png`): one compact row per device with a ≡ handle.
 /// Dragging a handle, or Up / Down arrow keys on a focused handle, moves the device; every move is
@@ -117,7 +117,7 @@ class _ReorderRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Semantics(
-              label: DevicesStrings.reorderRow(device.name, type),
+              label: context.l10n.devicesReorderRow(device.name, type),
               excludeSemantics: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +172,7 @@ class _Handle extends StatelessWidget {
           final focused = Focus.of(context).hasFocus;
           return Semantics(
             container: true,
-            label: DevicesStrings.reorderHandle(name),
+            label: context.l10n.devicesReorderHandle(name),
             excludeSemantics: true,
             child: ReorderableDragStartListener(
               index: index,

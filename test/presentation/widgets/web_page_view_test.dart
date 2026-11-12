@@ -4,6 +4,7 @@ import 'package:generic_flutter_app/presentation/widgets/web_page_view.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
 import '../../fixtures/fake_web_view.dart';
+import '../../fixtures/l10n.dart';
 
 void main() {
   late FakeWebViewPlatform platform;
@@ -13,6 +14,9 @@ void main() {
   Future<void> pumpView(WidgetTester tester, String url) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: Scaffold(body: WebPageView(url: url)),
       ),
     );
@@ -78,6 +82,9 @@ void main() {
   testWidgets('showWebPageSheet shows the title over the page and closes', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: Builder(
           builder: (context) => TextButton(
             onPressed: () =>

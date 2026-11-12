@@ -9,6 +9,7 @@ import '../../presentation/add_device/add_device_screen.dart';
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
+import '../../presentation/dashboard/device_page_states.dart';
 import '../../presentation/dashboard/live_device_screen.dart';
 import '../../presentation/device_settings/device_settings_screen.dart';
 import '../../presentation/devices/home_screen.dart';
@@ -16,9 +17,8 @@ import '../../presentation/profile/edit_profile_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
-import '../../presentation/strings/add_device_strings.dart';
-import '../../presentation/strings/shell_strings.dart';
 import '../../presentation/widgets/placeholder_screen.dart';
+import '../../l10n/l10n.dart';
 
 part 'app_router.g.dart';
 
@@ -85,7 +85,8 @@ GoRouter goRouter(Ref ref) {
               GoRoute(
                 path: Routes.history,
                 redirect: (_, _) => _featureOff(ref, (f) => f.history) ? Routes.home : null,
-                builder: (_, _) => const PlaceholderScreen(title: ShellStrings.historyPlaceholder),
+                builder: (context, _) =>
+                    PlaceholderScreen(title: context.l10n.shellHistoryPlaceholder),
               ),
             ],
           ),
@@ -94,7 +95,8 @@ GoRouter goRouter(Ref ref) {
               GoRoute(
                 path: Routes.alerts,
                 redirect: (_, _) => _featureOff(ref, (f) => f.alerts) ? Routes.home : null,
-                builder: (_, _) => const PlaceholderScreen(title: ShellStrings.alertsPlaceholder),
+                builder: (context, _) =>
+                    PlaceholderScreen(title: context.l10n.shellAlertsPlaceholder),
               ),
             ],
           ),
@@ -105,12 +107,12 @@ GoRouter goRouter(Ref ref) {
       ),
       // Full screen, without the tab bar, like the mockup.
       GoRoute(path: Routes.addDevice, builder: (_, _) => const AddDeviceScreen()),
-      // The device dashboard comes with its own task; Add device already ends here.
+      // A device's dashboard; Add device ends here too.
       GoRoute(
         path: Routes.device,
         builder: (_, state) => switch (int.tryParse(state.pathParameters['id'] ?? '')) {
           final id? => LiveDeviceScreen(deviceId: id),
-          null => const PlaceholderScreen(title: AddDeviceStrings.dashboardPlaceholder),
+          null => const DeviceNotFound(),
         },
       ),
       // Full screen, without the tab bar, like the mockup (opened from the device page's header).

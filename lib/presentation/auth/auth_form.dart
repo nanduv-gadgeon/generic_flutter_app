@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/common_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// Pieces shared by the account screens (login, register, forgot password).
 
@@ -15,7 +15,7 @@ class AuthBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppTokens>();
     return IconButton(
-      tooltip: CommonStrings.back,
+      tooltip: context.l10n.commonBack,
       onPressed: onPressed,
       icon: const Icon(Icons.chevron_left, size: 24),
       style: IconButton.styleFrom(

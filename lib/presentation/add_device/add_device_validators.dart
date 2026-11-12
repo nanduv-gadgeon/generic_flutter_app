@@ -1,14 +1,19 @@
 import '../../domain/validation/device_rules.dart';
-import '../strings/add_device_strings.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Form field validators for Add device: each pairs a rule from `device_rules.dart` with its
-/// message. Return null when the value is valid.
-abstract final class AddDeviceValidators {
-  static String? deviceName(String? v) =>
-      isValidDeviceName(v ?? '') ? null : AddDeviceStrings.enterDeviceName;
+/// message in the phone's language. Return null when the value is valid.
+/// Use `AddDeviceValidators(context.l10n).network`.
+final class AddDeviceValidators {
+  const AddDeviceValidators(this._l10n);
 
-  static String? network(String? v) => isValidSsid(v ?? '') ? null : AddDeviceStrings.enterNetwork;
+  final AppLocalizations _l10n;
 
-  static String? wifiPassword(String? v) =>
-      isValidWifiPassword(v ?? '') ? null : AddDeviceStrings.wifiPasswordLength;
+  String? deviceName(String? v) =>
+      isValidDeviceName(v ?? '') ? null : _l10n.addDeviceEnterDeviceName;
+
+  String? network(String? v) => isValidSsid(v ?? '') ? null : _l10n.addDeviceEnterNetwork;
+
+  String? wifiPassword(String? v) =>
+      isValidWifiPassword(v ?? '') ? null : _l10n.addDeviceWifiPasswordLength;
 }

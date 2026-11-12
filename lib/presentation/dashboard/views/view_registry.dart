@@ -18,7 +18,9 @@ final class DashboardData {
     required this.values,
     required this.live,
     required this.now,
-  });
+    this.times = const {},
+    bool? missingIsNoSignal,
+  }) : missingIsNoSignal = missingIsNoSignal ?? live;
 
   final int deviceId;
   final DeviceProfile profile;
@@ -29,6 +31,13 @@ final class DashboardData {
   /// The device is streaming, so a missing value means no signal.
   final bool live;
   final DateTime now;
+
+  /// When each of [values] was measured, where known.
+  final Map<String, DateTime> times;
+
+  /// A reading with no value shows "No signal". True for a streaming device that is streaming;
+  /// false for one that reads logs, which has nothing between fetches.
+  final bool missingIsNoSignal;
 
   /// How many values the main card and tiles show together ("7 values · live").
   int get valueCount {
@@ -66,8 +75,9 @@ Widget _gauge(DashboardData data, DashboardView view) {
       value: data.values[reading.key],
       pairValue: reading.pair == null ? null : data.values[reading.pair],
       trend: ref.watch(readingTrendProvider(data.deviceId, reading.key)).value ?? const [],
+      updatedAt: data.times[reading.key],
       now: data.now,
-      live: data.live,
+      live: data.missingIsNoSignal,
     ),
   );
 }
@@ -77,6 +87,7 @@ Widget _tiles(DashboardData data, DashboardView view) => TilesView(
   values: data.values,
   count: data.valueCount,
   live: data.live,
+  missingIsNoSignal: data.missingIsNoSignal,
 );
 
 Widget _spotValue(DashboardData data, DashboardView view) {

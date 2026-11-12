@@ -9,6 +9,7 @@ import '../../widgets/form_widgets.dart';
 import '../add_device_parts.dart';
 import '../remove_device_dialog.dart';
 import '../scan_pulse.dart';
+import '../../../l10n/l10n.dart';
 
 /// Step 3 (screen 11): nearby devices of the chosen type, each with Connect. Also used to find a
 /// Wi‑Fi device in setup mode.
@@ -28,7 +29,7 @@ class BleScanStep extends ConsumerWidget {
     return StepLayout(
       // After the 20 s scan: what was found stays listed.
       button: stopped
-          ? PrimaryButton(label: AddDeviceStrings.scanAgain, onPressed: controller.startScan)
+          ? PrimaryButton(label: context.l10n.addDeviceScanAgain, onPressed: controller.startScan)
           : null,
       children: [
         Padding(
@@ -52,9 +53,9 @@ class BleScanStep extends ConsumerWidget {
           liveRegion: true,
           child: Text(
             switch ((stopped, state.transport)) {
-              (true, _) => AddDeviceStrings.scanStopped,
-              (false, Transport.wifi) => AddDeviceStrings.searchingSetup,
-              _ => AddDeviceStrings.searching,
+              (true, _) => context.l10n.addDeviceScanStopped,
+              (false, Transport.wifi) => context.l10n.addDeviceSearchingSetup,
+              _ => context.l10n.addDeviceSearching,
             },
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
@@ -63,29 +64,29 @@ class BleScanStep extends ConsumerWidget {
         const SizedBox(height: 6),
         Text(
           switch ((stopped, phase.found.isEmpty)) {
-            (false, _) => AddDeviceStrings.searchingBody,
-            (true, true) => AddDeviceStrings.noneFound,
-            (true, false) => AddDeviceStrings.scanStoppedBody,
+            (false, _) => context.l10n.addDeviceSearchingBody,
+            (true, true) => context.l10n.addDeviceNoneFound,
+            (true, false) => context.l10n.addDeviceScanStoppedBody,
           },
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: tokens?.muted),
         ),
         if (error != null) ...[
           const SizedBox(height: 18),
-          ErrorMessage(AddDeviceStrings.error(error)),
+          ErrorMessage(context.l10n.addDeviceError(error)),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
               onPressed: controller.startScan,
-              child: const Text(AddDeviceStrings.tryAgain),
+              child: Text(context.l10n.addDeviceTryAgain),
             ),
           ),
         ],
         if (phase.found.isNotEmpty) ...[
           const SizedBox(height: 18),
           Text(
-            AddDeviceStrings.found(phase.found.length).toUpperCase(),
+            context.l10n.addDeviceFound(phase.found.length).toUpperCase(),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -104,7 +105,7 @@ class BleScanStep extends ConsumerWidget {
                     added: phase.added.contains(device.id),
                     onConnect: () => controller.connect(device),
                     onDisconnect: () async {
-                      final name = device.name ?? AddDeviceStrings.unknownDevice;
+                      final name = device.name ?? context.l10n.addDeviceUnknownDevice;
                       if (await confirmRemoveDevice(context, name)) {
                         await controller.disconnect(device);
                       }
@@ -139,7 +140,7 @@ class _DeviceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = tokensOf(context);
-    final name = device.name ?? AddDeviceStrings.unknownDevice;
+    final name = device.name ?? context.l10n.addDeviceUnknownDevice;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -153,7 +154,7 @@ class _DeviceRow extends StatelessWidget {
               children: [
                 Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 Text(
-                  AddDeviceStrings.deviceDetail(device.id, device.rssi),
+                  context.l10n.addDeviceDeviceDetail(device.id, device.rssi),
                   style: TextStyle(
                     fontSize: 12,
                     color: tokens?.muted,
@@ -167,14 +168,14 @@ class _DeviceRow extends StatelessWidget {
           const SizedBox(width: 12),
           if (added)
             _Pill(
-              label: AddDeviceStrings.disconnect,
-              semanticsLabel: AddDeviceStrings.disconnectFrom(name),
+              label: context.l10n.addDeviceDisconnect,
+              semanticsLabel: context.l10n.addDeviceDisconnectFrom(name),
               onPressed: onDisconnect,
             )
           else
             _Pill(
-              label: AddDeviceStrings.connect,
-              semanticsLabel: AddDeviceStrings.connectTo(name),
+              label: context.l10n.addDeviceConnect,
+              semanticsLabel: context.l10n.addDeviceConnectTo(name),
               onPressed: onConnect,
             ),
         ],

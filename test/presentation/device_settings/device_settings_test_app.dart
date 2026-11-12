@@ -18,6 +18,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/test_config.dart';
+import '../../fixtures/l10n.dart';
 
 class MockDeviceService extends Mock implements DeviceService {}
 
@@ -113,7 +114,12 @@ Future<void> pumpSettings(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(theme: buildTheme(_theme, brightness), routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: buildTheme(_theme, brightness),
+        routerConfig: router,
+      ),
     ),
   );
   unawaited(router.push(DeviceSettingsScreen.route(device?.id ?? 7)));

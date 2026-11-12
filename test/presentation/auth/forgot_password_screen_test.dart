@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/fake_auth.dart';
+import '../../fixtures/l10n.dart';
 
 late MockAuthService service;
 
@@ -45,7 +46,11 @@ Future<void> _pumpForgot(WidgetTester tester, {Size size = const Size(390, 900)}
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

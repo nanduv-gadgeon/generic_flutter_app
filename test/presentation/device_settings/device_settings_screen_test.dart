@@ -7,6 +7,7 @@ import 'package:generic_flutter_app/presentation/strings/device_settings_strings
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/ief_profile.dart';
+import '../../fixtures/l10n.dart';
 import '../../fixtures/ppg_motion_profile.dart';
 import 'device_settings_test_app.dart';
 
@@ -174,8 +175,8 @@ void main() {
   }
 
   test('the row reads "Every 1 s"', () {
-    expect(DeviceSettingsStrings.every(const Duration(seconds: 1)), 'Every 1 s');
-    expect(DeviceSettingsStrings.every(const Duration(minutes: 1)), 'Every 1 min');
+    expect(en.deviceSettingsEvery(const Duration(seconds: 1)), 'Every 1 s');
+    expect(en.deviceSettingsEvery(const Duration(minutes: 1)), 'Every 1 min');
   });
 
   testWidgets('screen readers hear each alert switch with its limit', (tester) async {

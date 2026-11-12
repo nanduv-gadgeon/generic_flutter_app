@@ -11,8 +11,8 @@ import '../../domain/services/device_service.dart';
 import '../../domain/services/live_readings.dart';
 import '../strings/device_strings.dart';
 import '../strings/devices_strings.dart';
-import '../strings/remove_device_strings.dart';
 import '../widgets/device_icons.dart';
+import '../../l10n/l10n.dart';
 
 /// One added device on My devices (mockup `06_home.png`): icon, name, the newest stored readings,
 /// whether it is the connected device, battery and when it was last seen. Tapping opens it.
@@ -40,9 +40,9 @@ class HomeDeviceCard extends ConsumerWidget {
     final link = ref.watch(activeLinkProvider).value;
     final now = ref.watch(clockProvider)();
 
-    final quick = _quickReading(profile, latest);
+    final quick = _quickReading(context, profile, latest);
     final state = linkStateFor(link, device.id);
-    final linkText = _linkText(state);
+    final linkText = _linkText(context, state);
     // Green when linked, amber while (re)connecting, red when Offline; the words say it too.
     final (chipColor, chipBg) = switch (state) {
       LinkState.connected => (tokens?.ok, tokens?.okBg),
@@ -52,22 +52,22 @@ class HomeDeviceCard extends ConsumerWidget {
     final battery = device.batteryPercent;
     final seenAt = device.lastHeartbeatAt;
     final seen = seenAt == null
-        ? DevicesStrings.notSeen
-        : DevicesStrings.seen(now.difference(seenAt));
+        ? context.l10n.devicesNotSeen
+        : context.l10n.devicesSeen(now.difference(seenAt));
 
     return Semantics(
       button: true,
-      label: DevicesStrings.card([
+      label: context.l10n.devicesCard([
         device.name,
         quick,
         linkText,
-        if (battery != null) DevicesStrings.batterySpoken(battery),
+        if (battery != null) context.l10n.devicesBatterySpoken(battery),
         seen,
       ]),
       customSemanticsActions: onDelete == null
           ? null
           : {
-              CustomSemanticsAction(label: RemoveDeviceStrings.deleteAction(device.name)):
+              CustomSemanticsAction(label: context.l10n.removeDeviceDeleteAction(device.name)):
                   onDelete!,
             },
       excludeSemantics: true,
@@ -146,7 +146,7 @@ class HomeDeviceCard extends ConsumerWidget {
                           constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.35),
                           child: _Chip(
                             icon: Icons.battery_std,
-                            text: DevicesStrings.battery(battery),
+                            text: context.l10n.devicesBattery(battery),
                             color: tokens?.muted,
                             background: tokens?.chipBg,
                           ),
@@ -175,7 +175,7 @@ class HomeDeviceCard extends ConsumerWidget {
 
   /// The newest stored values of the profile's quick readings (or its first readings), with their
   /// short labels, e.g. "SpO₂ 97 % · HR 72 bpm"; or "No readings yet".
-  String _quickReading(DeviceProfile? profile, Map<String, Sample> latest) {
+  String _quickReading(BuildContext context, DeviceProfile? profile, Map<String, Sample> latest) {
     final readings = profile?.readings ?? const <Reading>[];
     final chosen = profile == null || profile.quickReadings.isEmpty
         ? readings
@@ -186,20 +186,19 @@ class HomeDeviceCard extends ConsumerWidget {
     final parts = [
       for (final r in chosen)
         if (latest[r.key] case final s?)
-          '${r.shortLabel ?? r.label} ${DeviceStrings.value(s.value, r.decimals, r.unit)}',
+          '${r.shortLabel ?? r.label} ${context.l10n.deviceValue(s.value, r.decimals, r.unit)}',
     ].take(quickReadings).toList();
-    return parts.isEmpty ? DevicesStrings.noReadings : DevicesStrings.quickReading(parts);
+    return parts.isEmpty ? context.l10n.devicesNoReadings : context.l10n.devicesQuickReading(parts);
   }
 
-  String _linkText(LinkState state) {
-    final transport = device.transport == Transport.wifi
-        ? DevicesStrings.wifi
-        : DevicesStrings.bluetooth;
+  String _linkText(BuildContext context, LinkState state) {
+    final l10n = context.l10n;
+    final transport = device.transport == Transport.wifi ? l10n.devicesWifi : l10n.devicesBluetooth;
     return switch (state) {
-      LinkState.connected => DevicesStrings.link(transport, DevicesStrings.connected),
-      LinkState.connecting => DevicesStrings.link(transport, DevicesStrings.connecting),
-      LinkState.reconnecting => DevicesStrings.link(transport, DevicesStrings.reconnecting),
-      LinkState.offline || LinkState.onDemand => DevicesStrings.offline,
+      LinkState.connected => l10n.devicesLink(transport, l10n.devicesConnected),
+      LinkState.connecting => l10n.devicesLink(transport, l10n.devicesConnecting),
+      LinkState.reconnecting => l10n.devicesLink(transport, l10n.devicesReconnecting),
+      LinkState.offline || LinkState.onDemand => l10n.devicesOffline,
     };
   }
 }

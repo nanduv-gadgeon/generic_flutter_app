@@ -7,6 +7,7 @@ import 'package:generic_flutter_app/presentation/shell/app_shell.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../fixtures/test_config.dart';
+import '../../fixtures/l10n.dart';
 
 GoRoute _page(String path) => GoRoute(
   path: path,
@@ -41,7 +42,11 @@ Future<void> _pumpShell(WidgetTester tester, {bool history = true, bool alerts =
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

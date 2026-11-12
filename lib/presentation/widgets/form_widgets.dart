@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/common_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// Buttons and messages shared by the form screens (account, profile, Add device).
 
@@ -15,7 +15,7 @@ class CircleBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppTokens>();
     return IconButton(
-      tooltip: CommonStrings.back,
+      tooltip: context.l10n.commonBack,
       onPressed: onPressed,
       icon: const Icon(Icons.chevron_left, size: 24),
       style: IconButton.styleFrom(
@@ -34,13 +34,15 @@ class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
     required this.label,
-    this.busyLabel = CommonStrings.loading,
+    this.busyLabel,
     this.busy = false,
     required this.onPressed,
   });
 
   final String label;
-  final String busyLabel;
+
+  /// Default: "Loading".
+  final String? busyLabel;
   final bool busy;
   final VoidCallback? onPressed;
 
@@ -50,7 +52,7 @@ class PrimaryButton extends StatelessWidget {
       onPressed: busy ? null : onPressed,
       child: busy
           ? Semantics(
-              label: busyLabel,
+              label: busyLabel ?? context.l10n.commonLoading,
               child: const SizedBox.square(
                 dimension: 22,
                 child: CircularProgressIndicator(strokeWidth: 2.5),

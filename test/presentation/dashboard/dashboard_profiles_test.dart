@@ -41,7 +41,7 @@ void main() {
     'ief_device_v1': (
       [GaugeView, TilesView],
       ['Battery: 97%', 'State: Running'],
-      ['Current, 11.8 mA, Normal', 'Run time, 2.5 h', 'Sessions, 3', 'Errors, 1, High'],
+      ['Current, 11.8 mA, Normal', 'Run time, 2.0 h', 'Sessions, 3', 'Errors, 1, High'],
     ),
     'thermometer_v1': (
       [SpotValueView, NoteView, ReadingListView],

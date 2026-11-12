@@ -6,12 +6,11 @@ import '../../application/auth_controller.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/validation/auth_rules.dart';
-import '../strings/auth_strings.dart';
-import '../strings/common_strings.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/password_field.dart';
 import 'auth_form.dart';
 import 'auth_validators.dart';
+import '../../l10n/l10n.dart';
 
 /// Forgot password (Phase 1): email and a new password on one form. Saving asks for the phone's
 /// own screen lock (Face ID, fingerprint, PIN or passcode), then goes back to login.
@@ -39,6 +38,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   }
 
   Future<void> _reset() async {
+    final l10n = context.l10n;
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
     final messenger = ScaffoldMessenger.of(context);
@@ -46,20 +46,20 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     try {
       final result = await ref
           .read(authControllerProvider.notifier)
-          .resetPassword(_email.text.trim(), _password.text, reason: AuthStrings.resetReason);
+          .resetPassword(_email.text.trim(), _password.text, reason: l10n.authResetReason);
       switch (result) {
         case ResetSuccess():
-          messenger.showSnackBar(const SnackBar(content: Text(AuthStrings.passwordChanged)));
+          messenger.showSnackBar(SnackBar(content: Text(l10n.authPasswordChanged)));
           if (mounted) context.go('/login');
         case NoScreenLock():
-          _showError(AuthStrings.noScreenLock);
+          _showError(l10n.authNoScreenLock);
         case OwnerNotVerified():
-          _showError(AuthStrings.ownerNotVerified);
+          _showError(l10n.authOwnerNotVerified);
         case NoAccountForEmail():
-          _showError(AuthStrings.noAccountForEmail);
+          _showError(l10n.authNoAccountForEmail);
       }
     } catch (_) {
-      _showError(AuthStrings.resetFailed);
+      _showError(l10n.authResetFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -92,7 +92,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   Semantics(
                     header: true,
                     child: Text(
-                      AuthStrings.resetPassword,
+                      context.l10n.authResetPassword,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -101,7 +101,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(AuthStrings.resetSubtitle, style: TextStyle(fontSize: 15, color: muted)),
+                  Text(
+                    context.l10n.authResetSubtitle,
+                    style: TextStyle(fontSize: 15, color: muted),
+                  ),
                   const SizedBox(height: 20),
                   ..._fields(),
                   if (_error case final error?) ...[
@@ -110,8 +113,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   ],
                   const SizedBox(height: 20),
                   AuthSubmitButton(
-                    label: AuthStrings.resetPassword,
-                    busyLabel: AuthStrings.resettingPassword,
+                    label: context.l10n.authResetPassword,
+                    busyLabel: context.l10n.authResettingPassword,
                     busy: _busy,
                     onPressed: _reset,
                   ),
@@ -126,7 +129,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   List<Widget> _fields() => [
     LabeledField(
-      label: CommonStrings.email,
+      label: context.l10n.commonEmail,
       child: TextFormField(
         controller: _email,
         enabled: !_busy,
@@ -134,27 +137,27 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         autofillHints: const [AutofillHints.email],
         autocorrect: false,
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: CommonStrings.emailHint),
-        validator: AuthValidators.email,
+        decoration: InputDecoration(hintText: context.l10n.commonEmailHint),
+        validator: AuthValidators(context.l10n).email,
       ),
     ),
     const SizedBox(height: 14),
     PasswordField(
       controller: _password,
       enabled: !_busy,
-      label: AuthStrings.newPassword,
-      hint: AuthStrings.newPasswordHint(minPasswordLength),
+      label: context.l10n.authNewPassword,
+      hint: context.l10n.authNewPasswordHint(minPasswordLength),
       autofillHints: const [AutofillHints.newPassword],
-      validator: AuthValidators.newPassword,
+      validator: AuthValidators(context.l10n).newPassword,
     ),
     const SizedBox(height: 14),
     PasswordField(
       controller: _confirm,
       enabled: !_busy,
-      label: AuthStrings.confirmPassword,
-      hint: AuthStrings.confirmPasswordHint,
+      label: context.l10n.authConfirmPassword,
+      hint: context.l10n.authConfirmPasswordHint,
       autofillHints: const [AutofillHints.newPassword],
-      validator: AuthValidators.confirmPassword(() => _password.text),
+      validator: AuthValidators(context.l10n).confirmPassword(() => _password.text),
       onSubmitted: (_) => _reset(),
     ),
   ];

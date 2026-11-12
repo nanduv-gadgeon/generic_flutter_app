@@ -11,6 +11,7 @@ import '../../widgets/labeled_field.dart';
 import '../add_device_parts.dart';
 import '../add_device_validators.dart';
 import '../device_key_card.dart';
+import '../../../l10n/l10n.dart';
 
 /// Step 4 when saved (screen 12): the alert settings the device starts with, its name, and the
 /// way to its dashboard. The device key card shows only with the cloud (Phase 2).
@@ -61,8 +62,8 @@ class _DoneStepState extends ConsumerState<DoneStep> {
       key: _form,
       child: StepLayout(
         button: PrimaryButton(
-          label: AddDeviceStrings.goToDashboard,
-          busyLabel: AddDeviceStrings.saving,
+          label: context.l10n.addDeviceGoToDashboard,
+          busyLabel: context.l10n.addDeviceSaving,
           busy: _busy,
           onPressed: _finish,
         ),
@@ -77,15 +78,15 @@ class _DoneStepState extends ConsumerState<DoneStep> {
           const SizedBox(height: 10),
           Semantics(
             header: true,
-            child: const Text(
-              AddDeviceStrings.doneHeading,
+            child: Text(
+              context.l10n.addDeviceDoneHeading,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            AddDeviceStrings.doneBody(profile.label, state.transport!, cloud: cloud),
+            context.l10n.addDeviceDoneBody(profile.label, state.transport!, cloud: cloud),
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: tokens?.muted),
           ),
@@ -96,12 +97,12 @@ class _DoneStepState extends ConsumerState<DoneStep> {
           ],
           const SizedBox(height: 18),
           LabeledField(
-            label: AddDeviceStrings.deviceName,
+            label: context.l10n.addDeviceDeviceName,
             child: TextFormField(
               controller: _name,
               enabled: !_busy,
               textCapitalization: TextCapitalization.sentences,
-              validator: AddDeviceValidators.deviceName,
+              validator: AddDeviceValidators(context.l10n).deviceName,
               onFieldSubmitted: (_) => _finish(),
             ),
           ),
@@ -144,9 +145,9 @@ class _AlertsCard extends StatelessWidget {
                     children: [
                       Semantics(
                         header: true,
-                        child: const Text(
-                          AddDeviceStrings.alertSettings,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                        child: Text(
+                          context.l10n.addDeviceAlertSettings,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                         ),
                       ),
                       Container(
@@ -157,8 +158,8 @@ class _AlertsCard extends StatelessWidget {
                         ),
                         child: Text(
                           device.suggestedAlerts
-                              ? AddDeviceStrings.suggestedByCloud
-                              : AddDeviceStrings.defaultSettings,
+                              ? context.l10n.addDeviceSuggestedByCloud
+                              : context.l10n.addDeviceDefaultSettings,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -181,7 +182,7 @@ class _AlertsCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
             child: Text(
-              AddDeviceStrings.changeLater,
+              context.l10n.addDeviceChangeLater,
               style: TextStyle(fontSize: 12, color: tokens?.muted),
             ),
           ),
@@ -201,8 +202,8 @@ class _AlertRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = AddDeviceStrings.alertLabel(reading?.label ?? rule.key, rule);
-    final value = AddDeviceStrings.alertValue(rule, reading?.unit ?? '');
+    final label = context.l10n.addDeviceAlertLabel(reading?.label ?? rule.key, rule);
+    final value = context.l10n.addDeviceAlertValue(rule, reading?.unit ?? '');
     return MergeSemantics(
       child: Row(
         children: [

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/common_strings.dart';
-import '../strings/remove_device_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// The mockup's "Remove {name}?" bottom sheet (screen 26). True when the user confirms.
 Future<bool> confirmRemoveDevice(BuildContext context, {required String name}) async {
@@ -44,12 +43,12 @@ class _RemoveSheet extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              RemoveDeviceStrings.removeTitle(name),
+              context.l10n.removeDeviceRemoveTitle(name),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 14),
             Text(
-              RemoveDeviceStrings.removeBody,
+              context.l10n.removeDeviceRemoveBody,
               style: TextStyle(fontSize: 15, height: 1.45, color: tokens?.muted),
             ),
             const SizedBox(height: 14),
@@ -61,7 +60,7 @@ class _RemoveSheet extends StatelessWidget {
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(borderRadius: radius),
               ),
-              child: const Text(RemoveDeviceStrings.remove),
+              child: Text(context.l10n.removeDeviceRemove),
             ),
             const SizedBox(height: 14),
             OutlinedButton(
@@ -70,7 +69,7 @@ class _RemoveSheet extends StatelessWidget {
                 minimumSize: const Size.fromHeight(52),
                 shape: RoundedRectangleBorder(borderRadius: radius),
               ),
-              child: const Text(CommonStrings.cancel),
+              child: Text(context.l10n.commonCancel),
             ),
           ],
         ),

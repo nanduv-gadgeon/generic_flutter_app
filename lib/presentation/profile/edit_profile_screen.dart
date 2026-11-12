@@ -12,12 +12,10 @@ import '../../domain/validation/auth_rules.dart';
 import '../auth/auth_form.dart';
 import '../auth/auth_validators.dart';
 import '../auth/mobile_number_field.dart';
-import '../strings/auth_strings.dart';
-import '../strings/common_strings.dart';
-import '../strings/profile_strings.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/user_avatar.dart';
 import 'photo_source_sheet.dart';
+import '../../l10n/l10n.dart';
 
 /// Edit profile: photo, full name and mobile number; the email is shown read-only. Saves, then
 /// goes back to Profile.
@@ -97,10 +95,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text(ProfileStrings.profileSaved)));
+          .showSnackBar(SnackBar(content: Text(context.l10n.profileProfileSaved)));
       context.pop();
     } catch (_) {
-      if (mounted) setState(() => _error = ProfileStrings.saveFailed);
+      if (mounted) setState(() => _error = context.l10n.profileSaveFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -127,7 +125,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Semantics(
                         header: true,
                         child: Text(
-                          ProfileStrings.editProfile,
+                          context.l10n.profileEditProfile,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(fontSize: 20, fontWeight: FontWeight.w800),
                         ),
@@ -144,7 +142,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   child: TextButton.icon(
                     onPressed: _busy ? null : _changePhoto,
                     icon: const Icon(Icons.photo_camera_outlined, size: 16),
-                    label: const Text(ProfileStrings.changePhoto),
+                    label: Text(context.l10n.profileChangePhoto),
                     style: TextButton.styleFrom(
                       foregroundColor: accent,
                       minimumSize: const Size(0, 40),
@@ -160,8 +158,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ],
                 const SizedBox(height: 26),
                 AuthSubmitButton(
-                  label: ProfileStrings.saveChanges,
-                  busyLabel: ProfileStrings.saving,
+                  label: context.l10n.profileSaveChanges,
+                  busyLabel: context.l10n.profileSaving,
                   busy: _busy,
                   onPressed: _save,
                 ),
@@ -175,15 +173,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   List<Widget> _fields() => [
     LabeledField(
-      label: AuthStrings.fullName,
+      label: context.l10n.authFullName,
       child: TextFormField(
         controller: _name,
         enabled: !_busy,
         textCapitalization: TextCapitalization.words,
         autofillHints: const [AutofillHints.name],
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: AuthStrings.fullNameHint),
-        validator: AuthValidators.name,
+        decoration: InputDecoration(hintText: context.l10n.authFullNameHint),
+        validator: AuthValidators(context.l10n).name,
         // Keeps the initials in the avatar in step with the name.
         onChanged: (_) => setState(() {}),
       ),
@@ -191,7 +189,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     const SizedBox(height: 18),
     // The email is the login, so it is shown but cannot be edited (greyed out by the theme).
     LabeledField(
-      label: CommonStrings.email,
+      label: context.l10n.commonEmail,
       child: TextFormField(initialValue: _user.email, enabled: false),
     ),
     const SizedBox(height: 18),

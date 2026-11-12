@@ -4,19 +4,19 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/dashboard_provider.dart';
 import '../../application/device_profiles_provider.dart';
+import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../application/live_device_provider.dart';
 import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
 import '../device_settings/device_settings_button.dart';
-import '../strings/add_device_strings.dart';
 import '../strings/device_strings.dart';
 import '../widgets/form_widgets.dart';
-import '../widgets/placeholder_screen.dart';
 import 'dashboard_format.dart';
 import 'dashboard_actions.dart';
 import 'dashboard_header.dart';
+import 'device_page_states.dart';
 import 'dashboard_tabs.dart';
 import 'live_status_line.dart';
 import 'offline_banner.dart';
@@ -69,16 +69,18 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
   @override
   Widget build(BuildContext context) {
     final device = ref.watch(myDevicesProvider).value?.where((d) => d.id == deviceId).firstOrNull;
-    final registry = ref.watch(deviceProfileRegistryProvider).value;
-    final profile = device != null && registry != null && registry.contains(device.profileId)
-        ? registry.byId(device.profileId)
-        : null;
-    if (device == null || profile == null) {
-      return PlaceholderScreen(
-        title: AddDeviceStrings.dashboardPlaceholder,
-        actions: [DeviceSettingsButton(deviceId: deviceId)],
-      );
+    if (device == null) {
+      // My devices may not have caught up yet (e.g. just after Add device saved it), so ask the
+      // database for this one device before saying it is not there.
+      return switch (ref.watch(deviceDetailsProvider(deviceId))) {
+        AsyncData(value: null) || AsyncError() => const DeviceNotFound(),
+        _ => const DeviceLoading(),
+      };
     }
+    final registry = ref.watch(deviceProfileRegistryProvider).value;
+    if (registry == null) return const DeviceLoading();
+    if (!registry.contains(device.profileId)) return const DeviceNotFound();
+    final profile = registry.byId(device.profileId);
     final live = ref.watch(liveDeviceProvider(deviceId));
     final dashboard = profile.dashboardOrDefault;
     ref.listen(liveDeviceProvider(deviceId), (_, next) => _onLive(next, dashboard.onDemand));
@@ -97,6 +99,9 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       values: values,
       live: streaming,
       now: now,
+      times: dashboardTimes(profile, live, stored),
+      // Between log fetches there is nothing new to show, which is not "No signal".
+      missingIsNoSignal: streaming && !readsLogs(profile),
     );
     // "Could not connect" is what the banner says already; other problems (low battery, sensor
     // not responding…) still show, without Try again, since the banner has Reconnect.
@@ -148,26 +153,26 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
                   status: live.status,
                   offline: live.online
                       ? null
-                      : DeviceStrings.offline(switch (live.lastHeartbeatAt) {
+                      : context.l10n.deviceOffline(switch (live.lastHeartbeatAt) {
                           final at? => now.difference(at),
                           null => null,
                         }),
                 ),
               ],
               if (live.status == LiveStatus.streaming)
-                if (DeviceStrings.contact(live.contact) case final hint?) ...[
+                if (context.l10n.deviceContact(live.contact) case final hint?) ...[
                   const SizedBox(height: 14),
                   ContactHint(text: hint),
                 ],
               if (failure != null) ...[
                 const SizedBox(height: 12),
-                ErrorMessage(DeviceStrings.failure(failure)),
+                ErrorMessage(context.l10n.deviceFailure(failure)),
                 if (!showBanner)
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
                       onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
-                      child: const Text(DeviceStrings.tryAgain),
+                      child: Text(context.l10n.deviceTryAgain),
                     ),
                   ),
               ],

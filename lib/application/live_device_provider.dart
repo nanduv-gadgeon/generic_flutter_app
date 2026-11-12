@@ -17,6 +17,9 @@ abstract class LiveDeviceState with _$LiveDeviceState {
     @Default(LiveStatus.connecting) LiveStatus status,
     @Default({}) Map<String, double> values,
 
+    /// When each of [values] was measured (the device's time for logged readings).
+    @Default({}) Map<String, DateTime> times,
+
     /// Whether a finger is on the sensor; null for profiles that do not check it.
     SensorContact? contact,
 
@@ -61,8 +64,11 @@ class LiveDevice extends _$LiveDevice {
         status: status,
         failure: status == LiveStatus.streaming ? null : state.failure,
       ),
+      // A logged entry older than the value already kept (fetched in the same batch) is not newer.
+      LiveValue(:final sample) when state.times[sample.key]?.isAfter(sample.at) ?? false => state,
       LiveValue(:final sample) => state.copyWith(
         values: {...state.values, sample.key: sample.value},
+        times: {...state.times, sample.key: sample.at},
       ),
       // Without a settled finger the worked-out readings would be noise: keep only the battery.
       LiveContactChanged(:final contact) => state.copyWith(
@@ -71,6 +77,12 @@ class LiveDevice extends _$LiveDevice {
             ? state.values
             : {
                 for (final e in state.values.entries)
+                  if (e.key == batteryKey) e.key: e.value,
+              },
+        times: contact == SensorContact.ok
+            ? state.times
+            : {
+                for (final e in state.times.entries)
                   if (e.key == batteryKey) e.key: e.value,
               },
       ),

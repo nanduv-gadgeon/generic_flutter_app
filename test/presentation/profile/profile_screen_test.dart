@@ -18,6 +18,7 @@ import 'package:webview_flutter_platform_interface/webview_flutter_platform_inte
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/fake_web_view.dart';
 import '../../fixtures/test_config.dart';
+import '../../fixtures/l10n.dart';
 
 class MockAppSettingsService extends Mock implements AppSettingsService {}
 
@@ -86,6 +87,9 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           theme: buildTheme(config.theme, brightness),
           routerConfig: router,
         ),

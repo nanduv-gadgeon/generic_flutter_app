@@ -35,12 +35,4 @@ extension DeviceSettingsStrings on AppLocalizations {
     if (s < 86400) return agoHours(s ~/ 3600);
     return deviceSettingsAgoDays(s ~/ 86400);
   }
-
-  /// Sampling intervals shown (not changeable yet).
-  List<String> get deviceSettingsSamplingOptions => [
-    commonSeconds(1),
-    commonSeconds(5),
-    commonSeconds(30),
-    commonMinutes(1),
-  ];
 }

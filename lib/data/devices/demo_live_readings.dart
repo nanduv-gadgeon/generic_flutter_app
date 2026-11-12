@@ -91,6 +91,12 @@ class DemoLiveReadings implements LiveReadings {
     if (!_sessions.containsKey(deviceId)) await _inner.retry(deviceId);
   }
 
+  /// A dummy device has no real link: the command "works" at once, so the action can be tried.
+  @override
+  Future<void> runAction(int deviceId, List<ActionStep> steps) async {
+    if (!_sessions.containsKey(deviceId)) await _inner.runAction(deviceId, steps);
+  }
+
   @override
   Future<void> start(int userId) => _inner.start(userId);
 

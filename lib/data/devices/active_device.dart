@@ -121,6 +121,13 @@ class ActiveDevice implements LiveReadings {
     await _select(deviceId);
   }
 
+  @override
+  Future<void> runAction(int deviceId, List<ActionStep> steps) async {
+    final session = _active?.deviceId == deviceId ? _active?.session : null;
+    if (session == null) throw const LinkException('not connected');
+    await session.runAction(steps);
+  }
+
   /// Disconnects the current device, then connects [deviceId] (or nothing), one switch at a time.
   Future<void> _select(int? deviceId) => _switching = _switching.then((_) async {
     if (deviceId != null && activeId == deviceId) return;
@@ -176,6 +183,9 @@ class ActiveDevice implements LiveReadings {
     var unreachable = false;
     out.stream.listen((u) {
       if (u case LiveFailure(reason: LiveFailureReason.connectFailed)) unreachable = true;
+      // A retry in the background stays "waiting" (Offline) until it actually connects, so the
+      // device does not flash "Connecting…" every minute (task 1.3.6).
+      if (u case LiveStatusChanged(status: LiveStatus.connecting) when attempt > 0) return;
       active.emit(u);
     });
     active.session = session;

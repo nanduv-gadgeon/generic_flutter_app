@@ -42,11 +42,17 @@ class LiveDevice extends _$LiveDevice {
     return const LiveDeviceState();
   }
 
-  /// Disconnects and connects again from the start.
+  /// Disconnects and connects again from the start (Reconnect). The new connection starts with a
+  /// fresh heartbeat, so it counts as online until it misses its heartbeats again.
   Future<void> retry() async {
-    state = state.copyWith(failure: null);
+    state = state.copyWith(failure: null, online: true, status: LiveStatus.connecting);
     await ref.read(liveReadingsProvider).retry(deviceId);
   }
+
+  /// Sends a device action's [steps] to the device (the dashboard's action button). Throws when
+  /// the device is not connected, refuses a command or does not answer.
+  Future<void> runAction(List<ActionStep> steps) =>
+      ref.read(liveReadingsProvider).runAction(deviceId, steps);
 
   void _on(LiveUpdate update) {
     if (!ref.mounted) return;

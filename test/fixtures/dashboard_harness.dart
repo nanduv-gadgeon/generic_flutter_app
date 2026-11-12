@@ -82,7 +82,11 @@ List<Override> dashboardOverrides({
   required DateTime now,
   FakeReadingRepository? readings,
   FakeDeviceEventRepository? events,
+
+  /// Phase 2: the cloud is on, so Sync now shows.
+  bool cloud = false,
 }) => [
+  syncNowAvailableProvider.overrideWithValue(cloud),
   liveReadingsProvider.overrideWithValue(live),
   myDevicesProvider.overrideWith((ref) => Stream.value(devices)),
   deviceProfileRegistryProvider.overrideWith((ref) async => vitaCareRegistry),

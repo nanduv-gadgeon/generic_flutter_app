@@ -244,6 +244,7 @@
   "devicesWifi": "Wi‑Fi",
   "devicesConnected": "Connected",
   "devicesConnecting": "Connecting…",
+  "devicesReconnecting": "Reconnecting…",
   "devicesNotSeen": "Not seen yet",
   "devicesReorder": "Reorder",
   "devicesReorderLabel": "Reorder devices",
@@ -621,7 +622,10 @@
   "deviceSettingsOnline": "Online",
   "deviceSettingsOffline": "Offline",
   "deviceSettingsNotConnected": "Not connected",
-  "deviceSettingsSamplingLater": "Set by the device for now.",
+  "deviceSettingsSetByDevice": "Set by the device",
+  "@deviceSettingsSetByDevice": {
+    "description": "Sampling interval row when the config does not say how often readings come."
+  },
   "deviceSettingsBatteryAlert": "Battery",
   "@deviceSettingsBatteryAlert": {
     "description": "The battery limit is not one of a profile's readings."
@@ -967,5 +971,28 @@
         "type": "String"
       }
     }
-  }
+  },
+  "offlineBanner": "Offline · last heartbeat {ago}. Showing last readings.",
+  "@offlineBanner": {
+    "description": "The offline banner (task 1.3.6), e.g. 'Offline · last heartbeat 3 min ago. Showing last readings.'",
+    "placeholders": { "ago": { "type": "String" } }
+  },
+  "offlineBannerNoData": "Offline · no data from the device yet. Showing last readings.",
+  "reconnect": "Reconnect",
+  "reconnectLabel": "Reconnect to the device",
+  "reconnectingSpoken": "Reconnecting to the device",
+  "reconnectFailed": "Could not reconnect. Check the device is on and nearby.",
+  "syncNow": "Sync now",
+  "syncNowLabel": "Sync the device's readings now",
+  "syncNowLater": "Sync now comes with cloud sync.",
+  "actionUnavailable": "{label} isn't available yet.",
+  "@actionUnavailable": { "placeholders": { "label": { "type": "String" } } },
+  "actionDone": "{label}: done.",
+  "@actionDone": { "placeholders": { "label": { "type": "String" } } },
+  "actionFailed": "{label} didn't work. Check the device and try again.",
+  "@actionFailed": { "placeholders": { "label": { "type": "String" } } },
+  "actionRunningSpoken": "Sending {label} to the device",
+  "@actionRunningSpoken": { "placeholders": { "label": { "type": "String" } } },
+  "actionOfflineSpoken": "{label}, available when the device is connected",
+  "@actionOfflineSpoken": { "placeholders": { "label": { "type": "String" } } }
 }

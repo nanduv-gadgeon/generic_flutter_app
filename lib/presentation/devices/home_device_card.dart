@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/device_service.dart';
 import '../../domain/services/live_readings.dart';
@@ -40,8 +41,14 @@ class HomeDeviceCard extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
 
     final quick = _quickReading(context, profile, latest);
-    final linkText = _linkText(context, link);
-    final linked = link?.deviceId == device.id && isLinked(link);
+    final state = linkStateFor(link, device.id);
+    final linkText = _linkText(context, state);
+    // Green when linked, amber while (re)connecting, red when Offline; the words say it too.
+    final (chipColor, chipBg) = switch (state) {
+      LinkState.connected => (tokens?.ok, tokens?.okBg),
+      LinkState.connecting || LinkState.reconnecting => (tokens?.warn, tokens?.warnBg),
+      LinkState.offline || LinkState.onDemand => (tokens?.danger, tokens?.dangerBg),
+    };
     final battery = device.batteryPercent;
     final seenAt = device.lastHeartbeatAt;
     final seen = seenAt == null
@@ -129,9 +136,8 @@ class HomeDeviceCard extends ConsumerWidget {
                         child: _Chip(
                           icon: device.transport == Transport.wifi ? Icons.wifi : Icons.bluetooth,
                           text: linkText,
-                          // Offline in red; the word says it too, not just the colour.
-                          color: linked ? tokens?.ok : tokens?.danger,
-                          background: linked ? tokens?.okBg : tokens?.dangerBg,
+                          color: chipColor,
+                          background: chipBg,
                         ),
                       ),
                       if (battery != null) ...[
@@ -185,17 +191,15 @@ class HomeDeviceCard extends ConsumerWidget {
     return parts.isEmpty ? context.l10n.devicesNoReadings : context.l10n.devicesQuickReading(parts);
   }
 
-  String _linkText(BuildContext context, ActiveLink? link) {
-    if (link == null || link.deviceId != device.id || !isLinked(link)) {
-      return context.l10n.devicesOffline;
-    }
-    final transport = device.transport == Transport.wifi
-        ? context.l10n.devicesWifi
-        : context.l10n.devicesBluetooth;
-    final state = link.status == LiveStatus.connecting
-        ? context.l10n.devicesConnecting
-        : context.l10n.devicesConnected;
-    return context.l10n.devicesLink(transport, state);
+  String _linkText(BuildContext context, LinkState state) {
+    final l10n = context.l10n;
+    final transport = device.transport == Transport.wifi ? l10n.devicesWifi : l10n.devicesBluetooth;
+    return switch (state) {
+      LinkState.connected => l10n.devicesLink(transport, l10n.devicesConnected),
+      LinkState.connecting => l10n.devicesLink(transport, l10n.devicesConnecting),
+      LinkState.reconnecting => l10n.devicesLink(transport, l10n.devicesReconnecting),
+      LinkState.offline || LinkState.onDemand => l10n.devicesOffline,
+    };
   }
 }
 

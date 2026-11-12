@@ -225,4 +225,37 @@ void main() {
       expect(live.where((l) => RegExp(r'\d+\.\d').hasMatch(l)), isEmpty);
     },
   );
+
+  test('a device action sends its steps, then puts the red LED back at the AGC level', () async {
+    await session.start();
+    link.sent.clear();
+
+    await session.runAction(const [
+      ActionStep(command: 'led_red', value: 32),
+      ActionStep(command: 'led_red', value: 0),
+    ]);
+
+    expect(link.sent, [
+      [0xA5, 0xA5, 0x02, 0x0A, 32],
+      [0xA5, 0xA5, 0x02, 0x0A, 0],
+      [0xA5, 0xA5, 0x02, 0x0A, 5], // the AGC's level (its start, 5): readings recover
+    ]);
+  });
+
+  test('an action failing part-way still puts the LED back, then fails', () async {
+    await session.start();
+    link.sent.clear();
+
+    await expectLater(
+      session.runAction(const [
+        ActionStep(command: 'led_red', value: 32),
+        ActionStep(command: 'not_a_command'),
+      ]),
+      throwsA(anything),
+    );
+    expect(link.sent, [
+      [0xA5, 0xA5, 0x02, 0x0A, 32],
+      [0xA5, 0xA5, 0x02, 0x0A, 5],
+    ]);
+  });
 }

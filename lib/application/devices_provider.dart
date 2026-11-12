@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/di/services.dart';
+import '../domain/devices/link_state.dart';
 import '../domain/services/device_service.dart';
 import '../domain/services/live_readings.dart';
 import 'auth_controller.dart';
@@ -19,9 +20,11 @@ Stream<List<UserDevice>> myDevices(Ref ref) {
 @riverpod
 Stream<ActiveLink?> activeLink(Ref ref) => ref.watch(liveReadingsProvider).watchActive();
 
-/// Whether [link] means the device is linked or getting there, rather than waiting to retry or
-/// Offline after missed heartbeats.
-bool isLinked(ActiveLink? link) => link != null && link.online && link.status != LiveStatus.waiting;
+/// How the saved device [deviceId] looks on home, given the phone's one active [link]: any other
+/// device is Offline.
+LinkState linkStateFor(ActiveLink? link, int deviceId) => link == null || link.deviceId != deviceId
+    ? LinkState.offline
+    : linkStateOf(link.status, online: link.online);
 
 /// The newest stored reading of each key of the saved device [deviceId].
 @riverpod
@@ -40,8 +43,11 @@ HomeSummary homeSummary(Ref ref) {
   final devices = ref.watch(myDevicesProvider).value ?? const [];
   return (
     devices: devices.length,
-    // One device is linked at a time.
-    connected: isLinked(ref.watch(activeLinkProvider).value) ? 1 : 0,
+    // One device is linked at a time; Connecting and Reconnecting do not count yet.
+    connected: switch (ref.watch(activeLinkProvider).value) {
+      final link? when linkStateFor(link, link.deviceId) == LinkState.connected => 1,
+      _ => 0,
+    },
     // 0 until the alerts module stores alerts.
     alerts: 0,
   );

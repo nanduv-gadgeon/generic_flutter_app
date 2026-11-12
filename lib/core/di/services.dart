@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +14,7 @@ import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
 import '../../data/devices/cloud_device_registration.dart';
 import '../../data/devices/active_device.dart';
+import '../../data/devices/demo_live_readings.dart';
 import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
 import '../../data/events/local_device_event_repository.dart';
@@ -32,7 +34,7 @@ import '../../domain/services/biometric_auth.dart';
 import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
-import '../../domain/models/heartbeat_settings.dart';
+import '../../domain/models/device_profile.dart';
 import '../../domain/services/heartbeat_repository.dart';
 import '../../domain/services/live_readings.dart';
 import '../../domain/services/reading_repository.dart';
@@ -124,7 +126,8 @@ ReadingCleanupJob readingCleanupJob(Ref ref) {
 }
 
 /// Live readings work the same in both phases: from the one connected device to the screen and
-/// the local database.
+/// the local database. Debug builds also play made-up readings for dummy devices (home's hidden
+/// long-press), so every dashboard can be tried without hardware.
 @Riverpod(keepAlive: true)
 LiveReadings liveReadings(Ref ref) {
   final profiles = DeviceProfileRegistry(ref.watch(appConfigProvider).requireValue);
@@ -132,26 +135,41 @@ LiveReadings liveReadings(Ref ref) {
   final readings = ref.watch(readingRepositoryProvider);
   final heartbeats = ref.watch(heartbeatRepositoryProvider);
   final events = ref.watch(deviceEventRepositoryProvider);
-  final active = ActiveDevice(
-    db,
-    (id) => profiles.contains(id) ? profiles.byId(id) : null,
-    ref.watch(deviceLinkFactoryProvider),
-    (deviceId, profile) => ReadingWriter(
-      deviceId,
-      readings,
-      (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
-      events: events,
-      skip: waveformKeys(profile),
-    ),
-    (deviceId, settings) => HeartbeatRecorder(
-      deviceId,
-      heartbeats,
-      (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
-      interval: settings.interval,
-    ),
+  DeviceProfile? profileFor(String id) => profiles.contains(id) ? profiles.byId(id) : null;
+  ReadingWriter writerFor(int deviceId, DeviceProfile profile) => ReadingWriter(
+    deviceId,
+    readings,
+    (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
+    events: events,
+    skip: waveformKeys(profile),
   );
-  ref.onDispose(active.stop);
-  return active;
+  HeartbeatRecorder recorderFor(int deviceId, HeartbeatSettings settings) => HeartbeatRecorder(
+    deviceId,
+    heartbeats,
+    (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
+    interval: settings.interval,
+  );
+  final LiveReadings active = ActiveDevice(
+    db,
+    profileFor,
+    ref.watch(deviceLinkFactoryProvider),
+    writerFor,
+    recorderFor,
+  );
+  final live = kDebugMode
+      ? DemoLiveReadings(
+          active,
+          (id) async {
+            final row = await db.devicesDao.byId(id);
+            return row == null ? null : (address: row.address, profileId: row.profileId);
+          },
+          profileFor,
+          writerFor,
+          recorderFor,
+        )
+      : active;
+  ref.onDispose(live.stop);
+  return live;
 }
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.

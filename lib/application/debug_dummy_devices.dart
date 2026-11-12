@@ -1,15 +1,17 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/di/services.dart';
+import '../domain/devices/demo_devices.dart';
 import '../domain/models/device_profile.dart';
 import '../domain/services/device_service.dart';
 import 'device_profiles_provider.dart';
 
 part 'debug_dummy_devices.g.dart';
 
-/// Debug builds only (home's hidden long-press): fake devices for trying the device list, e.g.
-/// reordering, without hardware. They are saved like real devices, through [DeviceService], with
-/// made-up addresses, so they can never connect. Release builds never offer this.
+/// Debug builds only (home's hidden long-press): one fake device per offered type, for trying the
+/// device list and every dashboard without hardware. They are saved like real devices, through
+/// [DeviceService], with made-up addresses, so they can never connect; a demo feed plays made-up
+/// readings for them instead. Release builds never offer this.
 class DummyDevices {
   DummyDevices(this._devices, this._offered, this._name);
 
@@ -21,25 +23,23 @@ class DummyDevices {
   /// The name a dummy of a device type gets, from its type label.
   final String Function(String typeLabel) _name;
 
-  /// How many dummy devices are added.
-  static const count = 4;
-
   /// Made-up addresses; nothing real uses the `AA:BB:CC:DD` range.
-  static String address(int n) => 'AA:BB:CC:DD:00:0$n';
+  static String address(int n) => demoAddress(n);
 
-  /// Adds the dummies, or removes them when they are there. Returns how many were added (> 0) or
-  /// removed (< 0).
+  /// Adds one dummy per offered type, or removes them when they are there. Returns how many were
+  /// added (> 0) or removed (< 0).
   Future<int> toggle(int userId) async {
     if (await _devices.isAdded(userId, address(1))) {
-      for (var n = 1; n <= count; n++) {
+      var removed = 0;
+      for (var n = 1; await _devices.isAdded(userId, address(n)); n++) {
         await _devices.removeDevice(userId, address(n));
+        removed++;
       }
-      return -count;
+      return -removed;
     }
     final types = await _offered();
-    if (types.isEmpty) return 0;
-    for (var n = 1; n <= count; n++) {
-      final type = types[(n - 1) % types.length];
+    for (final (i, type) in types.indexed) {
+      final n = i + 1;
       await _devices.addDevice(
         NewDevice(
           userId: userId,
@@ -51,7 +51,7 @@ class DummyDevices {
         type.alerts,
       );
     }
-    return count;
+    return types.length;
   }
 }
 

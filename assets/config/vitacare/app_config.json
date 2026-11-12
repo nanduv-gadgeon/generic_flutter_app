@@ -432,7 +432,8 @@
         "views": [
           { "type": "gauge", "reading": "spo2" },
           { "type": "tiles", "readings": ["heart_rate", "pi_ir", "pi_red"] }
-        ]
+        ],
+        "action": { "label": "Calibrate device" }
       }
     }
   ]

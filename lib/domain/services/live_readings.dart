@@ -16,6 +16,11 @@ abstract interface class LiveReadings {
   /// Disconnects [deviceId] and connects it again from the start.
   Future<void> retry(int deviceId);
 
+  /// Sends the profile command [commandId] to [deviceId] and waits for its reply, e.g. the
+  /// dashboard's device action. Throws when [deviceId] is not the connected device, the device
+  /// refuses the command or does not answer.
+  Future<void> runCommand(int deviceId, String commandId);
+
   /// The device that is connected or connecting, and its status; null when there is none.
   /// Starts with the current one.
   Stream<ActiveLink?> watchActive();

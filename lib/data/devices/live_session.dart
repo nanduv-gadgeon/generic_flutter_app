@@ -85,6 +85,10 @@ class LiveSession {
     await _afterConnect();
   }
 
+  /// Sends the profile command [commandId] and waits for its reply (the dashboard's device
+  /// action). Throws [CommandFailedException], [LinkException] or [UnsupportedCommandException].
+  Future<void> runCommand(String commandId) => _commands.run(commandId);
+
   Future<void> stop() async {
     if (_stopped) return;
     _stopped = true;

@@ -15,6 +15,9 @@ class FakeLiveReadings implements LiveReadings {
   Future<void> retry(int deviceId) async {}
 
   @override
+  Future<void> runCommand(int deviceId, String commandId) async {}
+
+  @override
   Future<void> start(int userId) async => started.add(userId);
 
   @override

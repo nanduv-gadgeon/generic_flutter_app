@@ -222,11 +222,12 @@ void main() {
       Duration(seconds: 60),
       Duration(seconds: 60),
     ]);
-    expect(
-      updates.whereType<LiveStatusChanged>().map((u) => u.status),
-      contains(LiveStatus.waiting),
-    );
-    expect(updates.whereType<LiveStatusChanged>().last.status, LiveStatus.streaming);
+    final statuses = updates.whereType<LiveStatusChanged>().map((u) => u.status).toList();
+    expect(statuses, contains(LiveStatus.waiting));
+    expect(statuses.last, LiveStatus.streaming);
+    // Only the first attempt says Connecting…; retries in the background stay waiting (Offline)
+    // until one connects, so the device does not flash Connecting… every minute (task 1.3.6).
+    expect(statuses.where((s) => s == LiveStatus.connecting), hasLength(1));
     await sub.cancel();
   });
 

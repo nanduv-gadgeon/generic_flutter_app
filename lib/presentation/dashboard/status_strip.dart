@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/dashboard/event_summary.dart';
+import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
 import 'dashboard_format.dart';
@@ -94,6 +95,9 @@ typedef StripState = ({
   DashboardSettings dashboard,
   bool streaming,
   bool online,
+
+  /// The same link state as the home card and the offline banner.
+  LinkState link,
   double? battery,
   DateTime? lastHeartbeatAt,
   EventSummary summary,
@@ -110,11 +114,13 @@ List<StripCellData> stripCells(BuildContext context, StripState s) {
   final none = l10n.noValue;
   final good = s.streaming ? tokens.ok : null;
   final wifi = s.device.transport == Transport.wifi;
-  final link = !s.online
-      ? (l10n.linkOffline, tokens.danger)
-      : s.dashboard.onDemand
-      ? (l10n.linkOnDemand, tokens.ok)
-      : (wifi ? l10n.linkWifi : l10n.linkBluetooth, good);
+  final transport = wifi ? l10n.linkWifi : l10n.linkBluetooth;
+  final link = switch (s.link) {
+    LinkState.offline => (l10n.linkOffline, tokens.danger),
+    LinkState.onDemand => (l10n.linkOnDemand, tokens.ok),
+    LinkState.connecting || LinkState.reconnecting => (transport, tokens.warn),
+    LinkState.connected => (transport, good),
+  };
   final battery = s.battery;
   final third = switch (s.dashboard.strip) {
     StripCell.heartbeat => (

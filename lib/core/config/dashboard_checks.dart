@@ -36,6 +36,12 @@ List<String> checkDashboard(DeviceProfile profile, String path) {
     }
   }
 
+  if (dashboard.action?.command case final command?) {
+    if (!profile.commands.any((c) => c.id == command)) {
+      errors.add('$path/dashboard/action/command: "$command" is not a command of ${profile.id}');
+    }
+  }
+
   final waves = <String>{};
   for (final (v, view) in dashboard.views.indexed) {
     final at = '$path/dashboard/views/$v';

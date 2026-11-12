@@ -128,7 +128,17 @@
       "properties": {
         "strip": { "enum": ["heartbeat", "state", "lastReading", "streamRate", "channels"] },
         "onDemand": { "type": "boolean" },
-        "views": { "type": "array", "items": { "$ref": "#/definitions/dashboardView" } }
+        "views": { "type": "array", "items": { "$ref": "#/definitions/dashboardView" } },
+        "action": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["label"],
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "command": { "$ref": "#/definitions/key" },
+            "done": { "type": "string", "minLength": 1 }
+          }
+        }
       }
     },
     "dashboardView": {

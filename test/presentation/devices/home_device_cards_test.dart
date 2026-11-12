@@ -78,7 +78,12 @@ void main() {
       'the patch connecting': (
         (deviceId: 1, status: LiveStatus.connecting, online: true),
         'BLE · Connecting…',
-        1,
+        0, // only a connected device counts (task 1.3.6)
+      ),
+      'the sensor reconnecting after a drop': (
+        (deviceId: 2, status: LiveStatus.reconnecting, online: true),
+        'BLE · Reconnecting…',
+        0,
       ),
       'the sensor offline after missed heartbeats': (
         (deviceId: 2, status: LiveStatus.streaming, online: false),
@@ -97,7 +102,8 @@ void main() {
         await pump(tester, active: active);
 
         expect(find.text(text), findsAtLeastNWidgets(1));
-        expect(find.text('Offline'), findsNWidgets(count == 1 ? 2 : 3));
+        // The two other cards are Offline; the linked one is too only when it says so.
+        expect(find.text('Offline'), findsNWidgets(text == 'Offline' ? 3 : 2));
         expect(find.bySemanticsLabel('$count Connected'), findsOneWidget);
         semantics.dispose();
       });

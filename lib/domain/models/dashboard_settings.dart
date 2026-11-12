@@ -53,10 +53,30 @@ abstract class DashboardSettings with _$DashboardSettings {
 
     /// In screen order. Empty: a gauge for the first reading and tiles for the rest.
     @Default([]) List<DashboardView> views,
+
+    /// The device action button at the bottom of Live, e.g. "Find band"; none when null.
+    DeviceAction? action,
   }) = _DashboardSettings;
 
   factory DashboardSettings.fromJson(Map<String, dynamic> json) =>
       _$DashboardSettingsFromJson(json);
+}
+
+/// The dashboard's device action button (requirement 5.6), e.g. "Find band" or "Identify".
+@freezed
+abstract class DeviceAction with _$DeviceAction {
+  const factory DeviceAction({
+    /// The button's text, e.g. "Find band".
+    required String label,
+
+    /// The profile command it sends. Null: the action is not available yet (a placeholder).
+    String? command,
+
+    /// Said once the device has done it, e.g. "The band is vibrating."
+    String? done,
+  }) = _DeviceAction;
+
+  factory DeviceAction.fromJson(Map<String, dynamic> json) => _$DeviceActionFromJson(json);
 }
 
 /// One view on the dashboard and the readings that feed it.

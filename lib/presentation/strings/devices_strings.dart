@@ -35,6 +35,7 @@ abstract final class DevicesStrings {
   static const wifi = 'Wi‑Fi';
   static const connected = 'Connected';
   static const connecting = 'Connecting…';
+  static const reconnecting = 'Reconnecting…';
   static const notSeen = 'Not seen yet';
 
   /// "Bluetooth · Connected".

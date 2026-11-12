@@ -64,27 +64,33 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     if (!_nameFocus.hasFocus) _saveName();
   }
 
-  /// Saves a changed, valid name; an invalid one shows the message and is not saved.
-  Future<void> _saveName() async {
+  /// A save that has not finished yet. Done and the focus loss that follows it, or Back, may all
+  /// ask to save; they share this one.
+  Future<bool>? _saving;
+
+  /// Saves a changed, valid name; an invalid one shows the message and is not saved. True when the
+  /// screen may be left: the name is unchanged or was saved.
+  Future<bool> _saveName() => _saving ??= _save().whenComplete(() => _saving = null);
+
+  Future<bool> _save() async {
     final saved = _savedName;
     final name = _name.text.trim();
     if (saved == null || name == saved) {
-      if (_nameError != null) setState(() => _nameError = null);
-      return;
+      if (_nameError != null && mounted) setState(() => _nameError = null);
+      return true;
     }
-    // Set first: Done and the focus loss that follows both call this; only one saves.
-    _savedName = name;
     final ok = await ref
         .read(deviceSettingsControllerProvider.notifier)
         .rename(widget.deviceId, name);
-    if (!ok) _savedName = saved;
-    if (!mounted) return;
-    setState(() => _nameError = ok ? null : AddDeviceStrings.enterDeviceName);
+    if (ok) _savedName = name;
+    if (mounted) setState(() => _nameError = ok ? null : AddDeviceStrings.enterDeviceName);
+    return ok;
   }
 
+  /// The header's Back and the phone's back (gesture or button): saves a changed name first. An
+  /// invalid name keeps the screen open with its message (TC-DST-003); the old name stays saved.
   Future<void> _back() async {
-    await _saveName();
-    if (!mounted) return;
+    if (!await _saveName() || !mounted) return;
     context.canPop() ? context.pop() : context.go(AddDeviceScreen.deviceRoute(widget.deviceId));
   }
 
@@ -138,30 +144,37 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
       );
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  CircleBackButton(onPressed: _back),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: const Text(
-                        DeviceSettingsStrings.title,
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+    // The phone's back goes through [_back] too, so it saves the name or stays on a bad one.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _back();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    CircleBackButton(onPressed: _back),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: const Text(
+                          DeviceSettingsStrings.title,
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              Expanded(child: body),
-            ],
+                  ],
+                ),
+                Expanded(child: body),
+              ],
+            ),
           ),
         ),
       ),

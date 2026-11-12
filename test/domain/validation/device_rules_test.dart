@@ -9,6 +9,17 @@ void main() {
     '   ': false,
     'x' * 40: true,
     'x' * 41: false,
+    // At least one letter or digit; punctuation only alongside them.
+    '"': false,
+    "'": false,
+    '---': false,
+    r'#$%': false,
+    "Dad's band": true,
+    'Band-2': true,
+    'Kitchen #1': true,
+    '7': true,
+    'Wärme 3': true,
+    'Капля': true,
   };
   for (final MapEntry(key: name, value: valid) in names.entries) {
     test('device name "${name.length > 12 ? '${name.length} chars' : name}" -> $valid', () {

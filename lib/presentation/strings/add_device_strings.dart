@@ -116,7 +116,7 @@ abstract final class AddDeviceStrings {
   static const defaultSettings = 'Default settings';
   static const changeLater = 'You can change these later in Device settings.';
   static const deviceName = 'Device name';
-  static const enterDeviceName = 'Enter a name of up to 40 characters.';
+  static const enterDeviceName = 'Use letters or numbers, up to 40 characters.';
   static const goToDashboard = 'Go to dashboard';
   static const saving = 'Saving';
   static const deviceAdded = 'Device added';

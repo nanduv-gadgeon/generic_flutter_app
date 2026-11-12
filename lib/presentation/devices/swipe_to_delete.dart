@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/services/device_service.dart';
-import '../strings/remove_device_strings.dart';
 import 'remove_device_sheet.dart';
+import '../../l10n/l10n.dart';
 
 /// Swipe left on a device card to delete it (mockup `07_home_swipe.png`): the red Delete panel
 /// follows the finger and, once the swipe is complete, the "Remove {name}?" sheet asks to confirm.
@@ -29,6 +29,7 @@ class SwipeToDelete extends ConsumerWidget {
 
   /// Asks to confirm, then removes the device; true when it was removed.
   Future<bool> _confirmAndRemove(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
     // Everything from ref is read now: the widget may be gone once the sheet closes.
     final remove = ref.read(removeDeviceProvider);
     final messenger = ScaffoldMessenger.of(context);
@@ -38,10 +39,10 @@ class SwipeToDelete extends ConsumerWidget {
     try {
       await remove(device.id);
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(RemoveDeviceStrings.removeFailed)));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.removeDeviceRemoveFailed)));
       return false;
     }
-    messenger.showSnackBar(const SnackBar(content: Text(RemoveDeviceStrings.removed)));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.removeDeviceRemoved)));
     return true;
   }
 
@@ -83,7 +84,7 @@ class _DeletePanel extends StatelessWidget {
             Icon(Icons.delete_outline, color: onDanger, size: 26),
             const SizedBox(height: 4),
             Text(
-              RemoveDeviceStrings.delete,
+              context.l10n.removeDeviceDelete,
               style: TextStyle(color: onDanger, fontSize: 16, fontWeight: FontWeight.w700),
             ),
           ],

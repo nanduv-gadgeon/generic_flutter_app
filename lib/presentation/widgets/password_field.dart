@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../strings/common_strings.dart';
 import 'labeled_field.dart';
+import '../../l10n/l10n.dart';
 
 /// Password input with its label above and a show / hide button.
 class PasswordField extends StatefulWidget {
   const PasswordField({
     super.key,
     required this.controller,
-    this.label = CommonStrings.password,
-    this.hint = CommonStrings.passwordHint,
+    this.label,
+    this.hint,
     this.enabled = true,
     this.validator,
     this.autofillHints = const [AutofillHints.password],
@@ -17,8 +17,12 @@ class PasswordField extends StatefulWidget {
   });
 
   final TextEditingController controller;
-  final String label;
-  final String hint;
+
+  /// Default: "Password".
+  final String? label;
+
+  /// Default: "Enter password".
+  final String? hint;
   final bool enabled;
   final FormFieldValidator<String>? validator;
   final Iterable<String> autofillHints;
@@ -34,7 +38,7 @@ class _PasswordFieldState extends State<PasswordField> {
   @override
   Widget build(BuildContext context) {
     return LabeledField(
-      label: widget.label,
+      label: widget.label ?? context.l10n.commonPassword,
       child: TextFormField(
         controller: widget.controller,
         enabled: widget.enabled,
@@ -45,9 +49,9 @@ class _PasswordFieldState extends State<PasswordField> {
         validator: widget.validator,
         onFieldSubmitted: widget.onSubmitted,
         decoration: InputDecoration(
-          hintText: widget.hint,
+          hintText: widget.hint ?? context.l10n.commonPasswordHint,
           suffixIcon: IconButton(
-            tooltip: _obscured ? CommonStrings.showPassword : CommonStrings.hidePassword,
+            tooltip: _obscured ? context.l10n.commonShowPassword : context.l10n.commonHidePassword,
             icon: Icon(_obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined),
             onPressed: () => setState(() => _obscured = !_obscured),
           ),

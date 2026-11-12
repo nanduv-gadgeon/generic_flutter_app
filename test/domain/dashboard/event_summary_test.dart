@@ -4,7 +4,6 @@ import 'package:generic_flutter_app/domain/decoder/decoded_packet.dart';
 import 'package:generic_flutter_app/domain/models/reading.dart';
 
 final _dayStart = DateTime.utc(2026, 11, 11);
-final _now = _dayStart.add(const Duration(hours: 12));
 
 /// An event [minutes] after the start of the day (negative: the day before).
 DeviceEvent _e(DeviceEventKind kind, int minutes) =>
@@ -18,32 +17,54 @@ void main() {
   // (events, sessions, run time in minutes, errors, running)
   final cases = <String, (List<DeviceEvent>, int, int, int, bool)>{
     'one session': ([_e(_start, 60), _e(_stop, 90)], 1, 30, 0, false),
-    'two sessions and an error': (
-      [_e(_start, 60), _e(_error, 70), _e(_stop, 90), _e(_start, 120), _e(_stop, 180)],
+    'two sessions: from the first START to the last STOP, the break included': (
+      [_e(_start, 360), _e(_stop, 420), _e(_start, 450), _e(_stop, 480)],
       2,
-      90,
-      1,
+      120,
+      0,
       false,
     ),
-    'a session still running counts up to now': ([_e(_start, 600)], 1, 120, 0, true),
-    'a stop with no start is ignored': (
+    'an error during a session': ([_e(_start, 60), _e(_error, 70), _e(_stop, 90)], 1, 30, 1, false),
+    'still running after the last STOP: up to that STOP, not the clock': (
+      [_e(_start, 360), _e(_stop, 420), _e(_start, 480)],
+      2,
+      60,
+      0,
+      true,
+    ),
+    'a START with no STOP yet: zero': ([_e(_start, 600)], 1, 0, 0, true),
+    'a STOP before the first START is not the last STOP': (
+      [_e(_stop, 30), _e(_start, 60)],
+      1,
+      0,
+      0,
+      true,
+    ),
+    'a STOP before the first START, then a later STOP': (
       [_e(_stop, 30), _e(_start, 60), _e(_stop, 70)],
       1,
       10,
       0,
       false,
     ),
-    'a start while running starts another session': (
-      [_e(_start, 60), _e(_start, 100), _e(_stop, 110)],
-      2,
-      50,
+    'a session from yesterday: only today’s logs count': (
+      [_e(_start, -30), _e(_stop, 30)],
+      0,
+      0,
       0,
       false,
     ),
-    'a session from yesterday counts only from midnight': (
-      [_e(_start, -30), _e(_stop, 30)],
+    'yesterday’s START does not count, today’s does': (
+      [_e(_start, -30), _e(_stop, 30), _e(_start, 60), _e(_stop, 120)],
+      1,
+      60,
       0,
-      30,
+      false,
+    ),
+    'logs dated after today do not count': (
+      [_e(_start, 60), _e(_stop, 120), _e(_stop, 24 * 60 + 5), _e(_error, 24 * 60 + 6)],
+      1,
+      60,
       0,
       false,
     ),
@@ -55,7 +76,7 @@ void main() {
       in cases.entries) {
     test(name, () {
       expect(
-        summarise(events, dayStart: _dayStart, now: _now),
+        summarise(events, dayStart: _dayStart),
         EventSummary(
           sessions: sessions,
           runTime: Duration(minutes: minutes),
@@ -67,9 +88,21 @@ void main() {
   }
 
   test('no events: nothing known', () {
-    final summary = summarise(const [], dayStart: _dayStart, now: _now);
+    final summary = summarise(const [], dayStart: _dayStart);
     expect(summary, EventSummary.empty);
     expect(summary.hasEvents, isFalse);
+  });
+
+  test('a local day ends at the next local midnight', () {
+    final dayStart = DateTime(2026, 11, 11);
+    DeviceEvent at(DeviceEventKind kind, DateTime time) => DeviceEvent(kind, time, code: 0);
+    final summary = summarise([
+      at(_start, DateTime(2026, 11, 11, 8)),
+      at(_stop, DateTime(2026, 11, 11, 23, 30)),
+      at(_stop, DateTime(2026, 11, 12, 0, 30)),
+    ], dayStart: dayStart);
+
+    expect(summary.runTime, const Duration(hours: 15, minutes: 30));
   });
 
   test('values for event readings: run time in hours, counts as numbers', () {

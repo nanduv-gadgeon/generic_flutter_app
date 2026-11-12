@@ -49,33 +49,69 @@ Stream<List<DeviceEvent>> recentEvents(Ref ref, int deviceId) => ref
     .watch(deviceEventRepositoryProvider)
     .watchSince(deviceId, startOfDay(ref.watch(clockProvider)()).subtract(const Duration(days: 1)));
 
-/// Today's sessions, run time, errors and state of the device, from its events.
+/// Today's sessions, run time, errors and state of the device, from its stored events. Worked out
+/// again whenever an event is stored, and at midnight for the new day.
 @riverpod
 EventSummary eventSummary(Ref ref, int deviceId) {
   final events = ref.watch(recentEventsProvider(deviceId)).value;
   if (events == null) return EventSummary.empty;
   final now = ref.watch(dashboardNowProvider).value ?? ref.watch(clockProvider)();
-  return summarise(events, dayStart: startOfDay(now), now: now);
+  return summarise(events, dayStart: startOfDay(now));
 }
 
+/// Whether [profile]'s readings come from logs the app fetches now and then (a `sync` block, e.g.
+/// the therapy device), not from a stream. Its newest stored reading stays the latest one between
+/// fetches, so the dashboard keeps showing it while connected.
+bool readsLogs(DeviceProfile profile) => profile.sync != null;
+
 /// The latest value of each reading of [profile] the dashboard shows:
-/// - live values while the device is streaming;
-/// - otherwise the newest stored ones, so the screen is not empty while connecting or Offline;
+/// - a streaming device (e.g. the PPG sensor): live values while it streams, so an old value never
+///   looks live; otherwise the newest stored ones, so the screen is not empty while connecting or
+///   Offline;
+/// - a device that [readsLogs]: always the newest of the stored and live values, by the time each
+///   was measured, as a fetch brings several entries at once and nothing between fetches;
 /// - readings worked out from events, from [summary].
 Map<String, double> dashboardValues(
   DeviceProfile profile,
   LiveDeviceState live,
   Map<String, Sample> stored,
   EventSummary summary,
+) => {
+  for (final MapEntry(:key, value: (value, _)) in _latest(profile, live, stored).entries)
+    key: value,
+  if (summary.hasEvents)
+    for (final reading in profile.readings) reading.key: ?summary.valueFor(reading.source),
+};
+
+/// When each value of [dashboardValues] (other than those worked out from events) was measured,
+/// where that is known.
+Map<String, DateTime> dashboardTimes(
+  DeviceProfile profile,
+  LiveDeviceState live,
+  Map<String, Sample> stored,
+) => {
+  for (final MapEntry(:key, value: (_, at)) in _latest(profile, live, stored).entries) key: ?at,
+};
+
+Map<String, (double, DateTime?)> _latest(
+  DeviceProfile profile,
+  LiveDeviceState live,
+  Map<String, Sample> stored,
 ) {
   final streaming = live.status == LiveStatus.streaming && live.online;
-  return {
-    if (!streaming)
-      for (final MapEntry(:key, :value) in stored.entries) key: value.value,
-    ...live.values,
-    if (summary.hasEvents)
-      for (final reading in profile.readings) reading.key: ?summary.valueFor(reading.source),
+  final logs = readsLogs(profile);
+  final latest = <String, (double, DateTime?)>{
+    if (!streaming || logs)
+      for (final MapEntry(:key, value: sample) in stored.entries) key: (sample.value, sample.at),
   };
+  for (final MapEntry(:key, :value) in live.values.entries) {
+    final at = live.times[key];
+    final kept = latest[key]?.$2;
+    // A live value older than the stored one (an earlier entry of the same fetch) does not win.
+    if (logs && at != null && kept != null && at.isBefore(kept)) continue;
+    latest[key] = (value, at);
+  }
+  return latest;
 }
 
 /// The last [capacity] of the device's [key] samples, for a waveform, oldest first. Sampled many

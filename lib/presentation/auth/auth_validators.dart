@@ -2,33 +2,37 @@ import 'package:flutter/widgets.dart';
 
 import '../../domain/models/dial_code.dart';
 import '../../domain/validation/auth_rules.dart';
-import '../strings/auth_strings.dart';
-import '../strings/common_strings.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Form field validators for the account screens: each pairs a rule from `auth_rules.dart` with
-/// its message. Return null when the value is valid.
-abstract final class AuthValidators {
-  static String? name(String? v) => switch (nameProblem(v ?? '')) {
+/// its message in the phone's language. Return null when the value is valid.
+/// Use `AuthValidators(context.l10n).email`.
+final class AuthValidators {
+  const AuthValidators(this._l10n);
+
+  final AppLocalizations _l10n;
+
+  String? name(String? v) => switch (nameProblem(v ?? '')) {
     null => null,
-    NameProblem.blank => AuthStrings.enterName,
-    NameProblem.tooShort => AuthStrings.nameTooShort(minNameLength),
-    NameProblem.tooLong => AuthStrings.nameTooLong(maxNameLength),
+    NameProblem.blank => _l10n.authEnterName,
+    NameProblem.tooShort => _l10n.authNameTooShort(minNameLength),
+    NameProblem.tooLong => _l10n.authNameTooLong(maxNameLength),
   };
 
-  static String? email(String? v) => isValidEmail(v ?? '') ? null : CommonStrings.invalidEmail;
+  String? email(String? v) => isValidEmail(v ?? '') ? null : _l10n.commonInvalidEmail;
 
   /// Login only checks that something was typed; the account check gives the real answer.
-  static String? loginPassword(String? v) => (v ?? '').isEmpty ? AuthStrings.enterPassword : null;
+  String? loginPassword(String? v) => (v ?? '').isEmpty ? _l10n.authEnterPassword : null;
 
-  static String? newPassword(String? v) =>
-      isValidNewPassword(v ?? '') ? null : AuthStrings.passwordTooShort(minPasswordLength);
+  String? newPassword(String? v) =>
+      isValidNewPassword(v ?? '') ? null : _l10n.authPasswordTooShort(minPasswordLength);
 
   /// [password] is read when validating, so it sees the latest text.
-  static FormFieldValidator<String> confirmPassword(String Function() password) =>
-      (v) => passwordsMatch(password(), v ?? '') ? null : AuthStrings.passwordsDiffer;
+  FormFieldValidator<String> confirmPassword(String Function() password) =>
+      (v) => passwordsMatch(password(), v ?? '') ? null : _l10n.authPasswordsDiffer;
 
-  static FormFieldValidator<String> mobile(DialCode dialCode) =>
-      (v) => isValidNationalNumber(v ?? '', dialCode) ? null : AuthStrings.invalidMobile;
+  FormFieldValidator<String> mobile(DialCode dialCode) =>
+      (v) => isValidNationalNumber(v ?? '', dialCode) ? null : _l10n.authInvalidMobile;
 
-  static String? terms(bool? accepted) => accepted == true ? null : AuthStrings.termsRequired;
+  String? terms(bool? accepted) => accepted == true ? null : _l10n.authTermsRequired;
 }

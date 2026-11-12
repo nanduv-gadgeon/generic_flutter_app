@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/app_config_provider.dart';
 import '../../core/theme/app_tokens.dart';
-import '../strings/shell_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// One tab of the bottom bar. [branch] is its index in the router's shell route.
 typedef _Tab = ({int branch, IconData icon, String label});
@@ -25,12 +25,12 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final features = ref.watch(appConfigProvider).requireValue.features;
     final tabs = <_Tab>[
-      (branch: devicesBranch, icon: Icons.home_outlined, label: ShellStrings.devicesTab),
+      (branch: devicesBranch, icon: Icons.home_outlined, label: context.l10n.shellDevicesTab),
       if (features.history)
-        (branch: historyBranch, icon: Icons.bar_chart, label: ShellStrings.historyTab),
+        (branch: historyBranch, icon: Icons.bar_chart, label: context.l10n.shellHistoryTab),
       if (features.alerts)
-        (branch: alertsBranch, icon: Icons.notifications_none, label: ShellStrings.alertsTab),
-      (branch: profileBranch, icon: Icons.person_outline, label: ShellStrings.profileTab),
+        (branch: alertsBranch, icon: Icons.notifications_none, label: context.l10n.shellAlertsTab),
+      (branch: profileBranch, icon: Icons.person_outline, label: context.l10n.shellProfileTab),
     ];
     final selected = tabs.indexWhere((t) => t.branch == shell.currentIndex);
     final tokens = Theme.of(context).extension<AppTokens>();

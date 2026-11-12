@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/presentation/widgets/user_avatar.dart';
 
+import '../../fixtures/l10n.dart';
+
 void main() {
   test('initialsFor', () {
     final cases = {
@@ -21,6 +23,9 @@ void main() {
     for (final path in [null, '/no/such/photo.jpg']) {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+
           home: UserAvatar(name: 'Test User', photoPath: path, size: 56),
         ),
       );

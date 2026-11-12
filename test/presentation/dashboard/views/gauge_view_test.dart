@@ -69,4 +69,54 @@ void main() {
     expect(find.text('126/82'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('an older value with nothing in the last 30 min says when it was measured', (
+    tester,
+  ) async {
+    await pumpView(
+      tester,
+      GaugeView(
+        reading: hrReading,
+        value: 72,
+        trend: const [],
+        now: _now,
+        updatedAt: _now.subtract(const Duration(hours: 2)),
+        live: true,
+      ),
+    );
+
+    expect(find.text('Last reading 2 h ago'), findsOneWidget);
+    expect(find.text('Last 30 min · no readings yet'), findsNothing);
+  });
+
+  testWidgets('with a trend, its age is shown rather than the value time', (tester) async {
+    await pumpView(
+      tester,
+      GaugeView(
+        reading: hrReading,
+        value: 72,
+        trend: trend,
+        now: _now,
+        updatedAt: _now.subtract(const Duration(hours: 2)),
+      ),
+    );
+
+    expect(find.textContaining('Last reading'), findsNothing);
+    expect(find.text('Last 30 min · updated 2 s ago'), findsOneWidget);
+  });
+
+  testWidgets('no value: no time is shown, even if one is given', (tester) async {
+    await pumpView(
+      tester,
+      GaugeView(
+        reading: hrReading,
+        value: null,
+        trend: const [],
+        now: _now,
+        updatedAt: _now.subtract(const Duration(hours: 2)),
+      ),
+    );
+
+    expect(find.text('Last 30 min · no readings yet'), findsOneWidget);
+  });
 }

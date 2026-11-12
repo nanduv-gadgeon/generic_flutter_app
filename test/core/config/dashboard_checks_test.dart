@@ -117,6 +117,18 @@ void main() {
       ],
     },
     'an unknown strip cell': (p) => p['dashboard'] = {'strip': 'uptime'},
+    'an action without a label': (p) => p['dashboard'] = {
+      'action': {'command': 'ping'},
+    },
+    'an action with both a command and steps': (p) => p['dashboard'] = {
+      'action': {
+        'label': 'Identify',
+        'command': 'ping',
+        'steps': [
+          {'command': 'ping'},
+        ],
+      },
+    },
     'an unknown zone kind': (p) => _readings(p)[0]['zones'] = [
       {'label': 'Hot', 'kind': 'red'},
     ],
@@ -212,7 +224,46 @@ void main() {
       (p) => p['dashboard'] = {'strip': 'streamRate'},
       '/deviceProfiles/0/dashboard/strip: "streamRate" needs a waveform view',
     ),
+    'an action whose command the profile does not have': (
+      (p) => p['dashboard'] = {
+        'action': {'label': 'Find band', 'command': 'vibrate'},
+      },
+      '/deviceProfiles/0/dashboard/action/command: "vibrate" is not a command of test_device_v1',
+    ),
+    'an action step whose command the profile does not have': (
+      (p) => p['dashboard'] = {
+        'action': {
+          'label': 'Identify',
+          'steps': [
+            {'command': 'blink', 'value': 32},
+          ],
+        },
+      },
+      '/deviceProfiles/0/dashboard/action/steps/0/command: "blink" is not a command of test_device_v1',
+    ),
+    'a value for a command that takes none': (
+      (p) => p['dashboard'] = {
+        'action': {
+          'label': 'Identify',
+          'steps': [
+            {'command': 'ping', 'value': 1},
+          ],
+        },
+      },
+      '/deviceProfiles/0/dashboard/action/steps/0/command: "ping" takes no value',
+    ),
   };
+
+  test('an action with one of the profile commands, or none (a placeholder), passes', () {
+    for (final action in [
+      {'label': 'Find band', 'command': 'ping', 'done': 'The band is vibrating.'},
+      {'label': 'Calibrate device'},
+    ]) {
+      final json = _config((p) => p['dashboard'] = {'action': action});
+      expect(_schemaErrors(json), isEmpty);
+      expect(_ruleErrors(json), isEmpty);
+    }
+  });
   for (final MapEntry(key: name, value: (edit, error)) in ruleCases.entries) {
     test('refuses $name', () {
       final json = _config(edit);

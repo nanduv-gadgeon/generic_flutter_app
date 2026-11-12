@@ -7,13 +7,12 @@ import '../../core/theme/app_tokens.dart';
 import '../../domain/models/dial_code.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/validation/auth_rules.dart';
-import '../strings/auth_strings.dart';
-import '../strings/common_strings.dart';
 import '../widgets/labeled_field.dart';
 import '../widgets/password_field.dart';
 import 'auth_form.dart';
 import 'auth_validators.dart';
 import 'mobile_number_field.dart';
+import '../../l10n/l10n.dart';
 
 /// Creates a local account; on success the user is logged in and the router goes home.
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -46,6 +45,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
+    final l10n = context.l10n;
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
     // Captured now: on success the router replaces this screen.
@@ -63,11 +63,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               termsAccepted: true,
             ),
           );
-      messenger.showSnackBar(const SnackBar(content: Text(AuthStrings.accountCreated)));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.authAccountCreated)));
     } on EmailAlreadyUsedException {
-      _showError(AuthStrings.emailInUse);
+      _showError(l10n.authEmailInUse);
     } catch (_) {
-      _showError(AuthStrings.registerFailed);
+      _showError(l10n.authRegisterFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -100,7 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Semantics(
                     header: true,
                     child: Text(
-                      AuthStrings.createAccount,
+                      context.l10n.authCreateAccount,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -109,7 +109,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(AuthStrings.registerSubtitle, style: TextStyle(fontSize: 15, color: muted)),
+                  Text(
+                    context.l10n.authRegisterSubtitle,
+                    style: TextStyle(fontSize: 15, color: muted),
+                  ),
                   const SizedBox(height: 20),
                   ..._fields(),
                   const SizedBox(height: 14),
@@ -120,8 +123,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                   const SizedBox(height: 20),
                   AuthSubmitButton(
-                    label: AuthStrings.createAccount,
-                    busyLabel: AuthStrings.creatingAccount,
+                    label: context.l10n.authCreateAccount,
+                    busyLabel: context.l10n.authCreatingAccount,
                     busy: _busy,
                     onPressed: _register,
                   ),
@@ -136,20 +139,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   List<Widget> _fields() => [
     LabeledField(
-      label: AuthStrings.fullName,
+      label: context.l10n.authFullName,
       child: TextFormField(
         controller: _name,
         enabled: !_busy,
         textCapitalization: TextCapitalization.words,
         autofillHints: const [AutofillHints.name],
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: AuthStrings.fullNameHint),
-        validator: AuthValidators.name,
+        decoration: InputDecoration(hintText: context.l10n.authFullNameHint),
+        validator: AuthValidators(context.l10n).name,
       ),
     ),
     const SizedBox(height: 14),
     LabeledField(
-      label: CommonStrings.email,
+      label: context.l10n.commonEmail,
       child: TextFormField(
         controller: _email,
         enabled: !_busy,
@@ -157,8 +160,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         autofillHints: const [AutofillHints.email],
         autocorrect: false,
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: CommonStrings.emailHint),
-        validator: AuthValidators.email,
+        decoration: InputDecoration(hintText: context.l10n.commonEmailHint),
+        validator: AuthValidators(context.l10n).email,
       ),
     ),
     const SizedBox(height: 14),
@@ -172,18 +175,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     PasswordField(
       controller: _password,
       enabled: !_busy,
-      hint: AuthStrings.newPasswordHint(minPasswordLength),
+      hint: context.l10n.authNewPasswordHint(minPasswordLength),
       autofillHints: const [AutofillHints.newPassword],
-      validator: AuthValidators.newPassword,
+      validator: AuthValidators(context.l10n).newPassword,
     ),
     const SizedBox(height: 14),
     PasswordField(
       controller: _confirm,
       enabled: !_busy,
-      label: AuthStrings.confirmPassword,
-      hint: AuthStrings.confirmPasswordHint,
+      label: context.l10n.authConfirmPassword,
+      hint: context.l10n.authConfirmPasswordHint,
       autofillHints: const [AutofillHints.newPassword],
-      validator: AuthValidators.confirmPassword(() => _password.text),
+      validator: AuthValidators(context.l10n).confirmPassword(() => _password.text),
       onSubmitted: (_) => _register(),
     ),
   ];
@@ -200,7 +203,7 @@ class _TermsField extends StatelessWidget {
     final muted = Theme.of(context).extension<AppTokens>()?.muted;
     return FormField<bool>(
       initialValue: false,
-      validator: AuthValidators.terms,
+      validator: AuthValidators(context.l10n).terms,
       builder: (field) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -211,7 +214,7 @@ class _TermsField extends StatelessWidget {
             controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
-            title: Text(AuthStrings.acceptTerms, style: TextStyle(fontSize: 14, color: muted)),
+            title: Text(context.l10n.authAcceptTerms, style: TextStyle(fontSize: 14, color: muted)),
           ),
           if (field.errorText case final error?) AuthErrorMessage(error),
         ],

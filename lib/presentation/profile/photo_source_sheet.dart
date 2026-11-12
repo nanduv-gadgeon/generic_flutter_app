@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../strings/profile_strings.dart';
+import '../../l10n/l10n.dart';
 
 enum PhotoAction { camera, gallery, remove }
 
@@ -19,10 +19,14 @@ Future<PhotoAction?> showPhotoSourceSheet(BuildContext context, {required bool h
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            option(PhotoAction.camera, Icons.photo_camera_outlined, ProfileStrings.takePhoto),
-            option(PhotoAction.gallery, Icons.photo_library_outlined, ProfileStrings.choosePhoto),
+            option(PhotoAction.camera, Icons.photo_camera_outlined, context.l10n.profileTakePhoto),
+            option(
+              PhotoAction.gallery,
+              Icons.photo_library_outlined,
+              context.l10n.profileChoosePhoto,
+            ),
             if (hasPhoto)
-              option(PhotoAction.remove, Icons.delete_outline, ProfileStrings.removePhoto),
+              option(PhotoAction.remove, Icons.delete_outline, context.l10n.profileRemovePhoto),
             const SizedBox(height: 8),
           ],
         );

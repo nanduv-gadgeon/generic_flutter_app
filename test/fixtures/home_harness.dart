@@ -22,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'fake_auth.dart';
+import 'l10n.dart';
 
 class MockDeviceService extends Mock implements DeviceService {}
 
@@ -105,7 +106,12 @@ Future<MockDeviceService> pumpHome(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(theme: buildTheme(_theme, brightness), routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: buildTheme(_theme, brightness),
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

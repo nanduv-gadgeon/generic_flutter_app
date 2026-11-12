@@ -1,65 +1,59 @@
+import 'package:intl/intl.dart';
+
 import '../../domain/services/live_readings.dart';
+import '../../l10n/app_localizations.dart';
 
-/// Connection and problem text on a device's dashboard. The dashboard's views use `app_en.arb`.
-abstract final class DeviceStrings {
-  static const fallbackTitle = 'Device';
-  static const connecting = 'Connecting…';
-  static const starting = 'Starting the device…';
-  static const streaming = 'Live';
-  static const reconnecting = 'Connection lost. Reconnecting…';
-  static const syncing = 'Getting stored readings…';
-  static const waiting = 'Device not found. Trying again…';
-  static const tryAgain = 'Try again';
-  static const offlineNeverHeard = 'Offline · no data from the device yet.';
-  static const placeFinger = 'Place your finger on the sensor';
-  static const measuring = 'Measuring… hold still';
-
+/// Dashboard connection and problem text that needs more than a message from `app_en.arb`.
+extension DeviceStrings on AppLocalizations {
   /// What to tell the user about the sensor, or null while readings are coming.
-  static String? contact(SensorContact? contact) => switch (contact) {
-    SensorContact.none => placeFinger,
-    SensorContact.settling => measuring,
+  String? deviceContact(SensorContact? contact) => switch (contact) {
+    SensorContact.none => devicePlaceFinger,
+    SensorContact.settling => deviceMeasuring,
     SensorContact.ok || null => null,
   };
 
-  static String status(LiveStatus status) => switch (status) {
-    LiveStatus.connecting => connecting,
-    LiveStatus.starting => starting,
-    LiveStatus.streaming => streaming,
-    LiveStatus.reconnecting => reconnecting,
-    LiveStatus.syncing => syncing,
-    LiveStatus.waiting => waiting,
+  String deviceStatus(LiveStatus status) => switch (status) {
+    LiveStatus.connecting => deviceConnecting,
+    LiveStatus.starting => deviceStarting,
+    LiveStatus.streaming => deviceStreaming,
+    LiveStatus.reconnecting => deviceReconnecting,
+    LiveStatus.syncing => deviceSyncing,
+    LiveStatus.waiting => deviceWaiting,
   };
 
   /// "Offline · last heartbeat 5 min ago." Text, not only the colour, says it is offline.
-  static String offline(Duration? sinceLast) {
-    if (sinceLast == null) return offlineNeverHeard;
+  String deviceOffline(Duration? sinceLast) {
+    if (sinceLast == null) return deviceOfflineNeverHeard;
     final s = sinceLast.isNegative ? 0 : sinceLast.inSeconds;
-    final ago = s < 60
-        ? '$s s'
-        : s < 3600
-        ? '${s ~/ 60} min'
-        : '${s ~/ 3600} h';
-    return 'Offline · last heartbeat $ago ago.';
+    return deviceOfflineSince(
+      s < 60
+          ? commonSeconds(s)
+          : s < 3600
+          ? commonMinutes(s ~/ 60)
+          : commonHours(s ~/ 3600),
+    );
   }
 
-  /// "72 bpm", "1.25 %".
-  static String value(double value, int decimals, String unit) {
-    final text = value.toStringAsFixed(decimals);
+  /// "72 bpm", "1.25 %", in the phone's number format.
+  String deviceValue(double value, int decimals, String unit) {
+    final text = NumberFormat.decimalPatternDigits(
+      locale: localeName,
+      decimalDigits: decimals,
+    ).format(value);
     return unit.isEmpty ? text : '$text $unit';
   }
 
-  static String failure(LiveFailure failure) => switch (failure.problem) {
-    DeviceProblem.lowBattery => 'The device battery is low. Charge it, then try again.',
-    DeviceProblem.charging => 'The device is on its charger. Take it off, then try again.',
-    DeviceProblem.sensorError => 'The device sensor is not responding. Restart the device.',
-    DeviceProblem.transferError => 'The device stopped sending. Try again.',
+  String deviceFailure(LiveFailure failure) => switch (failure.problem) {
+    DeviceProblem.lowBattery => deviceFailureLowBattery,
+    DeviceProblem.charging => deviceFailureCharging,
+    DeviceProblem.sensorError => deviceFailureSensorError,
+    DeviceProblem.transferError => deviceFailureTransferError,
     null => switch (failure.reason) {
-      LiveFailureReason.unknownDevice => 'This device is no longer in your list.',
-      LiveFailureReason.notSupported => 'Live readings are not available for this device yet.',
-      LiveFailureReason.connectFailed =>
-        'Could not connect. Keep the device close and switched on.',
-      LiveFailureReason.startFailed => 'The device did not start. Try again.',
-      LiveFailureReason.deviceProblem => 'The device reported a problem. Try again.',
+      LiveFailureReason.unknownDevice => deviceFailureUnknownDevice,
+      LiveFailureReason.notSupported => deviceFailureNotSupported,
+      LiveFailureReason.connectFailed => deviceFailureConnectFailed,
+      LiveFailureReason.startFailed => deviceFailureStartFailed,
+      LiveFailureReason.deviceProblem => deviceFailureDeviceProblem,
     },
   };
 }

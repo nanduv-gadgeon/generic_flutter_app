@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/profile_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// The user's photo in a circle, or their initials when there is no photo (or its file is gone).
 class UserAvatar extends StatelessWidget {
@@ -23,7 +23,7 @@ class UserAvatar extends StatelessWidget {
     );
     return Semantics(
       image: true,
-      label: path == null ? null : ProfileStrings.profilePhoto,
+      label: path == null ? null : context.l10n.profileProfilePhoto,
       excludeSemantics: path != null,
       child: Container(
         width: size,

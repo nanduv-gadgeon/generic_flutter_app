@@ -1,11 +1,744 @@
 {
   "@@locale": "en",
-
+  "commonBack": "Back",
+  "commonLoading": "Loading",
+  "commonCancel": "Cancel",
+  "commonClose": "Close",
+  "commonLogOut": "Log out",
+  "commonFallbackAppName": "Generic App",
+  "@commonFallbackAppName": {
+    "description": "App title until the customer config (with its app name) has loaded."
+  },
+  "commonPassword": "Password",
+  "commonPasswordHint": "Enter password",
+  "commonShowPassword": "Show password",
+  "commonHidePassword": "Hide password",
+  "commonEmail": "Email",
+  "commonEmailHint": "you@example.com",
+  "commonInvalidEmail": "Enter a valid email address.",
+  "commonSeconds": "{count} s",
+  "@commonSeconds": {
+    "description": "A short span in seconds, e.g. \"30 s\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonMinutes": "{count} min",
+  "@commonMinutes": {
+    "description": "A short span in minutes, e.g. \"5 min\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonHours": "{count} h",
+  "@commonHours": {
+    "description": "A short span in hours, e.g. \"2 h\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startupConfigError": "Could not load the app configuration.",
+  "startupLocalDataError": "Could not open the app's local data.",
+  "startupUnknownError": "Something went wrong while starting the app.",
+  "startupUnreachable": "Can't reach the server. Check your connection.",
+  "startupRetry": "Retry",
+  "startupRetryLabel": "Retry connecting to the server",
+  "shellDevicesTab": "Devices",
+  "shellHistoryTab": "History",
+  "shellAlertsTab": "Alerts",
+  "shellProfileTab": "Profile",
+  "shellHistoryPlaceholder": "History",
+  "shellAlertsPlaceholder": "Alerts",
+  "authLogIn": "Log in",
+  "authSigningIn": "Signing in",
+  "authEnterPassword": "Enter your password.",
+  "authWrongCredentials": "Email or password is incorrect.",
+  "authForgotPassword": "Forgot password?",
+  "authBiometricLoginReason": "Log in to your account",
+  "@authBiometricLoginReason": {
+    "description": "Shown by the phone's own Face ID / fingerprint prompt."
+  },
+  "authNewHere": "New here?",
+  "authBiometricOfferBody": "You can turn this off later in your profile.",
+  "authNotNow": "Not now",
+  "authTurnOn": "Turn on",
+  "authFaceId": "Face ID",
+  "@authFaceId": {
+    "description": "What the phone calls its biometric login, used inside the texts above."
+  },
+  "authFingerprint": "fingerprint",
+  "authBiometrics": "biometrics",
+  "authCreateAccount": "Create account",
+  "authCreatingAccount": "Creating account",
+  "authRegisterSubtitle": "Register to add and monitor your devices.",
+  "authFullName": "Full name",
+  "authFullNameHint": "Your name",
+  "authEnterName": "Enter your name.",
+  "authConfirmPassword": "Confirm password",
+  "authConfirmPasswordHint": "Re-enter password",
+  "authPasswordsDiffer": "Passwords do not match.",
+  "authAcceptTerms": "I agree to the Terms and Privacy Policy",
+  "authTermsRequired": "Accept the terms to continue.",
+  "authAccountCreated": "Account created",
+  "authEmailInUse": "An account with this email already exists.",
+  "authRegisterFailed": "Could not create your account. Try again.",
+  "authResetPassword": "Reset password",
+  "authResettingPassword": "Resetting password",
+  "authResetSubtitle": "Confirm it's you with your phone's screen lock, then choose a new password.",
+  "authNewPassword": "New password",
+  "authResetReason": "Confirm it's you to reset your password",
+  "@authResetReason": {
+    "description": "Shown by the phone's own screen-lock prompt."
+  },
+  "authPasswordChanged": "Password changed. Log in with your new password.",
+  "authNoScreenLock": "Set up a screen lock (PIN, pattern, Face ID or fingerprint) on this phone to reset your password.",
+  "authOwnerNotVerified": "We couldn't confirm it's you. Try again.",
+  "authNoAccountForEmail": "No account with this email on this phone.",
+  "authResetFailed": "Could not reset your password. Try again.",
+  "authLogOutTitle": "Log out?",
+  "authLogOutBody": "You'll need your password or Face ID to log in again.",
+  "authMobileNumber": "Mobile number",
+  "authMobileHint": "98765 43210",
+  "authInvalidMobile": "Enter a valid mobile number.",
+  "authSearchCountry": "Search country or code",
+  "authNoCountry": "No matching country",
+  "authAccountLockedSeconds": "Too many attempts. Try again in {count, plural, =1{1 second} other{{count} seconds}}.",
+  "@authAccountLockedSeconds": {
+    "description": "After too many wrong passwords; the wait is under a minute.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "authAccountLockedMinutes": "Too many attempts. Try again in {count, plural, =1{1 minute} other{{count} minutes}}.",
+  "@authAccountLockedMinutes": {
+    "description": "After too many wrong passwords; the wait is a minute or more.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "authLogInWith": "Log in with {method}",
+  "@authLogInWith": {
+    "description": "Button; method is Face ID, fingerprint or biometrics.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricFailedMessage": "{method} login did not work. Use your password.",
+  "@authBiometricFailedMessage": {
+    "description": "Method with a capital first letter, e.g. \"Fingerprint\".",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricOfferTitle": "Use {method} to log in next time?",
+  "@authBiometricOfferTitle": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authNameTooShort": "Use at least {min} characters.",
+  "@authNameTooShort": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "authNameTooLong": "Use at most {max} characters.",
+  "@authNameTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "authNewPasswordHint": "At least {min} characters",
+  "@authNewPasswordHint": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "authPasswordTooShort": "Use at least {min} characters.",
+  "@authPasswordTooShort": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "authCountryCode": "Country code, {country} {dial}",
+  "@authCountryCode": {
+    "description": "Screen reader label of the country picker, e.g. \"Country code, India +91\".",
+    "placeholders": {
+      "country": {
+        "type": "String"
+      },
+      "dial": {
+        "type": "String"
+      }
+    }
+  },
+  "profileTitle": "Profile",
+  "profileEdit": "Edit",
+  "profileEditProfile": "Edit profile",
+  "profileNotifications": "Notifications",
+  "profileAutoSync": "Auto sync",
+  "profileAutoSyncStatus": "Not set up yet",
+  "profileAutoSyncValue": "Off",
+  "profileAutoSyncComingSoon": "Auto sync comes with cloud sync.",
+  "profilePrivacyPolicy": "Privacy policy",
+  "profileTermsOfUse": "Terms of use",
+  "profileLoadingPage": "Loading page",
+  "profilePageFailed": "Couldn't load this page. Check your connection and try again.",
+  "profileAppVersion": "App version",
+  "profileProfilePhoto": "Profile photo",
+  "profileChangePhoto": "Change photo",
+  "profileTakePhoto": "Take photo",
+  "profileChoosePhoto": "Choose from library",
+  "profileRemovePhoto": "Remove photo",
+  "profileSaveChanges": "Save changes",
+  "profileSaving": "Saving",
+  "profileProfileSaved": "Profile saved.",
+  "profileSaveFailed": "Could not save your profile. Try again.",
+  "profileVersion": "{version} (build {build})",
+  "@profileVersion": {
+    "description": "e.g. \"1.0.0 (build 12)\".",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesAddDevice": "Add device",
+  "devicesTotalDevices": "Devices",
+  "devicesTotalConnected": "Connected",
+  "devicesTotalAlerts": "Alerts",
+  "devicesMyDevices": "My devices",
+  "devicesNoDevices": "No devices yet",
+  "devicesNoDevicesBody": "Add your first device to start monitoring.",
+  "devicesAddADevice": "Add a device",
+  "devicesNoReadings": "No readings yet",
+  "devicesOffline": "Offline",
+  "devicesBluetooth": "BLE",
+  "devicesWifi": "Wi‑Fi",
+  "devicesConnected": "Connected",
+  "devicesConnecting": "Connecting…",
+  "devicesReconnecting": "Reconnecting…",
+  "devicesNotSeen": "Not seen yet",
+  "devicesReorder": "Reorder",
+  "devicesReorderLabel": "Reorder devices",
+  "devicesDone": "Done",
+  "devicesDoneLabel": "Done reordering",
+  "devicesReorderHint": "Press and drag ≡ to change the order of your devices.",
+  "devicesDummyFailed": "Could not change the test devices.",
+  "devicesGoodMorning": "Good morning,",
+  "@devicesGoodMorning": {
+    "description": "Greeting before 12:00, followed by the first name."
+  },
+  "devicesGoodAfternoon": "Good afternoon,",
+  "@devicesGoodAfternoon": {
+    "description": "Greeting before 17:00."
+  },
+  "devicesGoodEvening": "Good evening,",
+  "@devicesGoodEvening": {
+    "description": "Greeting from 17:00."
+  },
+  "devicesTotal": "{count} {label}",
+  "@devicesTotal": {
+    "description": "Screen reader phrase for a total, e.g. \"0 Devices\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesLink": "{transport} · {state}",
+  "@devicesLink": {
+    "description": "e.g. \"BLE · Connected\".",
+    "placeholders": {
+      "transport": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesBattery": "{percent}%",
+  "@devicesBattery": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesBatterySpoken": "Battery {percent}%",
+  "@devicesBatterySpoken": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesSeenSeconds": "Seen {count} s ago",
+  "@devicesSeenSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesSeenMinutes": "Seen {count} min ago",
+  "@devicesSeenMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesSeenHours": "Seen {count} h ago",
+  "@devicesSeenHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesSeenDays": "Seen {count} d ago",
+  "@devicesSeenDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesCardSpoken": "{summary}. Opens the device",
+  "@devicesCardSpoken": {
+    "description": "Screen reader text for a whole device card.",
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesReorderHandle": "Reorder {name}. Use the arrow keys to move it",
+  "@devicesReorderHandle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesReorderRow": "{name}, {type}",
+  "@devicesReorderRow": {
+    "description": "e.g. \"Smart Band S2, Smart band\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesDummyName": "{typeLabel} (test)",
+  "@devicesDummyName": {
+    "description": "Debug builds only.",
+    "placeholders": {
+      "typeLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "devicesDummyAdded": "{count, plural, =1{Added 1 test device.} other{Added {count} test devices.}}",
+  "@devicesDummyAdded": {
+    "description": "Debug builds only.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesDummyRemoved": "{count, plural, =1{Removed 1 test device.} other{Removed {count} test devices.}}",
+  "@devicesDummyRemoved": {
+    "description": "Debug builds only.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesDummyNone": "No device types to add.",
+  "@devicesDummyNone": {
+    "description": "Debug builds only."
+  },
+  "addDeviceTitle": "Add device",
+  "addDeviceContinueLabel": "Continue",
+  "addDeviceTryAgain": "Try again",
+  "addDeviceTypeHeading": "What are you adding?",
+  "addDeviceTypeBody": "Device types available for your organisation.",
+  "addDeviceComingSoon": "Coming soon",
+  "addDeviceLoadingTypes": "Loading device types",
+  "addDeviceConnectionHeading": "How does it connect?",
+  "addDeviceConnectionBody": "Options come from the device type settings.",
+  "addDeviceBluetooth": "Bluetooth (BLE)",
+  "addDeviceBluetoothBody": "Pair a nearby device. Keep it within 1 m.",
+  "addDeviceWifi": "Wi‑Fi",
+  "addDeviceWifiBody": "Device joins your Wi‑Fi and sends data.",
+  "addDeviceNotSupported": "Not supported by this device",
+  "addDeviceSearching": "Searching nearby…",
+  "addDeviceSearchingBody": "Keep the device close and switched on.",
+  "addDeviceSearchingSetup": "Looking for the device in setup mode…",
+  "addDeviceScanStopped": "Search stopped",
+  "addDeviceScanStoppedBody": "Not in the list? Check the device is on and close, then scan again.",
+  "addDeviceNoneFound": "No devices found. Check the device is on and close, then scan again.",
+  "addDeviceScanAgain": "Scan again",
+  "addDeviceUnknownDevice": "Unknown device",
+  "addDeviceConnect": "Connect",
+  "addDeviceDisconnect": "Disconnect",
+  "addDeviceRemoveBody": "It is removed from this phone with its alert settings. You can add it again.",
+  "addDeviceRemove": "Remove",
+  "addDeviceWifiHeading": "Connect device to Wi‑Fi",
+  "addDeviceWifiFormBody": "The device will send data over your network.",
+  "addDeviceWifiInstructions": "Put the device in setup mode as its manual describes, then enter your Wi‑Fi details.",
+  "addDeviceSetupOverBluetooth": "Over Bluetooth",
+  "addDeviceSetupOverHotspot": "Device hotspot",
+  "addDeviceSetupMethod": "Set up",
+  "addDeviceNetwork": "Wi‑Fi network",
+  "addDeviceNetworkHint": "Network name (2.4 GHz)",
+  "addDeviceWifiPassword": "Wi‑Fi password",
+  "addDeviceConnectDevice": "Connect device",
+  "addDeviceEnterNetwork": "Enter the network name (up to 32 characters).",
+  "addDeviceWifiPasswordLength": "Wi‑Fi passwords have 8–63 characters, or none.",
+  "addDeviceHotspotHeading": "Join the device's Wi‑Fi",
+  "addDeviceHotspotBody": "Your phone sends the network details to the device over its hotspot.",
+  "addDeviceHotspotStep1": "Open Settings, then Wi‑Fi, on this phone.",
+  "addDeviceHotspotStep3": "Come back to this app.",
+  "addDeviceLocalNetworkNote": "If your phone asks to find devices on your local network, allow it so the app can reach the device.",
+  "addDeviceHotspotJoined": "I've joined, continue",
+  "addDeviceRegisteringHeading": "Registering your device",
+  "addDeviceRegisteringBody": "Saving the device on this phone…",
+  "addDeviceRegisteringBodyCloud": "Sharing the device details with the cloud…",
+  "addDeviceStageConnected": "Connected to device",
+  "addDeviceStageSaved": "Saved on this phone",
+  "addDeviceStageSentToCloud": "Device details sent to cloud",
+  "addDeviceStageKey": "Device key received",
+  "addDeviceStageAlerts": "Alert settings received",
+  "addDeviceStageDone": "done",
+  "addDeviceStageActive": "in progress",
+  "addDeviceStageWaiting": "waiting",
+  "addDeviceDoneHeading": "Device registered",
+  "addDeviceDeviceKey": "Device key",
+  "addDeviceDeviceKeyNote": "Unique to this device. The app passes it to the cloud library with every reading.",
+  "addDeviceWaitingForCloud": "Waiting for the cloud",
+  "addDeviceAlertSettings": "Alert settings",
+  "addDeviceSuggestedByCloud": "Suggested by cloud AI",
+  "addDeviceDefaultSettings": "Default settings",
+  "addDeviceChangeLater": "You can change these later in Device settings.",
+  "addDeviceDeviceName": "Device name",
+  "addDeviceEnterDeviceName": "Use letters or numbers, up to 40 characters.",
+  "addDeviceGoToDashboard": "Go to dashboard",
+  "addDeviceSaving": "Saving",
+  "addDeviceDeviceAdded": "Device added",
+  "deviceNotFoundTitle": "Device not found",
+  "@deviceNotFoundTitle": {
+    "description": "Device page for a device that was removed, is not the user's, or whose type is no longer in the app."
+  },
+  "deviceNotFoundBody": "It may have been removed, or this app no longer supports its type.",
+  "deviceNotFoundBack": "Back to My devices",
+  "addDeviceStepOf": "Step {step} of 4",
+  "@addDeviceStepOf": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "addDeviceBle": "BLE",
+  "@addDeviceBle": {
+    "description": "Short name of Bluetooth on a device type badge."
+  },
+  "addDeviceFound": "{count, plural, =1{Found 1 device} other{Found {count} devices}}",
+  "@addDeviceFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addDeviceSignal": "{device} · {rssi} dBm",
+  "@addDeviceSignal": {
+    "description": "End of the address and the signal strength.",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      },
+      "rssi": {
+        "type": "int"
+      }
+    }
+  },
+  "addDeviceConnectTo": "Connect to {name}",
+  "@addDeviceConnectTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceDisconnectFrom": "Disconnect {name}",
+  "@addDeviceDisconnectFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceRemoveTitle": "Remove {name}?",
+  "@addDeviceRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceHotspotStep2": "Join the network whose name starts with \"{prefix}\".",
+  "@addDeviceHotspotStep2": {
+    "placeholders": {
+      "prefix": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceStageStatus": "{label}, {status}",
+  "@addDeviceStageStatus": {
+    "description": "Screen reader text, e.g. \"Saved on this phone, done\".",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceBluetoothName": "Bluetooth",
+  "addDeviceDoneBodyCloud": "{type} paired over {link} and registered with the cloud.",
+  "@addDeviceDoneBodyCloud": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceDoneBodyLocal": "{type} paired over {link} and saved on this phone.",
+  "@addDeviceDoneBodyLocal": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceAlertAbove": "{reading} above",
+  "@addDeviceAlertAbove": {
+    "description": "e.g. \"Heart rate above\".",
+    "placeholders": {
+      "reading": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceAlertBelow": "{reading} below",
+  "@addDeviceAlertBelow": {
+    "description": "e.g. \"Battery below\".",
+    "placeholders": {
+      "reading": {
+        "type": "String"
+      }
+    }
+  },
+  "addDeviceErrorBluetoothPermission": "Bluetooth permission is needed to find devices. Allow it in Settings, then try again.",
+  "addDeviceErrorScanFailed": "Could not search for devices. Check Bluetooth is on.",
+  "addDeviceErrorConnectFailed": "Could not connect. Keep the device close and try again.",
+  "addDeviceErrorAlreadyAdded": "This device is already in your list.",
+  "addDeviceErrorDeviceNotReachable": "Could not reach the device. Check your phone is on the device's Wi‑Fi.",
+  "addDeviceErrorDeviceNoAnswer": "The device did not answer. Check it is in setup mode.",
+  "addDeviceErrorSetupFailed": "The device could not join the network. Check the name and password.",
+  "addDeviceErrorSaveFailed": "Could not save the device. Please try again.",
+  "addDeviceErrorRemoveFailed": "Could not remove the device. Try again.",
+  "deviceSettingsTitle": "Device settings",
+  "deviceSettingsOpen": "Device settings",
+  "@deviceSettingsOpen": {
+    "description": "The button that opens this screen (device dashboard header)."
+  },
+  "deviceSettingsNotFound": "This device is no longer on this phone.",
+  "deviceSettingsNone": "—",
+  "@deviceSettingsNone": {
+    "description": "Shown for a value the app does not have yet."
+  },
+  "deviceSettingsConnection": "Connection",
+  "deviceSettingsHeartbeat": "Heartbeat",
+  "deviceSettingsSampling": "Sampling interval",
+  "deviceSettingsAlerts": "Alerts",
+  "deviceSettingsType": "Type",
+  "deviceSettingsConnectionRow": "Connection",
+  "deviceSettingsMacAddress": "MAC address",
+  "deviceSettingsIpAddress": "IP address",
+  "deviceSettingsSignal": "Signal (RSSI)",
+  "deviceSettingsFirmwareRow": "Firmware",
+  "deviceSettingsBatteryRow": "Battery",
+  "deviceSettingsHeartbeatInterval": "Heartbeat interval",
+  "deviceSettingsLastHeartbeat": "Last heartbeat",
+  "deviceSettingsOfflineAfter": "Offline after",
+  "deviceSettingsDeviceStatus": "Device status",
+  "deviceSettingsOnline": "Online",
+  "deviceSettingsOffline": "Offline",
+  "deviceSettingsNotConnected": "Not connected",
+  "deviceSettingsSetByDevice": "Set by the device",
+  "@deviceSettingsSetByDevice": {
+    "description": "Sampling interval row when the config does not say how often readings come."
+  },
+  "deviceSettingsBatteryAlert": "Battery",
+  "@deviceSettingsBatteryAlert": {
+    "description": "The battery limit is not one of a profile's readings."
+  },
+  "deviceSettingsBatteryUnit": "%",
+  "deviceSettingsRemoving": "Removing device",
+  "deviceSettingsTransportBle": "Bluetooth LE",
+  "deviceSettingsTransportWifi": "Wi‑Fi",
+  "deviceSettingsFirmware": "v{version}",
+  "@deviceSettingsFirmware": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceSettingsBattery": "{percent}%",
+  "@deviceSettingsBattery": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "deviceSettingsEveryText": "Every {span}",
+  "@deviceSettingsEveryText": {
+    "description": "e.g. \"Every 1 min\".",
+    "placeholders": {
+      "span": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceSettingsMissedText": "{count} missed ({span})",
+  "@deviceSettingsMissedText": {
+    "description": "e.g. \"3 missed (3 min)\".",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "span": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceSettingsAgoDays": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@deviceSettingsAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "removeDeviceSwipeHint": "Swipe left on a device to delete it.",
+  "removeDeviceDelete": "Delete",
+  "removeDeviceRemove": "Remove device",
+  "removeDeviceRemoveBody": "The device will be unpaired and removed from this app. You can add it again later.",
+  "removeDeviceRemoved": "Device removed",
+  "removeDeviceRemoveFailed": "Could not remove the device. Try again.",
+  "removeDeviceDeleteAction": "Delete {name}",
+  "@removeDeviceDeleteAction": {
+    "description": "Screen reader action on a device card, in place of the swipe.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "removeDeviceRemoveTitle": "Remove {name}?",
+  "@removeDeviceRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceFallbackTitle": "Device",
+  "deviceConnecting": "Connecting…",
+  "deviceStarting": "Starting the device…",
+  "deviceStreaming": "Live",
+  "deviceReconnecting": "Connection lost. Reconnecting…",
+  "deviceSyncing": "Getting stored readings…",
+  "deviceWaiting": "Device not found. Trying again…",
+  "deviceTryAgain": "Try again",
+  "deviceOfflineNeverHeard": "Offline · no data from the device yet.",
+  "devicePlaceFinger": "Place your finger on the sensor",
+  "deviceMeasuring": "Measuring… hold still",
+  "deviceOfflineSince": "Offline · last heartbeat {span} ago.",
+  "@deviceOfflineSince": {
+    "description": "e.g. \"Offline · last heartbeat 5 min ago.\"",
+    "placeholders": {
+      "span": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceFailureLowBattery": "The device battery is low. Charge it, then try again.",
+  "deviceFailureCharging": "The device is on its charger. Take it off, then try again.",
+  "deviceFailureSensorError": "The device sensor is not responding. Restart the device.",
+  "deviceFailureTransferError": "The device stopped sending. Try again.",
+  "deviceFailureUnknownDevice": "This device is no longer in your list.",
+  "deviceFailureNotSupported": "Live readings are not available for this device yet.",
+  "deviceFailureConnectFailed": "Could not connect. Keep the device close and switched on.",
+  "deviceFailureStartFailed": "The device did not start. Try again.",
+  "deviceFailureDeviceProblem": "The device reported a problem. Try again.",
   "dashboardLive": "Live",
   "dashboardHistory": "History",
-  "@dashboardHistory": { "description": "Tab that opens the device's stored readings." },
+  "@dashboardHistory": {
+    "description": "Tab that opens the device's stored readings."
+  },
   "dashboardHistorySoon": "History for this device is coming in a later update.",
-
   "stripLink": "Link",
   "stripBattery": "Battery",
   "stripHeartbeat": "Heartbeat",
@@ -16,40 +749,96 @@
   "stripCell": "{label}: {value}",
   "@stripCell": {
     "description": "Screen reader text for one status strip cell, e.g. 'Battery: 78%'.",
-    "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } }
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
   },
-
   "linkBluetooth": "Bluetooth",
   "linkWifi": "Wi‑Fi",
   "linkOnDemand": "On demand",
   "linkOffline": "Offline",
-
   "agoSeconds": "{seconds} s ago",
-  "@agoSeconds": { "placeholders": { "seconds": { "type": "int" } } },
+  "@agoSeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "agoMinutes": "{minutes} min ago",
-  "@agoMinutes": { "placeholders": { "minutes": { "type": "int" } } },
+  "@agoMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "agoHours": "{hours} h ago",
-  "@agoHours": { "placeholders": { "hours": { "type": "int" } } },
-
+  "@agoHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
   "stateRunning": "Running",
   "stateStopped": "Stopped",
   "channelsLive": "{count} live",
-  "@channelsLive": { "placeholders": { "count": { "type": "int" } } },
+  "@channelsLive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "streamRate": "{hz} Hz",
-  "@streamRate": { "placeholders": { "hz": { "type": "int" } } },
+  "@streamRate": {
+    "placeholders": {
+      "hz": {
+        "type": "int"
+      }
+    }
+  },
   "batteryPercent": "{percent}%",
-  "@batteryPercent": { "placeholders": { "percent": { "type": "int" } } },
-
+  "@batteryPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "allReadings": "All readings",
   "valuesLive": "{count} values · live",
-  "@valuesLive": { "placeholders": { "count": { "type": "int" } } },
+  "@valuesLive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "valuesCount": "{count} values",
-  "@valuesCount": { "placeholders": { "count": { "type": "int" } } },
+  "@valuesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "todaysReadings": "Today’s readings",
   "readingsCount": "{count, plural, =1{1 reading} other{{count} readings}}",
-  "@readingsCount": { "placeholders": { "count": { "type": "int" } } },
+  "@readingsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "nothingToShow": "Nothing to show",
-
   "statusNormal": "Normal",
   "statusHigh": "High",
   "statusLow": "Low",
@@ -57,48 +846,164 @@
   "normalRange": "Normal {range}",
   "@normalRange": {
     "description": "Normal range under a reading, e.g. 'Normal 60–100' or 'Normal 60–100 bpm'.",
-    "placeholders": { "range": { "type": "String" } }
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
   },
   "percentOfGoal": "{percent}% of goal",
-  "@percentOfGoal": { "placeholders": { "percent": { "type": "int" } } },
+  "@percentOfGoal": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "today": "Today",
   "hoursMinutes": "{hours}h {minutes}m",
-  "@hoursMinutes": { "placeholders": { "hours": { "type": "int" }, "minutes": { "type": "int" } } },
+  "@hoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "noValue": "–",
   "noReadingSpoken": "no reading yet",
-
   "trendCaption": "Last 30 min · updated {ago}",
-  "@trendCaption": { "placeholders": { "ago": { "type": "String" } } },
+  "@trendCaption": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "trendCaptionEmpty": "Last 30 min · no readings yet",
+  "trendCaptionLastReading": "Last reading {ago}",
+  "@trendCaptionLastReading": {
+    "description": "Under the gauge when the last 30 minutes have no readings but an older one is shown, e.g. 'Last reading 2 h ago'.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "trendSpoken": "Trend over the last 30 minutes",
-
   "lastReading": "Last reading",
   "measuredTodayAt": "Measured today at {time}",
-  "@measuredTodayAt": { "placeholders": { "time": { "type": "String" } } },
+  "@measuredTodayAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "noReadingYet": "No reading yet",
   "zoneBelow": "{label} < {value}",
-  "@zoneBelow": { "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } } },
+  "@zoneBelow": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "zoneBetween": "{label} {low}–{high}",
   "@zoneBetween": {
-    "placeholders": { "label": { "type": "String" }, "low": { "type": "String" }, "high": { "type": "String" } }
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "low": {
+        "type": "String"
+      },
+      "high": {
+        "type": "String"
+      }
+    }
   },
   "zoneFrom": "{label} ≥ {value}",
-  "@zoneFrom": { "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } } },
-
+  "@zoneFrom": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "axisSecondsAgo": "−{seconds} s",
-  "@axisSecondsAgo": { "placeholders": { "seconds": { "type": "int" } } },
+  "@axisSecondsAgo": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
   "axisNow": "now",
   "waveformSpoken": "{title}, live waveform",
-  "@waveformSpoken": { "placeholders": { "title": { "type": "String" } } },
-
+  "@waveformSpoken": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "readingSpoken": "{label}, {value}",
   "@readingSpoken": {
     "description": "Screen reader text for a reading, e.g. 'Heart rate, 72 bpm'.",
-    "placeholders": { "label": { "type": "String" }, "value": { "type": "String" } }
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
   },
   "readingWithStatusSpoken": "{label}, {value}, {status}",
   "@readingWithStatusSpoken": {
     "description": "Screen reader text for a reading and its status, e.g. 'Heart rate, 72 bpm, Normal'.",
-    "placeholders": { "label": { "type": "String" }, "value": { "type": "String" }, "status": { "type": "String" } }
-  }
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "offlineBanner": "Offline · last heartbeat {ago}. Showing last readings.",
+  "@offlineBanner": {
+    "description": "The offline banner (task 1.3.6), e.g. 'Offline · last heartbeat 3 min ago. Showing last readings.'",
+    "placeholders": { "ago": { "type": "String" } }
+  },
+  "offlineBannerNoData": "Offline · no data from the device yet. Showing last readings.",
+  "reconnect": "Reconnect",
+  "reconnectLabel": "Reconnect to the device",
+  "reconnectingSpoken": "Reconnecting to the device",
+  "reconnectFailed": "Could not reconnect. Check the device is on and nearby.",
+  "syncNow": "Sync now",
+  "syncNowLabel": "Sync the device's readings now",
+  "syncNowLater": "Sync now comes with cloud sync.",
+  "actionUnavailable": "{label} isn't available yet.",
+  "@actionUnavailable": { "placeholders": { "label": { "type": "String" } } },
+  "actionDone": "{label}: done.",
+  "@actionDone": { "placeholders": { "label": { "type": "String" } } },
+  "actionFailed": "{label} didn't work. Check the device and try again.",
+  "@actionFailed": { "placeholders": { "label": { "type": "String" } } },
+  "actionRunningSpoken": "Sending {label} to the device",
+  "@actionRunningSpoken": { "placeholders": { "label": { "type": "String" } } },
+  "actionOfflineSpoken": "{label}, available when the device is connected",
+  "@actionOfflineSpoken": { "placeholders": { "label": { "type": "String" } } }
 }

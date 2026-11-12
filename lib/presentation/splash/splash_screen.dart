@@ -9,9 +9,8 @@ import '../../application/startup_provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/config/config_loader.dart';
 import '../../core/theme/app_theme.dart';
-import '../strings/common_strings.dart';
-import '../strings/startup_strings.dart';
 import '../widgets/brand_header.dart';
+import '../../l10n/l10n.dart';
 
 /// Shows the brand and a spinner while the local database opens and the backend is checked,
 /// then goes to login.
@@ -35,7 +34,7 @@ class SplashScreen extends ConsumerWidget {
       AsyncData(value: StartupResult.backendUnreachable) => _Unreachable(
         onRetry: () => ref.invalidate(startupProvider),
       ),
-      _ => Semantics(label: CommonStrings.loading, child: const CircularProgressIndicator()),
+      _ => Semantics(label: context.l10n.commonLoading, child: const CircularProgressIndicator()),
     };
 
     return Scaffold(
@@ -70,7 +69,7 @@ class _BrandedSplash extends StatelessWidget {
                 BrandHeader.splash(brand: config.brand, background: background),
                 const SizedBox(height: 70),
                 Semantics(
-                  label: CommonStrings.loading,
+                  label: context.l10n.commonLoading,
                   child: const SizedBox.square(
                     dimension: 28,
                     child: CircularProgressIndicator(
@@ -98,9 +97,9 @@ class _StartupError extends StatelessWidget {
   Widget build(BuildContext context) {
     final error = this.error;
     final (message, details) = switch (error) {
-      ConfigException(:final errors) => (StartupStrings.configError, errors.join('\n')),
-      LocalDataException(:final cause) => (StartupStrings.localDataError, '$cause'),
-      _ => (StartupStrings.unknownError, '$error'),
+      ConfigException(:final errors) => (context.l10n.startupConfigError, errors.join('\n')),
+      LocalDataException(:final cause) => (context.l10n.startupLocalDataError, '$cause'),
+      _ => (context.l10n.startupUnknownError, '$error'),
     };
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -126,13 +125,13 @@ class _Unreachable extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text(StartupStrings.unreachable, textAlign: TextAlign.center),
+        Text(context.l10n.startupUnreachable, textAlign: TextAlign.center),
         const SizedBox(height: 16),
         Semantics(
           button: true,
-          label: StartupStrings.retryLabel,
+          label: context.l10n.startupRetryLabel,
           excludeSemantics: true,
-          child: FilledButton(onPressed: onRetry, child: const Text(StartupStrings.retry)),
+          child: FilledButton(onPressed: onRetry, child: Text(context.l10n.startupRetry)),
         ),
       ],
     );

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/dial_code.dart';
-import '../strings/auth_strings.dart';
 import 'auth_validators.dart';
+import '../../l10n/l10n.dart';
 
 /// "Mobile number": a country-code picker next to the number field.
 class MobileNumberField extends StatelessWidget {
@@ -19,7 +19,6 @@ class MobileNumberField extends StatelessWidget {
   final ValueChanged<DialCode> onDialCodeChanged;
   final bool enabled;
 
-  static const label = AuthStrings.mobileNumber;
   static const _codeWidth = 132.0;
 
   @override
@@ -31,15 +30,15 @@ class MobileNumberField extends StatelessWidget {
       onSelected: onDialCodeChanged,
     );
     final number = Semantics(
-      label: label,
+      label: context.l10n.authMobileNumber,
       child: TextFormField(
         controller: controller,
         enabled: enabled,
         keyboardType: TextInputType.phone,
         autofillHints: const [AutofillHints.telephoneNumberNational],
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: AuthStrings.mobileHint),
-        validator: AuthValidators.mobile(dialCode),
+        decoration: InputDecoration(hintText: context.l10n.authMobileHint),
+        validator: AuthValidators(context.l10n).mobile(dialCode),
       ),
     );
 
@@ -47,8 +46,11 @@ class MobileNumberField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Same style as LabeledField; each control below gets its own screen reader name.
-        const ExcludeSemantics(
-          child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+        ExcludeSemantics(
+          child: Text(
+            context.l10n.authMobileNumber,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
         ),
         const SizedBox(height: 6),
         // Side by side on a phone; stacked when large text leaves too little room.
@@ -101,7 +103,7 @@ class _CodeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: AuthStrings.countryCode(selected.name, selected.dial),
+      label: context.l10n.authCountryCode(selected.name, selected.dial),
       excludeSemantics: true,
       child: SizedBox(
         width: width,
@@ -149,16 +151,16 @@ class _CountryPickerSheetState extends State<_CountryPickerSheet> {
                 autofocus: true,
                 autocorrect: false,
                 textInputAction: TextInputAction.search,
-                decoration: const InputDecoration(
-                  hintText: AuthStrings.searchCountry,
-                  prefixIcon: Icon(Icons.search),
+                decoration: InputDecoration(
+                  hintText: context.l10n.authSearchCountry,
+                  prefixIcon: const Icon(Icons.search),
                 ),
                 onChanged: (q) => setState(() => _results = filterDialCodes(q)),
               ),
             ),
             Expanded(
               child: _results.isEmpty
-                  ? const Center(child: Text(AuthStrings.noCountry))
+                  ? Center(child: Text(context.l10n.authNoCountry))
                   : ListView.builder(
                       itemCount: _results.length,
                       prototypeItem: _row(dialCodes.first),

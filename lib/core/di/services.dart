@@ -191,6 +191,11 @@ AuthService authService(Ref ref) {
 @Riverpod(keepAlive: true)
 bool autoSyncAvailable(Ref ref) => ref.watch(appConfigProvider).requireValue.isCloud;
 
+/// Sync now on the dashboard (requirement 5.6) exists only with the cloud; Phase 1 does not
+/// show the button, without checking isCloud itself.
+@Riverpod(keepAlive: true)
+bool syncNowAvailable(Ref ref) => ref.watch(appConfigProvider).requireValue.isCloud;
+
 /// Notifications are local in both phases, so no isCloud branch.
 @Riverpod(keepAlive: true)
 AppSettingsService appSettingsService(Ref ref) =>

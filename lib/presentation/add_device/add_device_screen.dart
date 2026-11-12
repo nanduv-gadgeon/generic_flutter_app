@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/add_device/add_device_controller.dart';
-import '../strings/add_device_strings.dart';
 import 'add_device_parts.dart';
 import 'steps/ble_scan_step.dart';
 import 'steps/connection_step.dart';
@@ -12,6 +11,7 @@ import 'steps/hotspot_step.dart';
 import 'steps/registering_step.dart';
 import 'steps/type_step.dart';
 import 'steps/wifi_step.dart';
+import '../../l10n/l10n.dart';
 
 /// Add device in 4 steps (requirements §4, screens 10–12), full screen without the tab bar.
 ///
@@ -33,7 +33,7 @@ class AddDeviceScreen extends ConsumerWidget {
   void _finished(BuildContext context, int id) {
     final messenger = ScaffoldMessenger.of(context);
     context.go(deviceRoute(id));
-    messenger.showSnackBar(const SnackBar(content: Text(AddDeviceStrings.deviceAdded)));
+    messenger.showSnackBar(SnackBar(content: Text(context.l10n.addDeviceDeviceAdded)));
   }
 
   @override

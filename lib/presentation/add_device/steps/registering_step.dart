@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/add_device/add_device_controller.dart';
 import '../../../core/di/services.dart';
-import '../../strings/add_device_strings.dart';
 import '../add_device_parts.dart';
+import '../../../l10n/l10n.dart';
 
 /// Step 4 while saving: a checklist of what is done. With the cloud (Phase 2) it also lists the
 /// cloud steps from the mockup.
@@ -16,13 +16,13 @@ class RegisteringStep extends ConsumerWidget {
     final stage = (ref.watch(addDeviceControllerProvider).phase as Registering).stage;
     final cloud = ref.watch(cloudRegistrationAvailableProvider);
     final rows = cloud
-        ? const [
-            AddDeviceStrings.stageConnected,
-            AddDeviceStrings.stageSentToCloud,
-            AddDeviceStrings.stageKey,
-            AddDeviceStrings.stageAlerts,
+        ? [
+            context.l10n.addDeviceStageConnected,
+            context.l10n.addDeviceStageSentToCloud,
+            context.l10n.addDeviceStageKey,
+            context.l10n.addDeviceStageAlerts,
           ]
-        : const [AddDeviceStrings.stageConnected, AddDeviceStrings.stageSaved];
+        : [context.l10n.addDeviceStageConnected, context.l10n.addDeviceStageSaved];
     // Connecting: the first row is in progress. Saving: it is done and the rest are in progress
     // together, as one save call does them all.
     final doneCount = stage == RegisterStage.connecting ? 0 : 1;
@@ -37,15 +37,17 @@ class RegisteringStep extends ConsumerWidget {
         const SizedBox(height: 10),
         Semantics(
           header: true,
-          child: const Text(
-            AddDeviceStrings.registeringHeading,
+          child: Text(
+            context.l10n.addDeviceRegisteringHeading,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
           ),
         ),
         const SizedBox(height: 6),
         Text(
-          cloud ? AddDeviceStrings.registeringBodyCloud : AddDeviceStrings.registeringBody,
+          cloud
+              ? context.l10n.addDeviceRegisteringBodyCloud
+              : context.l10n.addDeviceRegisteringBody,
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: tokens?.muted),
         ),
@@ -104,13 +106,13 @@ class _StageRow extends StatelessWidget {
       ),
     };
     final word = switch (status) {
-      _Status.done => AddDeviceStrings.stageDone,
-      _Status.active => AddDeviceStrings.stageActive,
-      _Status.waiting => AddDeviceStrings.stageWaiting,
+      _Status.done => context.l10n.addDeviceStageDone,
+      _Status.active => context.l10n.addDeviceStageActive,
+      _Status.waiting => context.l10n.addDeviceStageWaiting,
     };
     // The status is said in words, not only shown by the icon or colour.
     return Semantics(
-      label: AddDeviceStrings.stageStatus(label, word),
+      label: context.l10n.addDeviceStageStatus(label, word),
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.all(14),

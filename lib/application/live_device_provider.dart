@@ -17,6 +17,9 @@ abstract class LiveDeviceState with _$LiveDeviceState {
     @Default(LiveStatus.connecting) LiveStatus status,
     @Default({}) Map<String, double> values,
 
+    /// When each of [values] was measured (the device's time for logged readings).
+    @Default({}) Map<String, DateTime> times,
+
     /// Whether a finger is on the sensor; null for profiles that do not check it.
     SensorContact? contact,
 
@@ -42,11 +45,17 @@ class LiveDevice extends _$LiveDevice {
     return const LiveDeviceState();
   }
 
-  /// Disconnects and connects again from the start.
+  /// Disconnects and connects again from the start (Reconnect). The new connection starts with a
+  /// fresh heartbeat, so it counts as online until it misses its heartbeats again.
   Future<void> retry() async {
-    state = state.copyWith(failure: null);
+    state = state.copyWith(failure: null, online: true, status: LiveStatus.connecting);
     await ref.read(liveReadingsProvider).retry(deviceId);
   }
+
+  /// Sends a device action's [steps] to the device (the dashboard's action button). Throws when
+  /// the device is not connected, refuses a command or does not answer.
+  Future<void> runAction(List<ActionStep> steps) =>
+      ref.read(liveReadingsProvider).runAction(deviceId, steps);
 
   void _on(LiveUpdate update) {
     if (!ref.mounted) return;
@@ -55,8 +64,11 @@ class LiveDevice extends _$LiveDevice {
         status: status,
         failure: status == LiveStatus.streaming ? null : state.failure,
       ),
+      // A logged entry older than the value already kept (fetched in the same batch) is not newer.
+      LiveValue(:final sample) when state.times[sample.key]?.isAfter(sample.at) ?? false => state,
       LiveValue(:final sample) => state.copyWith(
         values: {...state.values, sample.key: sample.value},
+        times: {...state.times, sample.key: sample.at},
       ),
       // Without a settled finger the worked-out readings would be noise: keep only the battery.
       LiveContactChanged(:final contact) => state.copyWith(
@@ -65,6 +77,12 @@ class LiveDevice extends _$LiveDevice {
             ? state.values
             : {
                 for (final e in state.values.entries)
+                  if (e.key == batteryKey) e.key: e.value,
+              },
+        times: contact == SensorContact.ok
+            ? state.times
+            : {
+                for (final e in state.times.entries)
                   if (e.key == batteryKey) e.key: e.value,
               },
       ),

@@ -53,10 +53,51 @@ abstract class DashboardSettings with _$DashboardSettings {
 
     /// In screen order. Empty: a gauge for the first reading and tiles for the rest.
     @Default([]) List<DashboardView> views,
+
+    /// The device action button at the bottom of Live, e.g. "Find band"; none when null.
+    DeviceAction? action,
   }) = _DashboardSettings;
 
   factory DashboardSettings.fromJson(Map<String, dynamic> json) =>
       _$DashboardSettingsFromJson(json);
+}
+
+/// The dashboard's device action button (requirement 5.6), e.g. "Find band" or "Identify".
+@freezed
+abstract class DeviceAction with _$DeviceAction {
+  const factory DeviceAction({
+    /// The button's text, e.g. "Find band".
+    required String label,
+
+    /// The profile command it sends, for a one-command action.
+    String? command,
+
+    /// The profile commands it sends in order, e.g. to flash an LED; instead of [command].
+    @Default([]) List<ActionStep> steps,
+
+    /// Said once the device has done it, e.g. "The band is vibrating."
+    String? done,
+  }) = _DeviceAction;
+
+  const DeviceAction._();
+
+  factory DeviceAction.fromJson(Map<String, dynamic> json) => _$DeviceActionFromJson(json);
+
+  /// What to send, in order; empty when the action is not available yet (a placeholder).
+  List<ActionStep> get sequence => switch (command) {
+    final c? => [ActionStep(command: c)],
+    null => steps,
+  };
+}
+
+/// One step of a device action: a profile command, its value byte when it takes one (e.g. an LED
+/// level), and how long to wait after it.
+@freezed
+abstract class ActionStep with _$ActionStep {
+  const factory ActionStep({required String command, int? value, @Default(0) int waitMs}) =
+      _ActionStep;
+
+  factory ActionStep.fromJson(Map<String, dynamic> json) => _$ActionStepFromJson(json);
 }
 
 /// One view on the dashboard and the readings that feed it.

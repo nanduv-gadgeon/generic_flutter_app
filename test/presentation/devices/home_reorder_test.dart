@@ -2,11 +2,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
-import 'package:generic_flutter_app/presentation/strings/devices_strings.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/home_harness.dart';
+import '../../fixtures/l10n.dart';
 
 /// Reorder on My devices (mockup 09_home_reorder): drag ≡ to move a device; every drop is saved.
 void main() {
@@ -16,11 +16,11 @@ void main() {
   const devices = [band, patch, sensor];
 
   Future<void> startReordering(WidgetTester tester) async {
-    await tester.tap(find.text(DevicesStrings.reorder));
+    await tester.tap(find.text(en.devicesReorder));
     await tester.pumpAndSettle();
   }
 
-  Finder handle(String name) => find.bySemanticsLabel(DevicesStrings.reorderHandle(name));
+  Finder handle(String name) => find.bySemanticsLabel(en.devicesReorderHandle(name));
 
   List<int> savedOrder(MockDeviceService service) =>
       verify(() => service.reorder(fakeUser.id, captureAny())).captured.single as List<int>;
@@ -29,7 +29,7 @@ void main() {
     testWidgets('no Reorder with $count device(s)', (tester) async {
       await pumpHome(tester, devices: devices.take(count).toList());
 
-      expect(find.text(DevicesStrings.reorder), findsNothing);
+      expect(find.text(en.devicesReorder), findsNothing);
     });
   }
 
@@ -37,11 +37,11 @@ void main() {
     final semantics = tester.ensureSemantics();
     await pumpHome(tester, devices: devices);
 
-    expect(find.bySemanticsLabel(DevicesStrings.reorderLabel), findsOneWidget);
+    expect(find.bySemanticsLabel(en.devicesReorderLabel), findsOneWidget);
     await startReordering(tester);
 
-    expect(find.text(DevicesStrings.reorderHint), findsOneWidget);
-    expect(find.bySemanticsLabel(DevicesStrings.doneLabel), findsOneWidget);
+    expect(find.text(en.devicesReorderHint), findsOneWidget);
+    expect(find.bySemanticsLabel(en.devicesDoneLabel), findsOneWidget);
     for (final d in devices) {
       expect(handle(d.name), findsOneWidget);
     }
@@ -109,10 +109,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('device page'), findsNothing);
 
-    await tester.tap(find.text(DevicesStrings.done));
+    await tester.tap(find.text(en.devicesDone));
     await tester.pumpAndSettle();
-    expect(find.text(DevicesStrings.reorderHint), findsNothing);
-    expect(find.text(DevicesStrings.reorder), findsOneWidget);
+    expect(find.text(en.devicesReorderHint), findsNothing);
+    expect(find.text(en.devicesReorder), findsOneWidget);
     await tester.tap(find.text(band.name));
     await tester.pumpAndSettle();
     expect(find.text('device page ${band.id}'), findsOneWidget);
@@ -122,7 +122,7 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 2;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await pumpHome(tester, devices: devices, size: const Size(320, 640));
-    await tester.ensureVisible(find.text(DevicesStrings.reorder));
+    await tester.ensureVisible(find.text(en.devicesReorder));
     await tester.pumpAndSettle();
     await startReordering(tester);
 

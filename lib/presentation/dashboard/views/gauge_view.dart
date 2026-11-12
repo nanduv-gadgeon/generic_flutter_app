@@ -19,6 +19,7 @@ class GaugeView extends StatelessWidget {
     required this.value,
     required this.trend,
     required this.now,
+    this.updatedAt,
     this.pairValue,
     this.live = false,
   });
@@ -31,6 +32,10 @@ class GaugeView extends StatelessWidget {
   final List<Sample> trend;
   final DateTime now;
   final bool live;
+
+  /// When [value] was measured, for the caption when the trend has nothing in its 30 minutes
+  /// (e.g. a therapy device's last logged current from an hour ago).
+  final DateTime? updatedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +103,17 @@ class GaugeView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            Expanded(child: _Details(reading, status, word, footer, trend, now)),
+            Expanded(
+              child: _Details(
+                reading,
+                status,
+                word,
+                footer,
+                trend,
+                now,
+                value == null ? null : updatedAt,
+              ),
+            ),
           ],
         ),
       ),
@@ -107,7 +122,15 @@ class GaugeView extends StatelessWidget {
 }
 
 class _Details extends StatelessWidget {
-  const _Details(this.reading, this.status, this.word, this.footer, this.trend, this.now);
+  const _Details(
+    this.reading,
+    this.status,
+    this.word,
+    this.footer,
+    this.trend,
+    this.now,
+    this.updatedAt,
+  );
 
   final Reading reading;
   final ReadingStatus status;
@@ -115,6 +138,7 @@ class _Details extends StatelessWidget {
   final String? footer;
   final List<Sample> trend;
   final DateTime now;
+  final DateTime? updatedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -149,9 +173,10 @@ class _Details extends StatelessWidget {
           area: tokens.soft,
         ),
         const SizedBox(height: 7),
-        Text(switch (trend.lastOrNull) {
-          final last? => l10n.trendCaption(l10n.ago(now.difference(last.at))),
-          null => l10n.trendCaptionEmpty,
+        Text(switch ((trend.lastOrNull, updatedAt)) {
+          (final last?, _) => l10n.trendCaption(l10n.ago(now.difference(last.at))),
+          (null, final at?) => l10n.trendCaptionLastReading(l10n.ago(now.difference(at))),
+          _ => l10n.trendCaptionEmpty,
         }, style: muted.copyWith(fontSize: 11)),
       ],
     );

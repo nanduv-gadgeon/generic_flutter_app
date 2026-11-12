@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/add_device/add_device_controller.dart';
 import '../../../core/config/device_profile_registry.dart';
 import '../../../domain/models/device_profile.dart';
-import '../../strings/add_device_strings.dart';
 import '../../widgets/form_widgets.dart';
 import '../add_device_parts.dart';
+import '../../../l10n/l10n.dart';
 
 /// Step 2: Bluetooth or Wi‑Fi, as the device type allows.
 class ConnectionStep extends ConsumerWidget {
@@ -27,8 +27,8 @@ class ConnectionStep extends ConsumerWidget {
         body: available
             ? body
             : listed
-            ? AddDeviceStrings.comingSoon
-            : AddDeviceStrings.notSupported,
+            ? context.l10n.addDeviceComingSoon
+            : context.l10n.addDeviceNotSupported,
         selected: state.transport == transport,
         onTap: available ? () => controller.selectTransport(transport) : null,
       );
@@ -36,20 +36,25 @@ class ConnectionStep extends ConsumerWidget {
 
     return StepLayout(
       button: PrimaryButton(
-        label: AddDeviceStrings.continueLabel,
+        label: context.l10n.addDeviceContinueLabel,
         onPressed: state.canContinueFromConnection ? controller.continueFromConnection : null,
       ),
       children: [
-        const StepHeading(AddDeviceStrings.connectionHeading, AddDeviceStrings.connectionBody),
+        StepHeading(context.l10n.addDeviceConnectionHeading, context.l10n.addDeviceConnectionBody),
         const SizedBox(height: 18),
         option(
           Transport.ble,
           Icons.bluetooth,
-          AddDeviceStrings.bluetooth,
-          AddDeviceStrings.bluetoothBody,
+          context.l10n.addDeviceBluetooth,
+          context.l10n.addDeviceBluetoothBody,
         ),
         const SizedBox(height: 10),
-        option(Transport.wifi, Icons.wifi, AddDeviceStrings.wifi, AddDeviceStrings.wifiBody),
+        option(
+          Transport.wifi,
+          Icons.wifi,
+          context.l10n.addDeviceWifi,
+          context.l10n.addDeviceWifiBody,
+        ),
       ],
     );
   }

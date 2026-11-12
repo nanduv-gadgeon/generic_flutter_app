@@ -3,8 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/device_settings/device_settings_sections.dart';
+import 'package:generic_flutter_app/presentation/strings/device_settings_strings.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../fixtures/ief_profile.dart';
+import '../../fixtures/l10n.dart';
+import '../../fixtures/ppg_motion_profile.dart';
 import 'device_settings_test_app.dart';
 
 Finder _row(String label, String value) => find.byWidgetPredicate(
@@ -19,9 +23,11 @@ void main() {
     expect(find.text('Device settings'), findsOneWidget);
     expect(find.text('Device name'), findsOneWidget);
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'Test band');
-    for (final heading in ['CONNECTION', 'HEARTBEAT', 'SAMPLING INTERVAL', 'ALERTS']) {
+    for (final heading in ['CONNECTION', 'HEARTBEAT', 'ALERTS']) {
       expect(find.text(heading), findsOneWidget);
     }
+    // The sampling interval is a row in the heartbeat card now, not its own section.
+    expect(find.text('SAMPLING INTERVAL'), findsNothing);
   });
 
   // Every read-only row of the mockup: label -> value for [band].
@@ -147,19 +153,30 @@ void main() {
     verifyNever(() => devices.rename(any(), any()));
   });
 
-  testWidgets('the sampling interval is shown but cannot be changed yet', (tester) async {
-    final semantics = tester.ensureSemantics();
+  testWidgets('the sampling interval is a row under Device status, from the config', (
+    tester,
+  ) async {
     await pumpSettings(tester, device: band);
 
+    // The test config sets no rate, so the device decides.
+    expect(_row('Sampling interval', 'Set by the device'), findsOneWidget);
     for (final option in ['1 s', '5 s', '30 s', '1 min']) {
-      expect(find.text(option), findsOneWidget);
+      expect(find.text(option), findsNothing); // no longer a hard-coded choice
     }
-    expect(find.text('Set by the device for now.'), findsOneWidget);
-    expect(
-      tester.getSemantics(find.bySemanticsLabel(RegExp('^Sampling interval'))),
-      isSemantics(hasEnabledState: true, isEnabled: false),
-    );
-    semantics.dispose();
+  });
+
+  // The VitaCare config's rates: worked-out readings, or stored logs fetched while connected.
+  final intervals = <String, (DeviceProfile, Duration)>{
+    'the PPG sensor: 100 samples at 100 Hz': (ppgMotionProfile(), const Duration(seconds: 1)),
+    'the IEF device: its logs every 60 s': (iefProfile(), const Duration(minutes: 1)),
+  };
+  for (final MapEntry(key: name, value: (profile, every)) in intervals.entries) {
+    test('readings interval of $name', () => expect(readingsInterval(profile), every));
+  }
+
+  test('the row reads "Every 1 s"', () {
+    expect(en.deviceSettingsEvery(const Duration(seconds: 1)), 'Every 1 s');
+    expect(en.deviceSettingsEvery(const Duration(minutes: 1)), 'Every 1 min');
   });
 
   testWidgets('screen readers hear each alert switch with its limit', (tester) async {

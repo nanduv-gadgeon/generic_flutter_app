@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/device_settings_strings.dart';
 import 'device_settings_screen.dart';
+import '../../l10n/l10n.dart';
 
 /// The mockup's round "Device settings" button (sliders icon) in the device dashboard header.
 class DeviceSettingsButton extends StatelessWidget {
@@ -15,7 +15,7 @@ class DeviceSettingsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppTokens>();
     return IconButton(
-      tooltip: DeviceSettingsStrings.open,
+      tooltip: context.l10n.deviceSettingsOpen,
       icon: const Icon(Icons.tune, size: 22),
       onPressed: () => context.push(DeviceSettingsScreen.route(deviceId)),
       style: IconButton.styleFrom(

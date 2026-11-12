@@ -8,11 +8,11 @@ import '../../application/debug_dummy_devices.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../strings/devices_strings.dart';
-import '../strings/remove_device_strings.dart';
 import 'home_device_card.dart';
 import 'home_list_parts.dart';
 import 'home_reorder_list.dart';
 import 'swipe_to_delete.dart';
+import '../../l10n/l10n.dart';
 
 /// My devices (home): greeting, totals and one card per added device, then "Add a device". With
 /// no devices it shows the "No devices yet" card instead.
@@ -33,14 +33,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// Debug builds only: adds or removes dummy devices for trying the list without hardware.
   Future<void> _toggleDummies() async {
+    final l10n = context.l10n;
     final userId = ref.read(authControllerProvider).value?.id;
     if (userId == null) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final change = await ref.read(dummyDevicesProvider)(DevicesStrings.dummyName).toggle(userId);
-      messenger.showSnackBar(SnackBar(content: Text(DevicesStrings.dummyChanged(change))));
+      final change = await ref.read(dummyDevicesProvider)(l10n.devicesDummyName).toggle(userId);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.devicesDummyChanged(change))));
     } catch (_) {
-      messenger.showSnackBar(const SnackBar(content: Text(DevicesStrings.dummyFailed)));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.devicesDummyFailed)));
     }
   }
 
@@ -73,8 +74,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Header(
-              greeting: DevicesStrings.greeting(now),
-              name: DevicesStrings.firstName(name),
+              greeting: context.l10n.devicesGreeting(now),
+              name: context.l10n.devicesFirstName(name),
               onAdd: addDevice,
             ),
             const SizedBox(height: 18),
@@ -89,7 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (devices.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                reordering ? DevicesStrings.reorderHint : RemoveDeviceStrings.swipeHint,
+                reordering ? context.l10n.devicesReorderHint : context.l10n.removeDeviceSwipeHint,
                 style: TextStyle(
                   fontSize: 14,
                   color: Theme.of(context).extension<AppTokens>()?.muted,
@@ -163,7 +164,7 @@ class _Header extends StatelessWidget {
         const SizedBox(width: 12),
         Semantics(
           button: true,
-          label: DevicesStrings.addDevice,
+          label: context.l10n.devicesAddDevice,
           excludeSemantics: true,
           child: IconButton.filled(
             onPressed: onAdd,
@@ -189,11 +190,15 @@ class _TotalsRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: _TotalCard(summary.devices, DevicesStrings.totalDevices)),
+          Expanded(child: _TotalCard(summary.devices, context.l10n.devicesTotalDevices)),
           const SizedBox(width: 10),
-          Expanded(child: _TotalCard(summary.connected, DevicesStrings.totalConnected, tokens?.ok)),
+          Expanded(
+            child: _TotalCard(summary.connected, context.l10n.devicesTotalConnected, tokens?.ok),
+          ),
           const SizedBox(width: 10),
-          Expanded(child: _TotalCard(summary.alerts, DevicesStrings.totalAlerts, tokens?.warn)),
+          Expanded(
+            child: _TotalCard(summary.alerts, context.l10n.devicesTotalAlerts, tokens?.warn),
+          ),
         ],
       ),
     );
@@ -212,7 +217,7 @@ class _TotalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppTokens>();
     return Semantics(
-      label: DevicesStrings.total(count, label),
+      label: context.l10n.devicesTotal(count, label),
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.all(12),

@@ -82,9 +82,16 @@ List<Override> dashboardOverrides({
   required DateTime now,
   FakeReadingRepository? readings,
   FakeDeviceEventRepository? events,
+
+  /// Phase 2: the cloud is on, so Sync now shows.
+  bool cloud = false,
+
+  /// My devices as it arrives, in place of [devices] at once, e.g. catching up after Add device.
+  Stream<List<UserDevice>>? deviceUpdates,
 }) => [
+  syncNowAvailableProvider.overrideWithValue(cloud),
   liveReadingsProvider.overrideWithValue(live),
-  myDevicesProvider.overrideWith((ref) => Stream.value(devices)),
+  myDevicesProvider.overrideWith((ref) => deviceUpdates ?? Stream.value(devices)),
   deviceProfileRegistryProvider.overrideWith((ref) async => vitaCareRegistry),
   readingRepositoryProvider.overrideWithValue(readings ?? FakeReadingRepository()),
   deviceEventRepositoryProvider.overrideWithValue(events ?? FakeDeviceEventRepository()),

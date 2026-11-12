@@ -11,14 +11,11 @@ import '../../domain/models/device_profile.dart';
 import '../../domain/services/device_service.dart';
 import '../add_device/add_device_screen.dart';
 import '../devices/remove_device_sheet.dart';
-import '../strings/add_device_strings.dart';
-import '../strings/common_strings.dart';
-import '../strings/device_settings_strings.dart';
-import '../strings/remove_device_strings.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/labeled_field.dart';
 import 'device_settings_sections.dart';
 import 'heartbeat_card.dart';
+import '../../l10n/l10n.dart';
 
 /// Device settings (requirements §8, mockup screen 25): rename, connection and heartbeat details,
 /// sampling interval, alert switches and Remove device. Full screen, without the tab bar.
@@ -83,7 +80,7 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
         .read(deviceSettingsControllerProvider.notifier)
         .rename(widget.deviceId, name);
     if (ok) _savedName = name;
-    if (mounted) setState(() => _nameError = ok ? null : AddDeviceStrings.enterDeviceName);
+    if (mounted) setState(() => _nameError = ok ? null : context.l10n.addDeviceEnterDeviceName);
     return ok;
   }
 
@@ -104,12 +101,12 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _removing = false);
-      messenger.showSnackBar(const SnackBar(content: Text(RemoveDeviceStrings.removeFailed)));
+      messenger.showSnackBar(SnackBar(content: Text(context.l10n.removeDeviceRemoveFailed)));
       return;
     }
     if (!mounted) return;
     context.go('/home');
-    messenger.showSnackBar(const SnackBar(content: Text(RemoveDeviceStrings.removed)));
+    messenger.showSnackBar(SnackBar(content: Text(context.l10n.removeDeviceRemoved)));
   }
 
   @override
@@ -125,12 +122,12 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     if (_removing || (details.isLoading && !details.hasValue)) {
       body = Center(
         child: Semantics(
-          label: _removing ? DeviceSettingsStrings.removing : CommonStrings.loading,
+          label: _removing ? context.l10n.deviceSettingsRemoving : context.l10n.commonLoading,
           child: const CircularProgressIndicator(),
         ),
       );
     } else if (device == null) {
-      body = const Center(child: Text(DeviceSettingsStrings.notFound, textAlign: TextAlign.center));
+      body = Center(child: Text(context.l10n.deviceSettingsNotFound, textAlign: TextAlign.center));
     } else {
       body = _Content(
         device: device,
@@ -164,9 +161,9 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
                     Expanded(
                       child: Semantics(
                         header: true,
-                        child: const Text(
-                          DeviceSettingsStrings.title,
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                        child: Text(
+                          context.l10n.deviceSettingsTitle,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                         ),
                       ),
                     ),
@@ -190,7 +187,7 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
   }
 
   Widget _nameField() => LabeledField(
-    label: AddDeviceStrings.deviceName,
+    label: context.l10n.addDeviceDeviceName,
     child: TextField(
       controller: _name,
       focusNode: _nameFocus,
@@ -232,11 +229,11 @@ class _Content extends StatelessWidget {
       children: [
         nameField,
         gap,
-        const SectionHeading(DeviceSettingsStrings.connection),
+        SectionHeading(context.l10n.deviceSettingsConnection),
         const SizedBox(height: 8),
         ConnectionCard(device: device, typeLabel: profile?.label ?? device.profileId),
         gap,
-        const SectionHeading(DeviceSettingsStrings.heartbeat),
+        SectionHeading(context.l10n.deviceSettingsHeartbeat),
         const SizedBox(height: 8),
         HeartbeatCard(
           device: device,
@@ -244,12 +241,12 @@ class _Content extends StatelessWidget {
           now: now,
         ),
         gap,
-        const SectionHeading(DeviceSettingsStrings.sampling),
+        SectionHeading(context.l10n.deviceSettingsSampling),
         const SizedBox(height: 8),
         const SamplingControl(),
         if (device.alerts.isNotEmpty) ...[
           gap,
-          const SectionHeading(DeviceSettingsStrings.alerts),
+          SectionHeading(context.l10n.deviceSettingsAlerts),
           const SizedBox(height: 8),
           AlertsCard(
             alerts: device.alerts,
@@ -261,7 +258,7 @@ class _Content extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: onRemove,
           icon: const Icon(Icons.delete_outline),
-          label: const Text(RemoveDeviceStrings.remove),
+          label: Text(context.l10n.removeDeviceRemove),
           style: OutlinedButton.styleFrom(
             foregroundColor: danger,
             side: BorderSide(color: danger, width: 1.5),

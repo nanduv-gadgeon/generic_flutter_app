@@ -6,6 +6,8 @@ import '../../domain/dashboard/reading_status.dart';
 import '../../domain/models/reading.dart';
 import '../../l10n/app_localizations.dart';
 
+export '../../l10n/l10n.dart';
+
 /// How dashboard views write values, ranges and statuses, in the phone's language.
 extension DashboardFormat on AppLocalizations {
   /// "72", "1,140", "36.6", "7h 12m"; "118/76" when [pairValue] is given.
@@ -75,9 +77,8 @@ extension DashboardFormat on AppLocalizations {
   null => (tokens.muted, tokens.chipBg),
 };
 
-/// The dashboard's design tokens and strings.
+/// The dashboard's design tokens.
 extension DashboardContext on BuildContext {
   AppTokens get tokens => Theme.of(this).extension<AppTokens>()!;
-  AppLocalizations get l10n => AppLocalizations.of(this);
   Color get textColor => Theme.of(this).colorScheme.onSurface;
 }

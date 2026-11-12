@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/test_config.dart';
+import '../../fixtures/l10n.dart';
 
 late MockAuthService service;
 late MockBiometricAuth biometrics;
@@ -52,7 +53,11 @@ Future<void> _pumpLogin(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();

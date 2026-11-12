@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/presentation/strings/device_settings_strings.dart';
 
+import '../../fixtures/l10n.dart';
+
 void main() {
   // time since the last heartbeat -> text
   final ago = <Duration, String>{
@@ -16,18 +18,18 @@ void main() {
     const Duration(seconds: -5): '0 s ago', // the phone's clock is behind: counts as now
   };
   for (final MapEntry(key: elapsed, value: text) in ago.entries) {
-    test('ago($elapsed) -> "$text"', () => expect(DeviceSettingsStrings.ago(elapsed), text));
+    test('ago($elapsed) -> "$text"', () => expect(en.deviceSettingsAgo(elapsed), text));
   }
 
   test('transport names and address labels', () {
-    expect(DeviceSettingsStrings.transport(Transport.ble), 'Bluetooth LE');
-    expect(DeviceSettingsStrings.transport(Transport.wifi), 'Wi‑Fi');
-    expect(DeviceSettingsStrings.addressLabel(Transport.ble), 'MAC address');
-    expect(DeviceSettingsStrings.addressLabel(Transport.wifi), 'IP address');
+    expect(en.deviceSettingsTransport(Transport.ble), 'Bluetooth LE');
+    expect(en.deviceSettingsTransport(Transport.wifi), 'Wi‑Fi');
+    expect(en.deviceSettingsAddressLabel(Transport.ble), 'MAC address');
+    expect(en.deviceSettingsAddressLabel(Transport.wifi), 'IP address');
   });
 
   test('firmware and battery', () {
-    expect(DeviceSettingsStrings.firmware('1.4.2'), 'v1.4.2');
-    expect(DeviceSettingsStrings.battery(78), '78%');
+    expect(en.deviceSettingsFirmware('1.4.2'), 'v1.4.2');
+    expect(en.deviceSettingsBattery(78), '78%');
   });
 }

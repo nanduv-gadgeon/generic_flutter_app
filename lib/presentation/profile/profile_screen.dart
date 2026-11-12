@@ -9,13 +9,11 @@ import '../../core/di/services.dart';
 import '../../core/theme/app_tokens.dart';
 import '../auth/biometric_offer_dialog.dart';
 import '../auth/logout_dialog.dart';
-import '../strings/auth_strings.dart';
-import '../strings/common_strings.dart';
-import '../strings/profile_strings.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/web_page_view.dart';
 import 'edit_profile_screen.dart';
 import 'profile_rows.dart';
+import '../../l10n/l10n.dart';
 
 /// Profile tab: who is logged in, settings, the customer's links, app version and Log out.
 class ProfileScreen extends ConsumerWidget {
@@ -46,7 +44,7 @@ class ProfileScreen extends ConsumerWidget {
             Semantics(
               header: true,
               child: Text(
-                ProfileStrings.title,
+                context.l10n.profileTitle,
                 style: Theme.of(context).textTheme.headlineMedium
                     ?.copyWith(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5),
               ),
@@ -63,7 +61,7 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 ProfileSwitchRow(
                   icon: Icons.notifications_none,
-                  label: ProfileStrings.notifications,
+                  label: context.l10n.profileNotifications,
                   value: notifications,
                   onChanged: (on) => ref
                       .read(appSettingsServiceProvider)
@@ -72,7 +70,7 @@ class ProfileScreen extends ConsumerWidget {
                 if (biometric != null)
                   ProfileSwitchRow(
                     icon: Icons.fingerprint,
-                    label: AuthStrings.logInWith(biometricName(biometric)),
+                    label: context.l10n.authLogInWith(biometricName(context.l10n, biometric)),
                     value: user.biometricEnabled,
                     onChanged: (on) =>
                         ref.read(authControllerProvider.notifier).setBiometricLogin(enabled: on),
@@ -82,12 +80,12 @@ class ProfileScreen extends ConsumerWidget {
                 if (ref.watch(autoSyncAvailableProvider))
                   ProfileNavRow(
                     icon: Icons.cloud_upload_outlined,
-                    label: ProfileStrings.autoSync,
-                    subtitle: ProfileStrings.autoSyncStatus,
-                    value: ProfileStrings.autoSyncValue,
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text(ProfileStrings.autoSyncComingSoon)),
-                    ),
+                    label: context.l10n.profileAutoSync,
+                    subtitle: context.l10n.profileAutoSyncStatus,
+                    value: context.l10n.profileAutoSyncValue,
+                    onTap: () => ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(context.l10n.profileAutoSyncComingSoon))),
                   ),
               ],
             ),
@@ -97,30 +95,30 @@ class ProfileScreen extends ConsumerWidget {
                 if (links != null) ...[
                   ProfileNavRow(
                     icon: Icons.verified_user_outlined,
-                    label: ProfileStrings.privacyPolicy,
+                    label: context.l10n.profilePrivacyPolicy,
                     onTap: () => showWebPageSheet(
                       context,
-                      title: ProfileStrings.privacyPolicy,
+                      title: context.l10n.profilePrivacyPolicy,
                       url: links.privacyPolicy,
                     ),
                   ),
                   ProfileNavRow(
                     icon: Icons.description_outlined,
-                    label: ProfileStrings.termsOfUse,
+                    label: context.l10n.profileTermsOfUse,
                     onTap: () => showWebPageSheet(
                       context,
-                      title: ProfileStrings.termsOfUse,
+                      title: context.l10n.profileTermsOfUse,
                       url: links.termsOfUse,
                     ),
                   ),
                 ],
                 ProfileRow(
                   icon: Icons.info_outline,
-                  label: ProfileStrings.appVersion,
+                  label: context.l10n.profileAppVersion,
                   trailing: version == null
                       ? null
                       : Text(
-                          ProfileStrings.version(version.$1, version.$2),
+                          context.l10n.profileVersion(version.$1, version.$2),
                           textAlign: TextAlign.end,
                           style: TextStyle(
                             fontSize: 14,
@@ -189,12 +187,12 @@ class _UserCard extends StatelessWidget {
           const SizedBox(width: 8),
           Semantics(
             button: true,
-            label: ProfileStrings.editProfile,
+            label: context.l10n.profileEditProfile,
             excludeSemantics: true,
             child: OutlinedButton.icon(
               onPressed: onEdit,
               icon: const Icon(Icons.edit_outlined, size: 14),
-              label: const Text(ProfileStrings.edit),
+              label: Text(context.l10n.profileEdit),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 36),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -221,12 +219,12 @@ class _LogOutButton extends StatelessWidget {
     final color = tokens?.danger ?? Theme.of(context).colorScheme.error;
     return Semantics(
       button: true,
-      label: CommonStrings.logOut,
+      label: context.l10n.commonLogOut,
       excludeSemantics: true,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.logout, size: 20),
-        label: const Text(CommonStrings.logOut),
+        label: Text(context.l10n.commonLogOut),
         style: OutlinedButton.styleFrom(
           foregroundColor: color,
           minimumSize: const Size.fromHeight(52),

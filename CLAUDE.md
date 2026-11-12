@@ -19,8 +19,8 @@ Rules for AI assistants working in this repository.
 - With `isCloud: false` the app makes zero network calls.
 - Nothing device-specific in Dart code; devices come from the config profile.
 - Use Riverpod with code generation, go_router and freezed.
-- No hard-coded user-facing text in widgets. Dashboard text lives in `lib/l10n/app_en.arb` (run `flutter gen-l10n`; generated files are not committed); device labels, units and zone names come from the config. Other screens keep their text in `lib/presentation/strings/` until moved: one `abstract final class` of constants per feature (e.g. `AuthStrings`); text with a value in it is a small function.
-- No validation logic in widgets. Rules are pure functions in `lib/domain/validation/`; widgets use field validators (e.g. `AuthValidators`) that pair a rule with its message from the strings files.
+- No hard-coded user-facing text. Every label, hint, message, error, tooltip and Semantics label is a message in `lib/l10n/app_en.arb` (keys start with the feature, e.g. `authLogIn`), read with `context.l10n.authLogIn`. Values go in placeholders and counts in ICU plurals, never by joining strings. Text that needs logic (enum to message, durations) is an extension on `AppLocalizations` in `lib/presentation/strings/`. Device labels, units and zone names come from the config. Run `flutter gen-l10n` (generated files are not committed). See `docs/localization.md`.
+- No validation logic in widgets. Rules are pure functions in `lib/domain/validation/`; widgets use field validators (e.g. `AuthValidators(context.l10n)`) that pair a rule with its message from `app_en.arb`.
 - Keep files under 300 lines.
 - Generated files (`*.g.dart`, `*.freezed.dart`) come from `dart run build_runner build --delete-conflicting-outputs`. They are not committed.
 - Add packages only with `flutter pub add`; never type versions by hand.

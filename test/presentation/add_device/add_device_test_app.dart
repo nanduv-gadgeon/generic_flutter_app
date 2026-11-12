@@ -12,6 +12,7 @@ import 'package:generic_flutter_app/presentation/add_device/add_device_screen.da
 import 'package:go_router/go_router.dart';
 
 import '../../fixtures/add_device_fakes.dart';
+import '../../fixtures/l10n.dart';
 
 export '../../fixtures/add_device_fakes.dart';
 
@@ -69,7 +70,12 @@ Future<void> pumpAddDevice(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(theme: buildTheme(_theme, brightness), routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: buildTheme(_theme, brightness),
+        routerConfig: router,
+      ),
     ),
   );
   unawaited(router.push('/add'));

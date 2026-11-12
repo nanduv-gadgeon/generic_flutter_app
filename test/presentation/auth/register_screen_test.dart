@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/fake_auth.dart';
+import '../../fixtures/l10n.dart';
 
 late MockAuthService service;
 late ProviderContainer container;
@@ -62,7 +63,11 @@ Future<void> _pumpRegister(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -70,7 +75,7 @@ Future<void> _pumpRegister(
 
 Future<void> _fill(WidgetTester tester, Map<String, String> values, {bool terms = true}) async {
   for (final MapEntry(:key, :value) in values.entries) {
-    final field = key == MobileNumberField.label
+    final field = key == en.authMobileNumber
         ? _mobileField
         : find.widgetWithText(LabeledField, key);
     await tester.enterText(field, value);

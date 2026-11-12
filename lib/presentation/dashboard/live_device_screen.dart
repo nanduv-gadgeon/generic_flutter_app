@@ -9,7 +9,6 @@ import '../../application/live_device_provider.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
 import '../device_settings/device_settings_button.dart';
-import '../strings/add_device_strings.dart';
 import '../strings/device_strings.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/placeholder_screen.dart';
@@ -50,7 +49,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
         : null;
     if (device == null || profile == null) {
       return PlaceholderScreen(
-        title: AddDeviceStrings.dashboardPlaceholder,
+        title: context.l10n.addDeviceDashboardPlaceholder,
         actions: [DeviceSettingsButton(deviceId: deviceId)],
       );
     }
@@ -99,25 +98,25 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
                   status: live.status,
                   offline: live.online
                       ? null
-                      : DeviceStrings.offline(switch (live.lastHeartbeatAt) {
+                      : context.l10n.deviceOffline(switch (live.lastHeartbeatAt) {
                           final at? => now.difference(at),
                           null => null,
                         }),
                 ),
               ],
               if (live.status == LiveStatus.streaming)
-                if (DeviceStrings.contact(live.contact) case final hint?) ...[
+                if (context.l10n.deviceContact(live.contact) case final hint?) ...[
                   const SizedBox(height: 14),
                   ContactHint(text: hint),
                 ],
               if (failure != null) ...[
                 const SizedBox(height: 12),
-                ErrorMessage(DeviceStrings.failure(failure)),
+                ErrorMessage(context.l10n.deviceFailure(failure)),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
                     onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
-                    child: const Text(DeviceStrings.tryAgain),
+                    child: Text(context.l10n.deviceTryAgain),
                   ),
                 ),
               ],

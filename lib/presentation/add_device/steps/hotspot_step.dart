@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/add_device/add_device_controller.dart';
-import '../../strings/add_device_strings.dart';
 import '../../widgets/form_widgets.dart';
 import '../add_device_parts.dart';
+import '../../../l10n/l10n.dart';
 
 /// Step 3, Wi‑Fi over the device's hotspot: the user joins it in phone Settings, then comes back.
 class HotspotStep extends ConsumerWidget {
@@ -16,20 +16,20 @@ class HotspotStep extends ConsumerWidget {
     final controller = ref.read(addDeviceControllerProvider.notifier);
     final tokens = tokensOf(context);
     final steps = [
-      AddDeviceStrings.hotspotStep1,
-      AddDeviceStrings.hotspotStep2(phase.ssidPrefix),
-      AddDeviceStrings.hotspotStep3,
+      context.l10n.addDeviceHotspotStep1,
+      context.l10n.addDeviceHotspotStep2(phase.ssidPrefix),
+      context.l10n.addDeviceHotspotStep3,
     ];
 
     return StepLayout(
       button: PrimaryButton(
-        label: AddDeviceStrings.hotspotJoined,
+        label: context.l10n.addDeviceHotspotJoined,
         onPressed: controller.hotspotJoined,
       ),
       children: [
         const StatusCircle(icon: Icons.wifi_tethering, size: 84, iconSize: 38),
         const SizedBox(height: 18),
-        const StepHeading(AddDeviceStrings.hotspotHeading, AddDeviceStrings.hotspotBody),
+        StepHeading(context.l10n.addDeviceHotspotHeading, context.l10n.addDeviceHotspotBody),
         const SizedBox(height: 18),
         SurfaceCard(
           padding: const EdgeInsets.all(14),
@@ -64,7 +64,7 @@ class HotspotStep extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         Text(
-          AddDeviceStrings.localNetworkNote,
+          context.l10n.addDeviceLocalNetworkNote,
           style: TextStyle(fontSize: 12, height: 1.4, color: tokens?.muted),
         ),
       ],

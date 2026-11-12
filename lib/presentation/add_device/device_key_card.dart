@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../strings/add_device_strings.dart';
 import 'add_device_parts.dart';
+import '../../l10n/l10n.dart';
 
 /// Phase 2: the key the cloud gave the device, masked (screen 12). Null [deviceKey] means the
 /// cloud has not sent it yet.
@@ -25,9 +26,9 @@ class DeviceKeyCard extends StatelessWidget {
               const SizedBox(width: 10),
               Semantics(
                 header: true,
-                child: const Text(
-                  AddDeviceStrings.deviceKey,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                child: Text(
+                  context.l10n.addDeviceDeviceKey,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -40,7 +41,9 @@ class DeviceKeyCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(tokens?.radiusSmall ?? 12),
             ),
             child: Text(
-              key == null ? AddDeviceStrings.waitingForCloud : AddDeviceStrings.maskedKey(key),
+              key == null
+                  ? context.l10n.addDeviceWaitingForCloud
+                  : context.l10n.addDeviceMaskedKey(key),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -53,7 +56,7 @@ class DeviceKeyCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            AddDeviceStrings.deviceKeyNote,
+            context.l10n.addDeviceDeviceKeyNote,
             style: TextStyle(fontSize: 12, height: 1.4, color: tokens?.muted),
           ),
         ],

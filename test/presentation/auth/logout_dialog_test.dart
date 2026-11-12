@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/presentation/auth/logout_dialog.dart';
 
+import '../../fixtures/l10n.dart';
+
 void main() {
   Future<bool?> openAndTap(WidgetTester tester, String button) async {
     bool? result;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+
         home: Builder(
           builder: (context) => TextButton(
             onPressed: () async => result = await confirmLogout(context),

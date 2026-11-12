@@ -3,10 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/presentation/add_device/scan_pulse.dart';
 
 import 'add_device_test_app.dart';
+import '../../fixtures/l10n.dart';
 
 void main() {
   Future<void> pumpPulse(WidgetTester tester, {required bool active}) => tester.pumpWidget(
     MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+
       home: Center(
         child: ScanPulse(
           active: active,

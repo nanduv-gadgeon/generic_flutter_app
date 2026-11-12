@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/devices_strings.dart';
 import '../widgets/dashed_border_box.dart';
+import '../../l10n/l10n.dart';
 
 // The device list's parts of My devices (home).
 
@@ -27,7 +27,7 @@ class MyDevicesHeading extends StatelessWidget {
     final heading = Semantics(
       header: true,
       child: Text(
-        DevicesStrings.myDevices,
+        context.l10n.devicesMyDevices,
         style: Theme.of(context).textTheme.titleLarge
             ?.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
       ),
@@ -42,12 +42,12 @@ class MyDevicesHeading extends StatelessWidget {
         if (onToggle != null)
           Semantics(
             button: true,
-            label: reordering ? DevicesStrings.doneLabel : DevicesStrings.reorderLabel,
+            label: reordering ? context.l10n.devicesDoneLabel : context.l10n.devicesReorderLabel,
             excludeSemantics: true,
             child: TextButton(
               onPressed: onToggle,
               child: Text(
-                reordering ? DevicesStrings.done : DevicesStrings.reorder,
+                reordering ? context.l10n.devicesDone : context.l10n.devicesReorder,
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),
@@ -70,7 +70,7 @@ class AddDeviceTile extends StatelessWidget {
     final radius = BorderRadius.circular(tokens?.radius ?? 16);
     return Semantics(
       button: true,
-      label: DevicesStrings.addADevice,
+      label: context.l10n.devicesAddADevice,
       excludeSemantics: true,
       child: InkWell(
         onTap: onAdd,
@@ -86,7 +86,7 @@ class AddDeviceTile extends StatelessWidget {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  DevicesStrings.addADevice,
+                  context.l10n.devicesAddADevice,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -125,14 +125,14 @@ class EmptyDevicesCard extends StatelessWidget {
             child: Icon(Icons.memory_outlined, size: 26, color: tokens?.accent),
           ),
           const SizedBox(height: 10),
-          const Text(
-            DevicesStrings.noDevices,
+          Text(
+            context.l10n.devicesNoDevices,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           Text(
-            DevicesStrings.noDevicesBody,
+            context.l10n.devicesNoDevicesBody,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: tokens?.muted),
           ),
@@ -140,7 +140,7 @@ class EmptyDevicesCard extends StatelessWidget {
           FilledButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add, size: 18),
-            label: const Text(DevicesStrings.addDevice),
+            label: Text(context.l10n.devicesAddDevice),
             style: FilledButton.styleFrom(
               minimumSize: const Size(0, 46),
               padding: const EdgeInsets.symmetric(horizontal: 20),

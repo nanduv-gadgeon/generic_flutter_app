@@ -11,11 +11,11 @@ import '../../domain/services/biometric_auth.dart';
 import '../widgets/brand_header.dart';
 import '../widgets/labeled_field.dart';
 import '../strings/auth_strings.dart';
-import '../strings/common_strings.dart';
 import '../widgets/password_field.dart';
 import 'auth_form.dart';
 import 'auth_validators.dart';
 import 'biometric_offer_dialog.dart';
+import '../../l10n/l10n.dart';
 
 /// Email + password login, optional biometric login, links to register and forgot password.
 class LoginScreen extends ConsumerStatefulWidget {
@@ -40,6 +40,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _logIn() async {
+    final l10n = context.l10n;
     setState(() => _error = null);
     if (!_formKey.currentState!.validate()) return;
     await _run(() async {
@@ -47,8 +48,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final result = await auth.login(_email.text, _password.text);
       if (result is! LoginSuccess) {
         _showError(switch (result) {
-          AccountLocked(:final retryAfter) => AuthStrings.accountLocked(retryAfter),
-          _ => AuthStrings.wrongCredentials,
+          AccountLocked(:final retryAfter) => l10n.authAccountLocked(retryAfter),
+          _ => l10n.authWrongCredentials,
         });
         return;
       }
@@ -64,13 +65,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _logInWithBiometrics(BiometricKind kind) async {
+    final l10n = context.l10n;
     setState(() => _error = null);
     await _run(() async {
       final result = await ref
           .read(authControllerProvider.notifier)
-          .loginWithBiometrics(reason: AuthStrings.biometricLoginReason);
+          .loginWithBiometrics(reason: l10n.authBiometricLoginReason);
       if (result is! LoginSuccess) {
-        _showError(AuthStrings.biometricFailed(biometricName(kind)));
+        _showError(l10n.authBiometricFailed(biometricName(l10n, kind)));
       }
     });
   }
@@ -115,8 +117,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         if (_error case final error?) AuthErrorMessage(error),
                         const SizedBox(height: 14),
                         AuthSubmitButton(
-                          label: AuthStrings.logIn,
-                          busyLabel: AuthStrings.signingIn,
+                          label: context.l10n.authLogIn,
+                          busyLabel: context.l10n.authSigningIn,
                           busy: _busy,
                           onPressed: _logIn,
                         ),
@@ -129,7 +131,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ? Icons.face_outlined
                                   : Icons.fingerprint,
                             ),
-                            label: Text(AuthStrings.logInWith(biometricName(biometric))),
+                            label: Text(
+                              context.l10n.authLogInWith(biometricName(context.l10n, biometric)),
+                            ),
                           ),
                         ],
                         const Spacer(),
@@ -151,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   List<Widget> _fields() => [
     LabeledField(
-      label: CommonStrings.email,
+      label: context.l10n.commonEmail,
       child: TextFormField(
         controller: _email,
         enabled: !_busy,
@@ -159,22 +163,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         autofillHints: const [AutofillHints.email],
         autocorrect: false,
         textInputAction: TextInputAction.next,
-        decoration: const InputDecoration(hintText: CommonStrings.emailHint),
-        validator: AuthValidators.email,
+        decoration: InputDecoration(hintText: context.l10n.commonEmailHint),
+        validator: AuthValidators(context.l10n).email,
       ),
     ),
     const SizedBox(height: 14),
     PasswordField(
       controller: _password,
       enabled: !_busy,
-      validator: AuthValidators.loginPassword,
+      validator: AuthValidators(context.l10n).loginPassword,
       onSubmitted: (_) => _logIn(),
     ),
     Align(
       alignment: Alignment.centerRight,
       child: TextButton(
         onPressed: _busy ? null : () => context.push('/forgot'),
-        child: const Text(AuthStrings.forgotPassword),
+        child: Text(context.l10n.authForgotPassword),
       ),
     ),
   ];
@@ -193,14 +197,14 @@ class _CreateAccountLink extends StatelessWidget {
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(AuthStrings.newHere, style: TextStyle(fontSize: 15, color: muted)),
+        Text(context.l10n.authNewHere, style: TextStyle(fontSize: 15, color: muted)),
         TextButton(
           onPressed: enabled ? () => context.push('/register') : null,
           style: TextButton.styleFrom(
             textStyle: Theme.of(context).textTheme.labelLarge
                 ?.copyWith(fontSize: 15, fontWeight: FontWeight.w700),
           ),
-          child: const Text(AuthStrings.createAccount),
+          child: Text(context.l10n.authCreateAccount),
         ),
       ],
     );

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
-import '../strings/add_device_strings.dart';
 import '../widgets/form_widgets.dart';
+import '../../l10n/l10n.dart';
 
 /// Pieces shared by the Add device steps (mockup screens 10–12).
 
@@ -34,13 +34,13 @@ class StepHeader extends StatelessWidget {
                 children: [
                   Semantics(
                     header: true,
-                    child: const Text(
-                      AddDeviceStrings.title,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                    child: Text(
+                      context.l10n.addDeviceTitle,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                     ),
                   ),
                   Text(
-                    AddDeviceStrings.stepOf(step),
+                    context.l10n.addDeviceStepOf(step),
                     style: TextStyle(fontSize: 13, color: tokens?.muted),
                   ),
                 ],

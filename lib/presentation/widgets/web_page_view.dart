@@ -3,8 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../domain/validation/link_rules.dart';
 import '../auth/auth_form.dart';
-import '../strings/common_strings.dart';
-import '../strings/profile_strings.dart';
+import '../../l10n/l10n.dart';
 
 /// Opens [url] in a tall sheet over the current screen, titled [title], with a close button.
 Future<void> showWebPageSheet(BuildContext context, {required String title, required String url}) =>
@@ -34,7 +33,7 @@ Future<void> showWebPageSheet(BuildContext context, {required String title, requ
                     ),
                   ),
                   IconButton(
-                    tooltip: CommonStrings.close,
+                    tooltip: context.l10n.commonClose,
                     icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -108,15 +107,15 @@ class _WebPageViewState extends State<WebPageView> {
         if (_loading)
           Center(
             child: Semantics(
-              label: ProfileStrings.loadingPage,
+              label: context.l10n.profileLoadingPage,
               child: const CircularProgressIndicator(),
             ),
           ),
         if (_failed)
-          const Center(
+          Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
-              child: AuthErrorMessage(ProfileStrings.pageFailed),
+              padding: const EdgeInsets.all(24),
+              child: AuthErrorMessage(context.l10n.profilePageFailed),
             ),
           ),
       ],

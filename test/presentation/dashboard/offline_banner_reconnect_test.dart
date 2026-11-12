@@ -171,7 +171,7 @@ void main() {
       await send(tester, [const LiveStatusChanged(LiveStatus.streaming)]);
 
       expect(find.text('Sync now'), findsNothing);
-      expect(find.text('Calibrate device'), findsOneWidget);
+      expect(find.text('Identify sensor'), findsOneWidget);
     });
 
     testWidgets('with the cloud, Sync now shows next to the action (a Phase 2 hook)', (
@@ -186,17 +186,15 @@ void main() {
       expect(find.text('Sync now comes with cloud sync.'), findsOneWidget);
     });
 
-    testWidgets('a placeholder action says it is not available yet and sends nothing', (
-      tester,
-    ) async {
+    testWidgets('PPG sensor: Identify flashes its red LED three times and says so', (tester) async {
       await pump(tester);
       await send(tester, [const LiveStatusChanged(LiveStatus.streaming)]);
-      await show(tester, find.text('Calibrate device'));
+      await show(tester, find.text('Identify sensor'));
 
-      await tester.tap(find.text('Calibrate device'));
+      await tester.tap(find.text('Identify sensor'));
       await tester.pump();
-      expect(find.text("Calibrate device isn't available yet."), findsOneWidget);
-      expect(live.commands, isEmpty);
+      expect(live.commands, List.filled(6, (_sensor.id, 'led_red')));
+      expect(find.text('The sensor light flashed.'), findsOneWidget);
     });
 
     testWidgets('TC-DSH-014: the action is disabled while the device is not connected', (
@@ -205,15 +203,15 @@ void main() {
       final semantics = tester.ensureSemantics();
       await pump(tester);
       await send(tester, offline);
-      await show(tester, find.text('Calibrate device'));
+      await show(tester, find.text('Identify sensor'));
 
       expect(
-        find.bySemanticsLabel('Calibrate device, available when the device is connected'),
+        find.bySemanticsLabel('Identify sensor, available when the device is connected'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Calibrate device'), warnIfMissed: false);
+      await tester.tap(find.text('Identify sensor'), warnIfMissed: false);
       await tester.pump();
-      expect(find.text("Calibrate device isn't available yet."), findsNothing);
+      expect(live.commands, isEmpty);
       semantics.dispose();
     });
   });

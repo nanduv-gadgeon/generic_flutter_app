@@ -93,8 +93,8 @@ class DemoLiveReadings implements LiveReadings {
 
   /// A dummy device has no real link: the command "works" at once, so the action can be tried.
   @override
-  Future<void> runCommand(int deviceId, String commandId) async {
-    if (!_sessions.containsKey(deviceId)) await _inner.runCommand(deviceId, commandId);
+  Future<void> runAction(int deviceId, List<ActionStep> steps) async {
+    if (!_sessions.containsKey(deviceId)) await _inner.runAction(deviceId, steps);
   }
 
   @override

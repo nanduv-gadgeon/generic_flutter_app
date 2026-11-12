@@ -25,15 +25,17 @@ class ScriptedLiveReadings implements LiveReadings {
   @override
   Future<void> retry(int deviceId) async => retried.add(deviceId);
 
-  /// Commands sent, as (device, command id).
+  /// Commands sent by device actions, as (device, command id), step by step.
   final commands = <(int, String)>[];
 
-  /// Makes [runCommand] throw this.
+  /// Makes [runAction] throw this.
   Object? commandError;
 
   @override
-  Future<void> runCommand(int deviceId, String commandId) async {
-    commands.add((deviceId, commandId));
+  Future<void> runAction(int deviceId, List<ActionStep> steps) async {
+    for (final step in steps) {
+      commands.add((deviceId, step.command));
+    }
     if (commandError case final e?) throw e;
   }
 

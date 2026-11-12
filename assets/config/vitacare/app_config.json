@@ -433,7 +433,18 @@
           { "type": "gauge", "reading": "spo2" },
           { "type": "tiles", "readings": ["heart_rate", "pi_ir", "pi_red"] }
         ],
-        "action": { "label": "Calibrate device" }
+        "action": {
+          "label": "Identify sensor",
+          "steps": [
+            { "command": "led_red", "value": 32, "waitMs": 300 },
+            { "command": "led_red", "value": 0, "waitMs": 300 },
+            { "command": "led_red", "value": 32, "waitMs": 300 },
+            { "command": "led_red", "value": 0, "waitMs": 300 },
+            { "command": "led_red", "value": 32, "waitMs": 300 },
+            { "command": "led_red", "value": 0, "waitMs": 300 }
+          ],
+          "done": "The sensor light flashed."
+        }
       }
     }
   ]

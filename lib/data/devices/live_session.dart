@@ -57,6 +57,9 @@ class LiveSession {
   bool _stopped = false;
   bool _streaming = false;
   bool _adjusting = false;
+
+  /// A device action is running: worked-out readings are held back.
+  bool _acting = false;
   LinkState? _lastState;
   SensorContact? _contact;
 
@@ -85,9 +88,38 @@ class LiveSession {
     await _afterConnect();
   }
 
-  /// Sends the profile command [commandId] and waits for its reply (the dashboard's device
-  /// action). Throws [CommandFailedException], [LinkException] or [UnsupportedCommandException].
-  Future<void> runCommand(String commandId) => _commands.run(commandId);
+  /// Sends a device action's [steps] in order (the dashboard's action button), waiting for each
+  /// reply and each step's pause. Meanwhile the AGC waits and worked-out readings are not passed
+  /// on (an LED flashing for the action would skew them); afterwards any LED the AGC drives is put
+  /// back at its level. Throws [CommandFailedException], [LinkException] or
+  /// [UnsupportedCommandException].
+  Future<void> runAction(List<ActionStep> steps) async {
+    _adjusting = true;
+    _acting = true;
+    try {
+      for (final step in steps) {
+        await _commands.run(step.command, value: step.value);
+        if (step.waitMs > 0) await Future<void>.delayed(Duration(milliseconds: step.waitMs));
+      }
+    } finally {
+      await _restoreAgcLevels(steps);
+      _acting = false;
+      _adjusting = false;
+    }
+  }
+
+  Future<void> _restoreAgcLevels(List<ActionStep> steps) async {
+    final agc = _agc;
+    if (agc == null) return;
+    final touched = {for (final s in steps) s.command}.intersection(_profile.agc!.commands.toSet());
+    for (final id in touched) {
+      try {
+        await _commands.run(id, value: agc.level);
+      } catch (_) {
+        // The AGC sets it again on its next change.
+      }
+    }
+  }
 
   Future<void> stop() async {
     if (_stopped) return;
@@ -223,7 +255,7 @@ class LiveSession {
         _emit(LiveContactChanged(contact));
       }
       for (final result in results) {
-        if (_readingKeys.contains(result.key)) _emit(LiveValue(result));
+        if (_readingKeys.contains(result.key) && !_acting) _emit(LiveValue(result));
       }
     }
     final agc = _agc;

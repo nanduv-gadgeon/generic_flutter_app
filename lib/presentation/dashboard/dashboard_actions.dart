@@ -35,15 +35,15 @@ class _DashboardActionsState extends ConsumerState<DashboardActions> {
   Future<void> _runAction(DeviceAction action) async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
-    final command = action.command;
-    if (command == null) {
+    final steps = action.sequence;
+    if (steps.isEmpty) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.actionUnavailable(action.label))));
       return;
     }
     setState(() => _running = true);
     String message;
     try {
-      await ref.read(liveDeviceProvider(widget.deviceId).notifier).runCommand(command);
+      await ref.read(liveDeviceProvider(widget.deviceId).notifier).runAction(steps);
       message = action.done ?? l10n.actionDone(action.label);
     } catch (_) {
       // The device refused it, did not answer, or is no longer connected.

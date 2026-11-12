@@ -122,10 +122,10 @@ class ActiveDevice implements LiveReadings {
   }
 
   @override
-  Future<void> runCommand(int deviceId, String commandId) async {
+  Future<void> runAction(int deviceId, List<ActionStep> steps) async {
     final session = _active?.deviceId == deviceId ? _active?.session : null;
     if (session == null) throw const LinkException('not connected');
-    await session.runCommand(commandId);
+    await session.runAction(steps);
   }
 
   /// Disconnects the current device, then connects [deviceId] (or nothing), one switch at a time.

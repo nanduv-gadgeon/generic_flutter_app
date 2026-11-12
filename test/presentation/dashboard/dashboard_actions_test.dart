@@ -111,6 +111,37 @@ void main() {
     expect(tester.getSize(find.byType(OutlinedButton).first).width, lessThan(alone));
   });
 
+  testWidgets('an action without commands is a placeholder: says so, sends nothing', (
+    tester,
+  ) async {
+    await pump(tester, action: const DeviceAction(label: 'Calibrate device'));
+
+    await tester.tap(find.text('Calibrate device'));
+    await tester.pump();
+
+    expect(find.text("Calibrate device isn't available yet."), findsOneWidget);
+    expect(live.commands, isEmpty);
+  });
+
+  testWidgets('an action of several steps sends each of them in order', (tester) async {
+    await pump(
+      tester,
+      action: const DeviceAction(
+        label: 'Identify',
+        steps: [
+          ActionStep(command: 'led_red', value: 32),
+          ActionStep(command: 'led_red', value: 0),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Identify'));
+    await tester.pump();
+
+    expect(live.commands, [(7, 'led_red'), (7, 'led_red')]);
+    expect(find.text('Identify: done.'), findsOneWidget);
+  });
+
   testWidgets('no action and no cloud: nothing is shown', (tester) async {
     await pump(tester, action: null);
 

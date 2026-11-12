@@ -49,10 +49,10 @@ class LiveDevice extends _$LiveDevice {
     await ref.read(liveReadingsProvider).retry(deviceId);
   }
 
-  /// Sends the profile command [commandId] to the device (the dashboard's device action). Throws
-  /// when the device is not connected, refuses it or does not answer.
-  Future<void> runCommand(String commandId) =>
-      ref.read(liveReadingsProvider).runCommand(deviceId, commandId);
+  /// Sends a device action's [steps] to the device (the dashboard's action button). Throws when
+  /// the device is not connected, refuses a command or does not answer.
+  Future<void> runAction(List<ActionStep> steps) =>
+      ref.read(liveReadingsProvider).runAction(deviceId, steps);
 
   void _on(LiveUpdate update) {
     if (!ref.mounted) return;

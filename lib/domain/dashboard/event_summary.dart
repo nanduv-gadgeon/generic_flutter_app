@@ -22,7 +22,7 @@ final class EventSummary {
   /// Sessions started today.
   final int sessions;
 
-  /// Time spent running today, including a session still running now.
+  /// From the first START logged today to the last STOP logged today.
   final Duration runTime;
 
   /// Errors logged today.
@@ -59,51 +59,47 @@ final class EventSummary {
       'EventSummary(sessions $sessions, runTime $runTime, errors $errors, running $running)';
 }
 
-/// Sums up [events] (any order) for the day that starts at [dayStart], as of [now].
+/// Sums up [events] (any order) for the day that starts at [dayStart] (and ends at the next
+/// midnight). Only the device's own log times count, never when it was connected or the clock.
 ///
-/// - A START opens a session; a START while one is open closes it and opens another.
-/// - A STOP closes the open session; a STOP with none open is ignored.
-/// - Run time counts only the part of each session inside today; an open session counts up to
-///   [now].
-/// - Events before [dayStart] only matter for whether a session is still running.
-EventSummary summarise(
-  Iterable<DeviceEvent> events, {
-  required DateTime dayStart,
-  required DateTime now,
-}) {
+/// - Run time: from the first START logged today to the last STOP logged today; zero without a
+///   START today or a STOP after it. Breaks between sessions count; a session still running after
+///   the last STOP counts once its STOP arrives.
+/// - Sessions and errors: today's STARTs and ERRORs.
+/// - Running: the last START has no STOP after it. Events before today only matter for this, e.g.
+///   a session started before midnight.
+EventSummary summarise(Iterable<DeviceEvent> events, {required DateTime dayStart}) {
   final sorted = [...events]..sort((a, b) => a.at.compareTo(b.at));
   if (sorted.isEmpty) return EventSummary.empty;
+  final dayEnd = dayStart.isUtc
+      ? DateTime.utc(dayStart.year, dayStart.month, dayStart.day + 1)
+      : DateTime(dayStart.year, dayStart.month, dayStart.day + 1);
+  bool isToday(DeviceEvent e) => !e.at.isBefore(dayStart) && e.at.isBefore(dayEnd);
+
   var sessions = 0;
   var errors = 0;
-  var runTime = Duration.zero;
-  DateTime? openedAt;
-
-  Duration today(DateTime from, DateTime to) {
-    final start = from.isBefore(dayStart) ? dayStart : from;
-    return to.isAfter(start) ? to.difference(start) : Duration.zero;
-  }
-
+  var running = false;
+  DateTime? firstStart;
+  DateTime? lastStop;
   for (final event in sorted) {
-    final isToday = !event.at.isBefore(dayStart);
     switch (event.kind) {
       case DeviceEventKind.start:
-        if (openedAt != null) runTime += today(openedAt, event.at);
-        openedAt = event.at;
-        if (isToday) sessions++;
+        running = true;
+        if (isToday(event)) {
+          sessions++;
+          firstStart ??= event.at;
+        }
       case DeviceEventKind.stop:
-        if (openedAt != null) runTime += today(openedAt, event.at);
-        openedAt = null;
+        running = false;
+        if (isToday(event)) lastStop = event.at;
       case DeviceEventKind.error:
-        if (isToday) errors++;
+        if (isToday(event)) errors++;
       case DeviceEventKind.unknown:
         break;
     }
   }
-  if (openedAt != null) runTime += today(openedAt, now);
-  return EventSummary(
-    sessions: sessions,
-    runTime: runTime,
-    errors: errors,
-    running: openedAt != null,
-  );
+  final runTime = firstStart != null && lastStop != null && lastStop.isAfter(firstStart)
+      ? lastStop.difference(firstStart)
+      : Duration.zero;
+  return EventSummary(sessions: sessions, runTime: runTime, errors: errors, running: running);
 }

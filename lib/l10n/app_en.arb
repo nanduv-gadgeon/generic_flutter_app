@@ -883,6 +883,15 @@
     }
   },
   "trendCaptionEmpty": "Last 30 min · no readings yet",
+  "trendCaptionLastReading": "Last reading {ago}",
+  "@trendCaptionLastReading": {
+    "description": "Under the gauge when the last 30 minutes have no readings but an older one is shown, e.g. 'Last reading 2 h ago'.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
   "trendSpoken": "Trend over the last 30 minutes",
   "lastReading": "Last reading",
   "measuredTodayAt": "Measured today at {time}",

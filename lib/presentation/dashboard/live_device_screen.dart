@@ -99,6 +99,9 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       values: values,
       live: streaming,
       now: now,
+      times: dashboardTimes(profile, live, stored),
+      // Between log fetches there is nothing new to show, which is not "No signal".
+      missingIsNoSignal: streaming && !readsLogs(profile),
     );
     // "Could not connect" is what the banner says already; other problems (low battery, sensor
     // not responding…) still show, without Try again, since the banner has Reconnect.

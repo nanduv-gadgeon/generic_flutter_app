@@ -13,7 +13,8 @@ class TilesView extends StatelessWidget {
     required this.values,
     required this.count,
     this.live = false,
-  });
+    bool? missingIsNoSignal,
+  }) : missingIsNoSignal = missingIsNoSignal ?? live;
 
   final List<Reading> readings;
   final Map<String, double> values;
@@ -22,6 +23,9 @@ class TilesView extends StatelessWidget {
   final int count;
   final bool live;
 
+  /// A tile with no value shows "No signal" (default: while [live]).
+  final bool missingIsNoSignal;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -29,7 +33,7 @@ class TilesView extends StatelessWidget {
       reading: r,
       value: values[r.key],
       pairValue: r.pair == null ? null : values[r.pair],
-      live: live,
+      live: missingIsNoSignal,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

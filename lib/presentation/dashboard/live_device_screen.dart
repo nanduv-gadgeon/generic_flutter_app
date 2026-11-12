@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/dashboard_provider.dart';
 import '../../application/device_profiles_provider.dart';
+import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../application/live_device_provider.dart';
 import '../../domain/devices/link_state.dart';
@@ -12,10 +13,10 @@ import '../../domain/models/user_device.dart';
 import '../device_settings/device_settings_button.dart';
 import '../strings/device_strings.dart';
 import '../widgets/form_widgets.dart';
-import '../widgets/placeholder_screen.dart';
 import 'dashboard_format.dart';
 import 'dashboard_actions.dart';
 import 'dashboard_header.dart';
+import 'device_page_states.dart';
 import 'dashboard_tabs.dart';
 import 'live_status_line.dart';
 import 'offline_banner.dart';
@@ -68,16 +69,18 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
   @override
   Widget build(BuildContext context) {
     final device = ref.watch(myDevicesProvider).value?.where((d) => d.id == deviceId).firstOrNull;
-    final registry = ref.watch(deviceProfileRegistryProvider).value;
-    final profile = device != null && registry != null && registry.contains(device.profileId)
-        ? registry.byId(device.profileId)
-        : null;
-    if (device == null || profile == null) {
-      return PlaceholderScreen(
-        title: context.l10n.addDeviceDashboardPlaceholder,
-        actions: [DeviceSettingsButton(deviceId: deviceId)],
-      );
+    if (device == null) {
+      // My devices may not have caught up yet (e.g. just after Add device saved it), so ask the
+      // database for this one device before saying it is not there.
+      return switch (ref.watch(deviceDetailsProvider(deviceId))) {
+        AsyncData(value: null) || AsyncError() => const DeviceNotFound(),
+        _ => const DeviceLoading(),
+      };
     }
+    final registry = ref.watch(deviceProfileRegistryProvider).value;
+    if (registry == null) return const DeviceLoading();
+    if (!registry.contains(device.profileId)) return const DeviceNotFound();
+    final profile = registry.byId(device.profileId);
     final live = ref.watch(liveDeviceProvider(deviceId));
     final dashboard = profile.dashboardOrDefault;
     ref.listen(liveDeviceProvider(deviceId), (_, next) => _onLive(next, dashboard.onDemand));

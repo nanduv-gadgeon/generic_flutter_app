@@ -278,19 +278,19 @@ void main() {
     expect(find.text('Full name'), findsNothing);
   });
 
-  testWidgets("the device page's settings button opens Device settings", (tester) async {
-    when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
-    await pumpApp(tester);
+  // The settings button of a real device's page is in device_page_states_test.dart.
+  for (final link in ['/device/1', '/device/abc']) {
+    testWidgets('$link (no such device) says so and goes back to My devices', (tester) async {
+      when(() => service.currentUser()).thenAnswer((_) async => fakeUser);
+      await pumpApp(tester);
 
-    GoRouter.of(tester.element(find.byType(NavigationBar))).go('/device/1');
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Device settings'));
-    await tester.pumpAndSettle();
+      GoRouter.of(tester.element(find.byType(NavigationBar))).go(link);
+      await tester.pumpAndSettle();
 
-    // No such device in this app's fake service, so the screen says so; Back returns.
-    expect(find.text('This device is no longer on this phone.'), findsOneWidget);
-    await tester.tap(find.byTooltip('Back'));
-    await tester.pumpAndSettle();
-    expect(find.byTooltip('Device settings'), findsOneWidget);
-  });
+      expect(find.text('Device not found'), findsOneWidget);
+      await tester.tap(find.text('Back to My devices'));
+      await tester.pumpAndSettle();
+      expect(find.text('My devices'), findsOneWidget);
+    });
+  }
 }

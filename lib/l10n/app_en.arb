@@ -464,10 +464,12 @@
   "addDeviceGoToDashboard": "Go to dashboard",
   "addDeviceSaving": "Saving",
   "addDeviceDeviceAdded": "Device added",
-  "addDeviceDashboardPlaceholder": "Device dashboard (later task)",
-  "@addDeviceDashboardPlaceholder": {
-    "description": "Device dashboard until its task builds it."
+  "deviceNotFoundTitle": "Device not found",
+  "@deviceNotFoundTitle": {
+    "description": "Device page for a device that was removed, is not the user's, or whose type is no longer in the app."
   },
+  "deviceNotFoundBody": "It may have been removed, or this app no longer supports its type.",
+  "deviceNotFoundBack": "Back to My devices",
   "addDeviceStepOf": "Step {step} of 4",
   "@addDeviceStepOf": {
     "placeholders": {

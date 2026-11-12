@@ -77,6 +77,18 @@ List<String> checkDashboard(DeviceProfile profile, String path) {
         for (final (k, key) in view.stats.indexed) {
           needs('$at/stats/$k', key);
         }
+      case DashboardViewType.channels:
+        if ((view.title ?? '').isEmpty) errors.add('$at/title: needed for a channels view');
+        final count = view.channels;
+        if (count == null || count < 1) {
+          errors.add('$at/channels: needed for a channels view, 1 or more');
+        }
+        if (view.enabled.isEmpty) errors.add('$at/enabled: needed for a channels view');
+        for (final (k, channel) in view.enabled.indexed) {
+          if (count != null && (channel < 1 || channel > count)) {
+            errors.add('$at/enabled/$k: channel $channel is not between 1 and $count');
+          }
+        }
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/presentation/dashboard/live_device_screen.dart';
+import 'package:generic_flutter_app/presentation/dashboard/views/channels_view.dart';
 import 'package:generic_flutter_app/presentation/dashboard/views/gauge_view.dart';
 import 'package:generic_flutter_app/presentation/dashboard/views/note_view.dart';
 import 'package:generic_flutter_app/presentation/dashboard/views/reading_list_view.dart';
@@ -59,7 +60,7 @@ void main() {
       ['CH01 Boiler inlet, 62.4 °C, Normal', 'CH07 Line A pressure, 8.9 bar, High'],
     ),
     'ppg_motion_v1': (
-      [GaugeView, TilesView],
+      [GaugeView, TilesView, ChannelsView],
       ['Battery: 85%', 'Heartbeat: 2 s ago'],
       ['SpO₂, 97 %, Normal', 'Heart rate, 65 bpm, Normal', 'PI (Red), 0.098, Normal'],
     ),

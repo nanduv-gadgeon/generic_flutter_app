@@ -739,6 +739,42 @@
     "description": "Tab that opens the device's stored readings."
   },
   "dashboardHistorySoon": "History for this device is coming in a later update.",
+  "dashboardChannel": "Channel {number}",
+  "@dashboardChannel": {
+    "description": "One option of the read-only Enabled channels view, e.g. 'Channel 5'.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardChannelsOn": "{on} of {total} on",
+  "@dashboardChannelsOn": {
+    "description": "How many channels are on, top right of the Enabled channels view, e.g. '2 of 7 on'.",
+    "placeholders": {
+      "on": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "dashboardChannelsSpoken": "{title}, {on} of {total} on",
+  "@dashboardChannelsSpoken": {
+    "description": "Screen reader heading of the Enabled channels view, e.g. 'Enabled channels, 2 of 7 on'.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "on": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "stripLink": "Link",
   "stripBattery": "Battery",
   "stripHeartbeat": "Heartbeat",

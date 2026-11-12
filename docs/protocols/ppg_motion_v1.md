@@ -25,6 +25,7 @@ What the app does, from the profile:
    - read the battery, and read it again every 60 s in case notifications are dropped
    - write the UTC time to `…6468`
 2. **When the device's page opens:** send Stop → channel mask `0x11` (channels 1 and 5) → Start. Each command waits up to 2.5 s for its reply and is retried once. Stop comes first because channels can only change while the device is stopped.
+   The Live dashboard's **Enabled channels** card (a `channels` view in the profile) shows channels 1 and 5 as on, read-only. Its `enabled` list must match the mask that `set_channels` sends.
 3. **When the page closes:** send Stop, then disconnect. After a dropped link that reconnects, the start commands are sent again.
 
 > Open item: the company identifier in the manufacturer data is "TBD", so the app can't use it.

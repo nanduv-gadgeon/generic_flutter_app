@@ -161,7 +161,7 @@
       "additionalProperties": false,
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["gauge", "tiles", "spotValue", "note", "readingList", "waveform"] },
+        "type": { "enum": ["gauge", "tiles", "spotValue", "note", "readingList", "waveform", "channels"] },
         "reading": { "$ref": "#/definitions/key" },
         "readings": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/definitions/key" } },
         "title": { "type": "string", "minLength": 1 },
@@ -170,7 +170,9 @@
         "sampleHz": { "type": "integer", "minimum": 1 },
         "seconds": { "type": "integer", "minimum": 1, "maximum": 60 },
         "status": { "$ref": "#/definitions/key" },
-        "stats": { "type": "array", "maxItems": 3, "items": { "$ref": "#/definitions/key" } }
+        "stats": { "type": "array", "maxItems": 3, "items": { "$ref": "#/definitions/key" } },
+        "channels": { "type": "integer", "minimum": 1 },
+        "enabled": { "type": "array", "uniqueItems": true, "items": { "type": "integer", "minimum": 1 } }
       }
     },
     "uuid": {

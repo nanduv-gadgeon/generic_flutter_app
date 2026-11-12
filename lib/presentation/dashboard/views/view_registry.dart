@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/dashboard_provider.dart';
 import '../../../domain/models/device_profile.dart';
+import 'channels_view.dart';
 import 'gauge_view.dart';
 import 'note_view.dart';
 import 'reading_list_view.dart';
@@ -61,6 +62,7 @@ const viewRegistry = <DashboardViewType, ViewBuilder>{
   DashboardViewType.note: _note,
   DashboardViewType.readingList: _readingList,
   DashboardViewType.waveform: _waveform,
+  DashboardViewType.channels: _channels,
 };
 
 /// The view for [view], or nothing when it names a reading the profile no longer has.
@@ -133,3 +135,10 @@ Widget _waveform(DashboardData data, DashboardView view) {
     ),
   );
 }
+
+Widget _channels(DashboardData data, DashboardView view) => ChannelsView(
+  title: view.title ?? '',
+  text: view.text,
+  count: view.channels ?? 0,
+  enabled: view.enabled.toSet(),
+);

@@ -40,6 +40,10 @@ enum DashboardViewType {
 
   /// A live trace with grid paper, e.g. ECG, and a row of readings under it.
   waveform,
+
+  /// Which of the device's numbered channels are on, e.g. "Enabled channels · 2 of 7 on". Shown
+  /// only; the app sets the channels with the profile's commands.
+  channels,
 }
 
 /// The `dashboard` block of a device profile.
@@ -112,10 +116,10 @@ abstract class DashboardView with _$DashboardView {
     /// The readings a tiles view shows, in order.
     @Default([]) List<String> readings,
 
-    /// Title of a waveform, e.g. "Live ECG · Lead I · 250 Hz".
+    /// Title of a waveform, e.g. "Live ECG · Lead I · 250 Hz", or of a channels view.
     String? title,
 
-    /// Text of a note.
+    /// Text of a note, or the line under a channels view's title.
     String? text,
 
     /// Middle label under a waveform, e.g. "25 mm/s · 10 mm/mV".
@@ -132,6 +136,12 @@ abstract class DashboardView with _$DashboardView {
 
     /// Readings shown in a row under a waveform.
     @Default([]) List<String> stats,
+
+    /// How many channels a channels view lists, numbered from 1.
+    int? channels,
+
+    /// The channels a channels view shows as on, e.g. `[1, 5]`.
+    @Default([]) List<int> enabled,
   }) = _DashboardView;
 
   factory DashboardView.fromJson(Map<String, dynamic> json) => _$DashboardViewFromJson(json);

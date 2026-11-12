@@ -431,7 +431,14 @@
       "dashboard": {
         "views": [
           { "type": "gauge", "reading": "spo2" },
-          { "type": "tiles", "readings": ["heart_rate", "pi_ir", "pi_red"] }
+          { "type": "tiles", "readings": ["heart_rate", "pi_ir", "pi_red"] },
+          {
+            "type": "channels",
+            "title": "Enabled channels",
+            "text": "The channels the sensor streams. The app sets them; they can't be changed here.",
+            "channels": 7,
+            "enabled": [1, 5]
+          }
         ],
         "action": {
           "label": "Identify sensor",

@@ -1,6 +1,6 @@
 import '../../domain/services/live_readings.dart';
 
-/// Text for a device's live readings screen (stands in for the dashboard, task 1.3.4).
+/// Connection and problem text on a device's dashboard. The dashboard's views use `app_en.arb`.
 abstract final class DeviceStrings {
   static const fallbackTitle = 'Device';
   static const connecting = 'Connecting…';
@@ -9,13 +9,8 @@ abstract final class DeviceStrings {
   static const reconnecting = 'Connection lost. Reconnecting…';
   static const syncing = 'Getting stored readings…';
   static const waiting = 'Device not found. Trying again…';
-  static const battery = 'Battery';
   static const tryAgain = 'Try again';
   static const offlineNeverHeard = 'Offline · no data from the device yet.';
-  static const noValue = '–';
-  static const noValueSpoken = 'no reading yet';
-  static const note =
-      'Readings are saved on this phone. The device stays connected until you open another one.';
   static const placeFinger = 'Place your finger on the sensor';
   static const measuring = 'Measuring… hold still';
 
@@ -52,9 +47,6 @@ abstract final class DeviceStrings {
     final text = value.toStringAsFixed(decimals);
     return unit.isEmpty ? text : '$text $unit';
   }
-
-  /// "Heart rate, 72 bpm" for screen readers.
-  static String reading(String label, String? value) => '$label, ${value ?? noValueSpoken}';
 
   static String failure(LiveFailure failure) => switch (failure.problem) {
     DeviceProblem.lowBattery => 'The device battery is low. Charge it, then try again.',

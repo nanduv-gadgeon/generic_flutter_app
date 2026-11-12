@@ -7,6 +7,7 @@ import 'core/di/database.dart';
 import 'core/di/services.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'l10n/app_localizations.dart';
 import 'presentation/strings/common_strings.dart';
 
 /// Root widget. Uses a neutral theme until the config file has loaded.
@@ -30,6 +31,8 @@ class GenericApp extends ConsumerWidget {
       theme: buildTheme(theme, Brightness.light),
       darkTheme: buildTheme(theme, Brightness.dark),
       themeMode: themeModeFor(theme),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: ref.watch(goRouterProvider),
     );
   }

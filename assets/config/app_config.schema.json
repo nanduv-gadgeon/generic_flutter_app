@@ -95,7 +95,7 @@
         "id": { "$ref": "#/definitions/key" },
         "label": { "type": "string", "minLength": 1 },
         "summary": { "type": "string", "minLength": 1 },
-        "icon": { "enum": ["watch", "chip", "patch", "kit"] },
+        "icon": { "enum": ["watch", "chip", "patch", "kit", "bolt", "thermo", "ecg", "hub", "heart"] },
         "transports": {
           "type": "array",
           "minItems": 1,
@@ -117,7 +117,35 @@
         "sync": { "$ref": "#/definitions/sync" },
         "signal": { "$ref": "#/definitions/signal" },
         "agc": { "$ref": "#/definitions/agc" },
-        "heartbeat": { "$ref": "#/definitions/heartbeat" }
+        "heartbeat": { "$ref": "#/definitions/heartbeat" },
+        "dashboard": { "$ref": "#/definitions/dashboard" }
+      }
+    },
+    "statusKind": { "enum": ["ok", "warn", "danger"] },
+    "dashboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "strip": { "enum": ["heartbeat", "state", "lastReading", "streamRate", "channels"] },
+        "onDemand": { "type": "boolean" },
+        "views": { "type": "array", "items": { "$ref": "#/definitions/dashboardView" } }
+      }
+    },
+    "dashboardView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["gauge", "tiles", "spotValue", "note", "readingList", "waveform"] },
+        "reading": { "$ref": "#/definitions/key" },
+        "readings": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/definitions/key" } },
+        "title": { "type": "string", "minLength": 1 },
+        "text": { "type": "string", "minLength": 1 },
+        "scaleLabel": { "type": "string", "minLength": 1 },
+        "sampleHz": { "type": "integer", "minimum": 1 },
+        "seconds": { "type": "integer", "minimum": 1, "maximum": 60 },
+        "status": { "$ref": "#/definitions/key" },
+        "stats": { "type": "array", "maxItems": 3, "items": { "$ref": "#/definitions/key" } }
       }
     },
     "uuid": {
@@ -512,12 +540,44 @@
         "icon": {
           "enum": [
             "pulse", "drop", "heart", "thermo", "trend", "moon", "wind", "cloud",
-            "dots", "gauge", "sun", "flask", "bolt", "scale", "battery"
+            "dots", "gauge", "sun", "flask", "bolt", "scale", "battery",
+            "play", "list", "alert", "vibrate", "ecg"
           ]
         },
         "decimals": { "type": "integer", "minimum": 0, "maximum": 3 },
         "normal": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
-        "goal": { "type": "number", "exclusiveMinimum": 0 }
+        "goal": { "type": "number", "exclusiveMinimum": 0 },
+        "scale": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 },
+        "zones": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "kind"],
+            "properties": {
+              "below": { "type": "number" },
+              "label": { "type": "string", "minLength": 1 },
+              "kind": { "$ref": "#/definitions/statusKind" }
+            }
+          }
+        },
+        "states": {
+          "type": "object",
+          "propertyNames": { "pattern": "^-?[0-9]+$" },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "kind"],
+            "properties": {
+              "label": { "type": "string", "minLength": 1 },
+              "kind": { "$ref": "#/definitions/statusKind" }
+            }
+          }
+        },
+        "pair": { "$ref": "#/definitions/key" },
+        "format": { "enum": ["number", "hoursMinutes"] },
+        "source": { "enum": ["device", "eventsRunTimeToday", "eventsSessionsToday", "eventsErrorsToday"] }
       },
       "not": { "required": ["normal", "goal"] }
     },

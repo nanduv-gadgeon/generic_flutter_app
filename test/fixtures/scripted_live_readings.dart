@@ -2,17 +2,21 @@ import 'dart:async';
 
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 
-/// Live readings the test sends by hand; counts who listens.
+/// Live readings the test sends by hand to everyone watching; counts who listens.
 class ScriptedLiveReadings implements LiveReadings {
-  StreamController<LiveUpdate>? controller;
+  final _controllers = <StreamController<LiveUpdate>>[];
   int listens = 0;
   int cancels = 0;
   final retried = <int>[];
 
   @override
   Stream<LiveUpdate> watch(int deviceId) {
-    controller = StreamController(onListen: () => listens++, onCancel: () => cancels++);
-    return controller!.stream;
+    final controller = StreamController<LiveUpdate>(
+      onListen: () => listens++,
+      onCancel: () => cancels++,
+    );
+    _controllers.add(controller);
+    return controller.stream;
   }
 
   @override
@@ -27,5 +31,9 @@ class ScriptedLiveReadings implements LiveReadings {
   @override
   Future<void> stop() async {}
 
-  void send(LiveUpdate update) => controller!.add(update);
+  void send(LiveUpdate update) {
+    for (final controller in _controllers) {
+      if (!controller.isClosed && controller.hasListener) controller.add(update);
+    }
+  }
 }

@@ -69,6 +69,7 @@ class LiveDevice extends _$LiveDevice {
               },
       ),
       LiveFailure() => state.copyWith(failure: update),
+      LiveEvent() => state, // Stored; the dashboard reads events from the database.
       LiveHeartbeat(:final online, :final lastAt) => state.copyWith(
         online: online,
         lastHeartbeatAt: lastAt,

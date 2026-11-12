@@ -62,6 +62,13 @@ final class LiveValue extends LiveUpdate {
   final Sample sample;
 }
 
+/// Something the device logged other than a reading, e.g. a session start. Stored, not replayed.
+final class LiveEvent extends LiveUpdate {
+  const LiveEvent(this.event);
+
+  final DeviceEvent event;
+}
+
 /// Whether a finger is on the sensor, for profiles that check it. Readings worked out from the
 /// signal are only sent while it is [SensorContact.ok].
 final class LiveContactChanged extends LiveUpdate {

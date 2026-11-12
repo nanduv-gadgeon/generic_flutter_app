@@ -1,51 +1,32 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:generic_flutter_app/application/device_profiles_provider.dart';
-import 'package:generic_flutter_app/application/devices_provider.dart';
-import 'package:generic_flutter_app/core/config/app_config.dart';
-import 'package:generic_flutter_app/core/config/device_profile_registry.dart';
-import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/models/user_device.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
+import 'package:generic_flutter_app/l10n/app_localizations.dart';
 import 'package:generic_flutter_app/presentation/dashboard/live_device_screen.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../fixtures/dashboard_harness.dart';
 import '../../fixtures/scripted_live_readings.dart';
 
-const _theme = ThemeConfig(
-  primary: '#123456',
-  accent: '#ABCDEF',
-  font: 'TestFont',
-  cornerRadius: 20,
-  cornerRadiusSmall: 12,
-  mode: ThemeModeSetting.light,
-);
-
-final _registry = DeviceProfileRegistry(
-  AppConfig.fromJson(
-    jsonDecode(File('assets/config/vitacare/app_config.json').readAsStringSync())
-        as Map<String, dynamic>,
-  ),
-);
-
-final _t = DateTime.utc(2026, 11, 3);
+final _now = DateTime.utc(2026, 11, 11, 9);
 
 const _sensor = UserDevice(id: 1, name: 'Finger sensor', profileId: 'ppg_motion_v1');
 const _patch = UserDevice(id: 2, name: 'Patch', profileId: 'ief_device_v1');
 const _band = UserDevice(id: 3, name: 'Band', profileId: 'smart_band_v1');
 
+/// The dashboard shell: connecting, statuses, problems, Offline and the finger hint. What each
+/// profile's views show is in `dashboard_profiles_test.dart`.
 void main() {
   late ScriptedLiveReadings live;
+  late FakeReadingRepository readings;
   late ValueNotifier<bool> open;
 
   setUp(() {
     live = ScriptedLiveReadings();
+    readings = FakeReadingRepository();
     open = ValueNotifier(true);
   });
 
@@ -61,18 +42,19 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          liveReadingsProvider.overrideWithValue(live),
-          myDevicesProvider.overrideWith((ref) => Stream.value(const [_sensor, _patch, _band])),
-          deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
-        ],
-        child: MaterialApp(
-          theme: buildTheme(_theme, brightness),
-          home: ValueListenableBuilder(
+        overrides: dashboardOverrides(
+          live: live,
+          devices: const [_sensor, _patch, _band],
+          now: _now,
+          readings: readings,
+        ),
+        child: dashboardApp(
+          ValueListenableBuilder(
             valueListenable: open,
             builder: (_, isOpen, _) =>
                 isOpen ? LiveDeviceScreen(deviceId: deviceId) : const Text('closed'),
           ),
+          brightness: brightness,
         ),
       ),
     );
@@ -87,34 +69,38 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('connects when opened and shows "–" until values arrive', (tester) async {
+  testWidgets('connects when opened: name, type, Connecting… and no values yet', (tester) async {
     await pump(tester);
 
     expect(live.listens, 1);
     expect(find.text('Finger sensor'), findsOneWidget);
+    expect(find.text('PPG + motion sensor'), findsOneWidget);
     expect(find.text('Connecting…'), findsOneWidget);
-    expect(find.text('–'), findsNWidgets(5)); // 4 readings and battery
     expect(find.bySemanticsLabel('Heart rate, no reading yet'), findsOneWidget);
+    expect(find.bySemanticsLabel('Battery: –'), findsOneWidget);
     expect(find.bySemanticsLabel('Connecting…'), findsOneWidget);
   });
 
-  testWidgets('shows each reading with its unit and decimals, and the battery', (tester) async {
+  testWidgets('streaming: values with units and status words, battery in the strip', (
+    tester,
+  ) async {
     await pump(tester);
     await send(tester, [
       const LiveStatusChanged(LiveStatus.streaming),
-      LiveValue(Sample('heart_rate', 72, _t)),
-      LiveValue(Sample('spo2', 97, _t)),
-      LiveValue(Sample('pi_red', 0.7206, _t)),
-      LiveValue(Sample('pi_ir', 1.4369, _t)),
-      LiveValue(Sample('battery', 81, _t)),
+      LiveValue(Sample('heart_rate', 72, _now)),
+      LiveValue(Sample('spo2', 97, _now)),
+      LiveValue(Sample('pi_red', 0.0981, _now)),
+      LiveValue(Sample('pi_ir', 1.4369, _now)),
+      LiveValue(Sample('battery', 81, _now)),
     ]);
 
-    expect(find.text('Live'), findsOneWidget);
-    for (final text in ['72 bpm', '97 %', '0.72 %', '1.44 %', '81 %']) {
-      expect(find.text(text), findsOneWidget, reason: text);
-    }
-    expect(find.bySemanticsLabel('Heart rate, 72 bpm'), findsOneWidget);
-    expect(find.bySemanticsLabel('PI (IR), 1.44 %'), findsOneWidget);
+    expect(find.text('Connecting…'), findsNothing);
+    expect(find.bySemanticsLabel('SpO₂, 97 %, Normal'), findsOneWidget);
+    expect(find.bySemanticsLabel('Heart rate, 72 bpm, Normal'), findsOneWidget);
+    expect(find.bySemanticsLabel('PI (Red), 0.098, Normal'), findsOneWidget);
+    expect(find.bySemanticsLabel('PI (IR), 1.437, High'), findsOneWidget);
+    expect(find.bySemanticsLabel('Battery: 81%'), findsOneWidget);
+    expect(find.text('4 values · live'), findsOneWidget);
   });
 
   testWidgets('says why it stopped, and Try again connects again', (tester) async {
@@ -144,27 +130,29 @@ void main() {
     expect(find.textContaining('stopped sending'), findsNothing);
   });
 
-  final offline = <String, (DateTime? Function(), String)>{
+  final offline = <String, (DateTime?, String)>{
     'heard from 5 min ago': (
-      () => DateTime.now().subtract(const Duration(minutes: 5, seconds: 2)),
+      _now.subtract(const Duration(minutes: 5, seconds: 2)),
       'Offline · last heartbeat 5 min ago.',
     ),
-    'never heard from': (() => null, 'Offline · no data from the device yet.'),
+    'never heard from': (null, 'Offline · no data from the device yet.'),
   };
   for (final MapEntry(key: name, value: (lastAt, text)) in offline.entries) {
-    testWidgets('missed heartbeats, $name: says Offline in words, then Live again', (tester) async {
+    testWidgets('missed heartbeats, $name: Offline in words, in the strip too', (tester) async {
       await pump(tester);
       await send(tester, [
         const LiveStatusChanged(LiveStatus.streaming),
-        LiveHeartbeat(online: false, lastAt: lastAt()),
+        LiveHeartbeat(online: false, lastAt: lastAt),
       ]);
 
       expect(find.text(text), findsOneWidget);
       expect(find.bySemanticsLabel(text), findsOneWidget);
-      expect(find.text('Live'), findsNothing);
+      expect(find.bySemanticsLabel('Link: Offline'), findsOneWidget);
 
-      await send(tester, [LiveHeartbeat(online: true, lastAt: DateTime.now())]);
-      expect(find.text('Live'), findsOneWidget);
+      await send(tester, [LiveHeartbeat(online: true, lastAt: _now)]);
+      expect(find.text(text), findsNothing);
+      expect(find.bySemanticsLabel('Link: Bluetooth'), findsOneWidget);
+      expect(find.bySemanticsLabel('Heartbeat: 0 s ago'), findsOneWidget);
     });
   }
 
@@ -176,11 +164,26 @@ void main() {
     expect(live.cancels, 1);
   });
 
-  testWidgets('a device type without a protocol keeps the placeholder', (tester) async {
+  testWidgets('before it connects, the newest stored readings are shown', (tester) async {
+    readings.latest[_band.id] = {'hr': Sample('hr', 72, _now), 'spo2': Sample('spo2', 98, _now)};
     await pump(tester, deviceId: _band.id);
 
-    expect(find.text('Device dashboard (later task)'), findsWidgets);
-    expect(live.listens, 0);
+    expect(find.bySemanticsLabel('Heart rate, 72 bpm, Normal'), findsOneWidget);
+    expect(find.bySemanticsLabel('SpO₂, 98 %, Normal'), findsOneWidget);
+    expect(find.text('7 values'), findsOneWidget);
+  });
+
+  testWidgets('History shows that it comes later; Live brings the views back', (tester) async {
+    await pump(tester);
+    await tester.tap(find.bySemanticsLabel('History'));
+    await tester.pump();
+
+    expect(find.text('History for this device is coming in a later update.'), findsOneWidget);
+    expect(find.text('All readings'), findsNothing);
+
+    await tester.tap(find.bySemanticsLabel('Live'));
+    await tester.pump();
+    expect(find.text('All readings'), findsOneWidget);
   });
 
   final statuses = {
@@ -205,7 +208,7 @@ void main() {
       await pump(tester, brightness: brightness, size: const Size(320, 568));
       await send(tester, [
         const LiveFailure(LiveFailureReason.connectFailed),
-        LiveValue(Sample('pi_red', 12.3456, _t)),
+        LiveValue(Sample('pi_red', 12.3456, _now)),
       ]);
 
       expect(tester.takeException(), isNull);
@@ -236,22 +239,22 @@ void main() {
     });
   }
 
-  testWidgets('lifting the finger clears the readings but keeps the battery', (tester) async {
+  testWidgets('lifting the finger clears the readings (No signal) but keeps the battery', (
+    tester,
+  ) async {
     await pump(tester);
     await send(tester, [
       const LiveStatusChanged(LiveStatus.streaming),
       const LiveContactChanged(SensorContact.ok),
-      LiveValue(Sample('heart_rate', 72, _t)),
-      LiveValue(Sample('spo2', 97, _t)),
-      LiveValue(Sample('battery', 81, _t)),
+      LiveValue(Sample('heart_rate', 72, _now)),
+      LiveValue(Sample('battery', 81, _now)),
     ]);
-    expect(find.text('72 bpm'), findsOneWidget);
+    expect(find.bySemanticsLabel('Heart rate, 72 bpm, Normal'), findsOneWidget);
 
     await send(tester, [const LiveContactChanged(SensorContact.none)]);
 
-    expect(find.text('72 bpm'), findsNothing);
-    expect(find.text('97 %'), findsNothing);
-    expect(find.text('81 %'), findsOneWidget);
+    expect(find.bySemanticsLabel('Heart rate, no reading yet, No signal'), findsOneWidget);
+    expect(find.bySemanticsLabel('Battery: 81%'), findsOneWidget);
     expect(find.text('Place your finger on the sensor'), findsOneWidget);
   });
 
@@ -273,13 +276,11 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          liveReadingsProvider.overrideWithValue(live),
-          myDevicesProvider.overrideWith((ref) => Stream.value(const [_sensor, _patch, _band])),
-          deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
-        ],
+        overrides: dashboardOverrides(live: live, devices: const [_sensor], now: _now),
         child: MaterialApp.router(
-          theme: buildTheme(_theme, Brightness.light),
+          theme: buildTheme(testTheme, Brightness.light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
         ),
       ),

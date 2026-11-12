@@ -35,6 +35,10 @@ void main() {
       expect(checkDeviceProfiles(_config()), isEmpty);
     });
 
+    test('accepts a single normal value, e.g. 0 errors', () {
+      expect(checkDeviceProfiles(_config((j) => _readings(j)[0]['normal'] = [0, 0])), isEmpty);
+    });
+
     test('accepts a profile with a wifi block', () {
       expect(checkDeviceProfiles(_config(_wifi((_) {}))), isEmpty);
     });
@@ -68,10 +72,6 @@ void main() {
       'a quick reading that is not a reading': (
         (j) => _profile(j)['quickReadings'] = ['current', 'pressure'],
         '/deviceProfiles/0/quickReadings/1: "pressure" is not a reading',
-      ),
-      'a normal range with low = high': (
-        (j) => _readings(j)[0]['normal'] = [20, 20],
-        '/deviceProfiles/0/readings/0/normal: low must be below high',
       ),
       'a ble block without the ble transport': (
         (j) => _profile(j)['transports'] = ['wifi'],
@@ -151,7 +151,7 @@ void main() {
       ),
       'a normal range with low > high': (
         (j) => _readings(j)[0]['normal'] = [30, 20],
-        '/deviceProfiles/0/readings/0/normal: low must be below high',
+        '/deviceProfiles/0/readings/0/normal: low must not be above high',
       ),
     };
     for (final MapEntry(key: name, value: (change, error)) in invalid.entries) {

@@ -74,7 +74,7 @@ void main() {
         opened.add(address);
         return links[address]!;
       },
-      (deviceId) => ReadingWriter(
+      (deviceId, _) => ReadingWriter(
         deviceId,
         readings,
         (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
@@ -201,7 +201,7 @@ void main() {
       db,
       (id) => profiles[id],
       (profile, transport, address, {lastAddress}) => links[address]!,
-      (deviceId) => ReadingWriter(deviceId, readings, (_, _) async {}),
+      (deviceId, _) => ReadingWriter(deviceId, readings, (_, _) async {}),
       recorderFor,
       delay: (d) async {
         waits.add(d);

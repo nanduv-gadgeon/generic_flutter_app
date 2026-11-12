@@ -8,6 +8,11 @@ IconData iconFor(DeviceIcon icon) => switch (icon) {
   DeviceIcon.chip => Icons.memory_outlined,
   DeviceIcon.patch => Icons.monitor_heart_outlined,
   DeviceIcon.kit => Icons.medical_services_outlined,
+  DeviceIcon.bolt => Icons.bolt,
+  DeviceIcon.thermo => Icons.thermostat_outlined,
+  DeviceIcon.ecg => Icons.ssid_chart,
+  DeviceIcon.hub => Icons.grid_view,
+  DeviceIcon.heart => Icons.favorite_border,
 };
 
 /// The icon for a reading's config `icon`.
@@ -27,4 +32,9 @@ IconData readingIconFor(ReadingIcon icon) => switch (icon) {
   ReadingIcon.bolt => Icons.bolt,
   ReadingIcon.scale => Icons.monitor_weight_outlined,
   ReadingIcon.battery => Icons.battery_std,
+  ReadingIcon.play => Icons.play_arrow_outlined,
+  ReadingIcon.list => Icons.format_list_bulleted,
+  ReadingIcon.alert => Icons.warning_amber_rounded,
+  ReadingIcon.vibrate => Icons.vibration,
+  ReadingIcon.ecg => Icons.ssid_chart,
 };

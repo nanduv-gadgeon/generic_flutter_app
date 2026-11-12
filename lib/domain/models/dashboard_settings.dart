@@ -1,0 +1,97 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'dashboard_settings.freezed.dart';
+part 'dashboard_settings.g.dart';
+
+/// What the third cell of the dashboard's status strip shows, after Link and Battery.
+enum StripCell {
+  /// When the device was last heard from.
+  heartbeat,
+
+  /// Running or Stopped, from the device's START / STOP events.
+  state,
+
+  /// The time of today's latest reading.
+  lastReading,
+
+  /// The waveform's sample rate, e.g. "250 Hz".
+  streamRate,
+
+  /// How many readings have a value, e.g. "24 live".
+  channels,
+}
+
+/// The view types a dashboard is built from. Each has one widget, found through the view registry.
+enum DashboardViewType {
+  /// Main card: arc gauge, status, normal range and the 30-minute trend.
+  gauge,
+
+  /// "All readings" and a two-column grid of reading tiles.
+  tiles,
+
+  /// One large latest value with its zone bar, for devices that send a reading when used.
+  spotValue,
+
+  /// An information banner.
+  note,
+
+  /// "Today's readings" as a list with each value's zone.
+  readingList,
+
+  /// A live trace with grid paper, e.g. ECG, and a row of readings under it.
+  waveform,
+}
+
+/// The `dashboard` block of a device profile.
+@freezed
+abstract class DashboardSettings with _$DashboardSettings {
+  const factory DashboardSettings({
+    @Default(StripCell.heartbeat) StripCell strip,
+
+    /// The device connects only to send a reading; the Link cell says "On demand".
+    @Default(false) bool onDemand,
+
+    /// In screen order. Empty: a gauge for the first reading and tiles for the rest.
+    @Default([]) List<DashboardView> views,
+  }) = _DashboardSettings;
+
+  factory DashboardSettings.fromJson(Map<String, dynamic> json) =>
+      _$DashboardSettingsFromJson(json);
+}
+
+/// One view on the dashboard and the readings that feed it.
+@freezed
+abstract class DashboardView with _$DashboardView {
+  const factory DashboardView({
+    required DashboardViewType type,
+
+    /// The reading a gauge, spot value, reading list or waveform shows.
+    String? reading,
+
+    /// The readings a tiles view shows, in order.
+    @Default([]) List<String> readings,
+
+    /// Title of a waveform, e.g. "Live ECG · Lead I · 250 Hz".
+    String? title,
+
+    /// Text of a note.
+    String? text,
+
+    /// Middle label under a waveform, e.g. "25 mm/s · 10 mm/mV".
+    String? scaleLabel,
+
+    /// Samples per second of a waveform.
+    int? sampleHz,
+
+    /// Seconds of trace a waveform shows.
+    @Default(6) int seconds,
+
+    /// A reading whose state is shown at the top right of a waveform, e.g. "Signal good".
+    String? status,
+
+    /// Readings shown in a row under a waveform.
+    @Default([]) List<String> stats,
+  }) = _DashboardView;
+
+  factory DashboardView.fromJson(Map<String, dynamic> json) => _$DashboardViewFromJson(json);
+}

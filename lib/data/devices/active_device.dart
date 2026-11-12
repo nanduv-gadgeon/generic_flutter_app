@@ -19,8 +19,8 @@ typedef LinkOpener = DeviceLink Function(
   String? lastAddress,
 });
 
-/// Makes the writer that stores a connected device's readings.
-typedef WriterFor = ReadingWriter Function(int deviceId);
+/// Makes the writer that stores a connected device's readings and events.
+typedef WriterFor = ReadingWriter Function(int deviceId, DeviceProfile profile);
 
 /// Makes the recorder that saves a connected device's heartbeats.
 typedef RecorderFor = HeartbeatRecorder Function(int deviceId, HeartbeatSettings settings);
@@ -145,7 +145,7 @@ class ActiveDevice implements LiveReadings {
       active.emit(const LiveFailure(LiveFailureReason.unknownDevice));
       return active;
     }
-    active.writer = _writerFor(deviceId);
+    active.writer = _writerFor(deviceId, profile);
     final heartbeat = profile.heartbeatOrDefault;
     active.recorder = _recorderFor(deviceId, heartbeat);
     active.monitor = HeartbeatMonitor(heartbeat, (online, lastAt) {
@@ -237,6 +237,9 @@ class _Active {
       case LiveValue(:final sample):
         _values[sample.key] = sample;
         writer?.add(sample);
+      case LiveEvent(:final event):
+        writer?.addEvent(event);
+        return; // Stored; the dashboard reads events from the database.
       case LiveFailure():
         _failure = update;
       case LiveHeartbeat():

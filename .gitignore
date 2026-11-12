@@ -125,3 +125,6 @@ key.properties
 # Generated code (run: dart run build_runner build)
 *.g.dart
 *.freezed.dart
+
+# Generated localizations (run: flutter gen-l10n)
+lib/l10n/app_localizations*.dart

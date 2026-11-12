@@ -24,24 +24,26 @@ void main() {
   DummyDevices dummies(List<DeviceProfile> types) =>
       DummyDevices(devices, () async => types, (label) => '$label (test)');
 
-  test('adds four devices with made-up addresses, cycling through the types', () async {
-    expect(await dummies([band, patch]).toggle(fakeUser.id), DummyDevices.count);
+  test('adds one device per offered type, with made-up addresses', () async {
+    expect(await dummies([band, patch]).toggle(fakeUser.id), 2);
 
-    expect(
-      [for (final d in devices.devices) d.name],
-      ['Band (test)', 'Patch (test)', 'Band (test)', 'Patch (test)'],
-    );
+    expect([for (final d in devices.devices) d.name], ['Band (test)', 'Patch (test)']);
     expect(
       [for (final (d, _) in devices.added) d.address],
-      [for (var n = 1; n <= DummyDevices.count; n++) DummyDevices.address(n)],
+      ['AA:BB:CC:DD:00:01', 'AA:BB:CC:DD:00:02'],
     );
   });
 
-  test('a second toggle removes them again', () async {
-    final toggle = dummies([band]);
+  test('ten or more types still get distinct addresses', () {
+    expect(DummyDevices.address(9), 'AA:BB:CC:DD:00:09');
+    expect(DummyDevices.address(12), 'AA:BB:CC:DD:00:12');
+  });
+
+  test('a second toggle removes them all again', () async {
+    final toggle = dummies([band, patch, band]);
     await toggle.toggle(fakeUser.id);
 
-    expect(await toggle.toggle(fakeUser.id), -DummyDevices.count);
+    expect(await toggle.toggle(fakeUser.id), -3);
     expect(devices.devices, isEmpty);
   });
 
@@ -65,8 +67,8 @@ void main() {
 
     final toggle = container.read(dummyDevicesProvider)((label) => '$label (test)');
 
-    expect(await toggle.toggle(fakeUser.id), DummyDevices.count);
-    expect(slow.devices, hasLength(DummyDevices.count));
+    expect(await toggle.toggle(fakeUser.id), 1);
+    expect(slow.devices, hasLength(1));
   });
 }
 

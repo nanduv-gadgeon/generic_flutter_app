@@ -1,5 +1,6 @@
 import '../../domain/transport/lan_address.dart';
 import 'app_config.dart';
+import 'dashboard_checks.dart';
 import 'heartbeat_checks.dart';
 import 'streaming_checks.dart';
 
@@ -60,8 +61,9 @@ List<String> checkDeviceProfiles(AppConfig config) {
         errors.add('$path/readings/$j/key: duplicate reading key "${reading.key}"');
       }
       final normal = reading.normal;
-      if (normal != null && normal.low >= normal.high) {
-        errors.add('$path/readings/$j/normal: low must be below high');
+      // Equal ends are allowed: a single normal value, e.g. 0 errors.
+      if (normal != null && normal.low > normal.high) {
+        errors.add('$path/readings/$j/normal: low must not be above high');
       }
     }
 
@@ -87,6 +89,7 @@ List<String> checkDeviceProfiles(AppConfig config) {
     }
     errors.addAll(_checkWifi(profile, path));
     errors.addAll(checkHeartbeat(profile, path));
+    errors.addAll(checkDashboard(profile, path));
     final commandIds = <String>{};
     for (final (j, command) in profile.commands.indexed) {
       if (!commandIds.add(command.id)) {
@@ -171,6 +174,8 @@ List<String> _checkPacket(DeviceProfile profile, String path) {
 
   final given = {...fieldKeys, ...signalOutputs(profile)};
   for (final (j, reading) in profile.readings.indexed) {
+    // Readings worked out from device events have no field of their own.
+    if (reading.source != ReadingSource.device) continue;
     if (reading.key != batteryKey && !given.contains(reading.key)) {
       errors.add('$path/readings/$j/key: no packet field or signal gives "${reading.key}"');
     }

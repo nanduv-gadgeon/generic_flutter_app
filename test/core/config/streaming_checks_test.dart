@@ -18,7 +18,7 @@ AppConfig _vitaCare([void Function(Map<String, dynamic> profile)? change]) {
 }
 
 /// Index of the PPG + Motion sensor profile in the VitaCare config.
-const _at = '/deviceProfiles/5';
+const _at = '/deviceProfiles/8';
 
 Map<String, dynamic> _ppg(Map<String, dynamic> p) =>
     (p['signal'] as Map<String, dynamic>)['ppgOximetry'] as Map<String, dynamic>;

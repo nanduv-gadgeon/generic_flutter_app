@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,8 +14,10 @@ import '../../data/cloud/cloud_backend_health.dart';
 import '../../data/cloud/local_backend_health.dart';
 import '../../data/devices/cloud_device_registration.dart';
 import '../../data/devices/active_device.dart';
+import '../../data/devices/demo_live_readings.dart';
 import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
+import '../../data/events/local_device_event_repository.dart';
 import '../../data/heartbeats/local_heartbeat_repository.dart';
 import '../../data/readings/local_reading_repository.dart';
 import '../../data/devices/local_device_service.dart';
@@ -28,15 +31,17 @@ import '../../domain/services/app_settings_service.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
-import '../../domain/models/heartbeat_settings.dart';
+import '../../domain/models/device_profile.dart';
 import '../../domain/services/heartbeat_repository.dart';
 import '../../domain/services/live_readings.dart';
 import '../../domain/services/reading_repository.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/photo_picker.dart';
 import '../../domain/services/uploader.dart';
+import '../config/dashboard_checks.dart';
 import '../config/device_profile_registry.dart';
 import '../jobs/reading_cleanup_job.dart';
 import 'database.dart';
@@ -99,8 +104,14 @@ ReadingRepository readingRepository(Ref ref) =>
 HeartbeatRepository heartbeatRepository(Ref ref) =>
     LocalHeartbeatRepository(ref.watch(appDatabaseProvider).requireValue);
 
-/// Deletes readings older than the config's `history.daysOnPhone` and heartbeats older than
-/// 24 hours, now and once a day.
+/// Stored device events (session start / stop, errors): the local database in both phases.
+// TODO(phase2): the uploader sends them with the readings.
+@Riverpod(keepAlive: true)
+DeviceEventRepository deviceEventRepository(Ref ref) =>
+    LocalDeviceEventRepository(ref.watch(appDatabaseProvider).requireValue);
+
+/// Deletes readings and device events older than the config's `history.daysOnPhone`, and
+/// heartbeats older than 24 hours, now and once a day.
 @Riverpod(keepAlive: true)
 ReadingCleanupJob readingCleanupJob(Ref ref) {
   final days = ref.watch(appConfigProvider).requireValue.history.daysOnPhone;
@@ -108,37 +119,57 @@ ReadingCleanupJob readingCleanupJob(Ref ref) {
     ref.watch(readingRepositoryProvider),
     days,
     heartbeats: ref.watch(heartbeatRepositoryProvider),
+    events: ref.watch(deviceEventRepositoryProvider),
   )..start();
   ref.onDispose(job.stop);
   return job;
 }
 
 /// Live readings work the same in both phases: from the one connected device to the screen and
-/// the local database.
+/// the local database. Debug builds also play made-up readings for dummy devices (home's hidden
+/// long-press), so every dashboard can be tried without hardware.
 @Riverpod(keepAlive: true)
 LiveReadings liveReadings(Ref ref) {
   final profiles = DeviceProfileRegistry(ref.watch(appConfigProvider).requireValue);
   final db = ref.watch(appDatabaseProvider).requireValue;
   final readings = ref.watch(readingRepositoryProvider);
   final heartbeats = ref.watch(heartbeatRepositoryProvider);
-  final active = ActiveDevice(
-    db,
-    (id) => profiles.contains(id) ? profiles.byId(id) : null,
-    ref.watch(deviceLinkFactoryProvider),
-    (deviceId) => ReadingWriter(
-      deviceId,
-      readings,
-      (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
-    ),
-    (deviceId, settings) => HeartbeatRecorder(
-      deviceId,
-      heartbeats,
-      (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
-      interval: settings.interval,
-    ),
+  final events = ref.watch(deviceEventRepositoryProvider);
+  DeviceProfile? profileFor(String id) => profiles.contains(id) ? profiles.byId(id) : null;
+  ReadingWriter writerFor(int deviceId, DeviceProfile profile) => ReadingWriter(
+    deviceId,
+    readings,
+    (id, percent) => db.devicesDao.updateStatus(id, batteryPercent: percent),
+    events: events,
+    skip: waveformKeys(profile),
   );
-  ref.onDispose(active.stop);
-  return active;
+  HeartbeatRecorder recorderFor(int deviceId, HeartbeatSettings settings) => HeartbeatRecorder(
+    deviceId,
+    heartbeats,
+    (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
+    interval: settings.interval,
+  );
+  final LiveReadings active = ActiveDevice(
+    db,
+    profileFor,
+    ref.watch(deviceLinkFactoryProvider),
+    writerFor,
+    recorderFor,
+  );
+  final live = kDebugMode
+      ? DemoLiveReadings(
+          active,
+          (id) async {
+            final row = await db.devicesDao.byId(id);
+            return row == null ? null : (address: row.address, profileId: row.profileId);
+          },
+          profileFor,
+          writerFor,
+          recorderFor,
+        )
+      : active;
+  ref.onDispose(live.stop);
+  return live;
 }
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.

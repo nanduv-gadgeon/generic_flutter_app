@@ -30,6 +30,13 @@ class BleDeviceLink implements DeviceLink {
   /// Android maximum; the device may agree to less. iOS negotiates by itself.
   static const preferredMtu = 517;
 
+  /// Tries at the radio connect of [connect]. Android often refuses a connection right after the
+  /// device was disconnected or unpaired (GATT error 133) and accepts the next one.
+  static const connectAttempts = 3;
+
+  /// Wait between those tries.
+  static const connectRetryDelay = Duration(seconds: 2);
+
   final BleAdapter _adapter;
   final String deviceId;
   final BleSettings _settings;
@@ -65,7 +72,7 @@ class BleDeviceLink implements DeviceLink {
     _wanted = true;
     _setState(LinkState.connecting);
     try {
-      await _open();
+      await _open(attempts: connectAttempts);
     } catch (_) {
       _wanted = false;
       _setState(LinkState.disconnected);
@@ -121,9 +128,12 @@ class BleDeviceLink implements DeviceLink {
   }
 
   /// Connects and sets everything up; throws [LinkException] and leaves the device disconnected.
-  Future<void> _open() async {
+  /// The radio connect is tried up to [attempts] times (the reconnect loop has its own waits).
+  Future<void> _open({int attempts = 1}) async {
     try {
-      await _adapter.connect(deviceId);
+      await _connectRadio(attempts);
+      // Pairs before anything else: a device that asks to pair as soon as it connects drops the
+      // first requests made while the user is still typing its key.
       if (_settings.bond) await _adapter.pair(deviceId);
       final services = await _adapter.discover(deviceId);
       await _requestMtu();
@@ -137,6 +147,28 @@ class BleDeviceLink implements DeviceLink {
       throw e is LinkException ? e : LinkException('connect failed: ${describeError(e)}');
     }
     _setState(LinkState.connected);
+  }
+
+  /// A refused connection is tried again after [connectRetryDelay]; a timeout is not, since a
+  /// device that is off or out of range would only make the user wait longer.
+  Future<void> _connectRadio(int attempts) async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        await _adapter.connect(deviceId);
+        return;
+      } on TimeoutException {
+        rethrow;
+      } catch (_) {
+        if (attempt >= attempts || !_wanted) rethrow;
+      }
+      try {
+        await _adapter.disconnect(deviceId); // Frees the failed attempt's GATT client.
+      } catch (_) {
+        // Best effort.
+      }
+      await _delay(connectRetryDelay);
+      if (!_wanted) throw const LinkException('disconnected while connecting');
+    }
   }
 
   Future<void> _requestMtu() async {

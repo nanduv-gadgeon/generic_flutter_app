@@ -76,6 +76,14 @@ void main() {
     expect(flat[3000]!['spo2'], 80);
   });
 
+  test('SpO₂ is never above 100, even when the formula gives more', () {
+    // R ≈ 0.05 gives about 111 from the formula.
+    final spo2 = [for (final r in _run(_pulse(1000, redAc: 200)).values) ?r['spo2']];
+
+    expect(spo2, everyElement(lessThanOrEqualTo(100)));
+    expect(spo2.last, 100); // Once the filters settle.
+  });
+
   test('ignores other readings and waits for both colours', () {
     final oximetry = PpgOximetry(ppgMotionProfile().signal!.ppgOximetry!.copyWith(finger: null));
     final t = DateTime.utc(2026);

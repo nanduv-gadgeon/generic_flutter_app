@@ -231,7 +231,11 @@ class _Content extends StatelessWidget {
         gap,
         SectionHeading(context.l10n.deviceSettingsConnection),
         const SizedBox(height: 8),
-        ConnectionCard(device: device, typeLabel: profile?.label ?? device.profileId),
+        ConnectionCard(
+          device: device,
+          typeLabel: profile?.label ?? device.profileId,
+          readingsEvery: readingsInterval(profile),
+        ),
         gap,
         SectionHeading(context.l10n.deviceSettingsHeartbeat),
         const SizedBox(height: 8),
@@ -239,7 +243,6 @@ class _Content extends StatelessWidget {
           device: device,
           settings: profile?.heartbeatOrDefault ?? const HeartbeatSettings(),
           now: now,
-          readingsEvery: readingsInterval(profile),
         ),
         if (device.alerts.isNotEmpty) ...[
           gap,

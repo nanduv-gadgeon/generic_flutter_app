@@ -36,8 +36,9 @@ List<String> checkDashboard(DeviceProfile profile, String path) {
     }
   }
 
-  if (dashboard.action case final action?) {
-    final at = '$path/dashboard/action';
+  for (final (name, action) in [('syncNow', dashboard.syncNow), ('action', dashboard.action)]) {
+    if (action == null) continue;
+    final at = '$path/dashboard/$name';
     void check(String where, String id, int? value) {
       final command = profile.commands.where((c) => c.id == id).firstOrNull;
       if (command == null) {

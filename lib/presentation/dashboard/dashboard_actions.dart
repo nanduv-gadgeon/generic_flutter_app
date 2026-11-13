@@ -2,27 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/live_device_provider.dart';
-import '../../core/di/services.dart';
 import '../../domain/models/dashboard_settings.dart';
 import 'dashboard_format.dart';
 
-/// The buttons at the bottom of Live (requirement 5.6, mockup): Sync now (only with the cloud,
-/// Phase 2) and the profile's device action, e.g. "Find band". One button takes the full width;
-/// with neither, nothing is shown.
+/// The buttons at the bottom of Live (requirement 5.6, mockup), both from the profile's dashboard
+/// config and sent the same way: Sync now (`dashboard.syncNow`, e.g. request the logs the device
+/// stored; nothing to do with the cloud) and the device action (`dashboard.action`, e.g. "Identify
+/// sensor"). One button takes the full width; with neither, nothing is shown.
 class DashboardActions extends ConsumerStatefulWidget {
   const DashboardActions({
     super.key,
     required this.deviceId,
+    required this.syncNow,
     required this.action,
     required this.connected,
   });
 
   final int deviceId;
 
+  /// The profile's Sync now; none when null.
+  final DeviceAction? syncNow;
+
   /// The profile's device action; none when null.
   final DeviceAction? action;
 
-  /// Whether the device is connected; the action needs it.
+  /// Whether the device is connected; both buttons need it.
   final bool connected;
 
   @override
@@ -30,9 +34,10 @@ class DashboardActions extends ConsumerStatefulWidget {
 }
 
 class _DashboardActionsState extends ConsumerState<DashboardActions> {
-  bool _running = false;
+  /// The action being sent, if any; one at a time.
+  DeviceAction? _running;
 
-  Future<void> _runAction(DeviceAction action) async {
+  Future<void> _run(DeviceAction action) async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final steps = action.sequence;
@@ -40,7 +45,7 @@ class _DashboardActionsState extends ConsumerState<DashboardActions> {
       messenger.showSnackBar(SnackBar(content: Text(l10n.actionUnavailable(action.label))));
       return;
     }
-    setState(() => _running = true);
+    setState(() => _running = action);
     String message;
     try {
       await ref.read(liveDeviceProvider(widget.deviceId).notifier).runAction(steps);
@@ -49,40 +54,32 @@ class _DashboardActionsState extends ConsumerState<DashboardActions> {
       // The device refused it, did not answer, or is no longer connected.
       message = l10n.actionFailed(action.label);
     }
-    if (mounted) setState(() => _running = false);
+    if (mounted) setState(() => _running = null);
     messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _syncNow() {
-    // TODO(phase2): hand the readings not yet sent to the cloud library (requirement 5.6).
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.syncNowLater)));
+  Widget _button(DeviceAction action, IconData icon) {
+    final l10n = context.l10n;
+    final running = identical(_running, action);
+    return _ActionButton(
+      icon: icon,
+      text: action.label,
+      label: running
+          ? l10n.actionRunningSpoken(action.label)
+          : widget.connected
+          ? action.label
+          : l10n.actionOfflineSpoken(action.label),
+      running: running,
+      // Needs the device: not while offline or (re)connecting (TC-DSH-014); one at a time.
+      onPressed: widget.connected && _running == null ? () => _run(action) : null,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final action = widget.action;
     final buttons = [
-      if (ref.watch(syncNowAvailableProvider))
-        _ActionButton(
-          icon: Icons.sync,
-          text: l10n.syncNow,
-          label: l10n.syncNowLabel,
-          onPressed: _syncNow,
-        ),
-      if (action != null)
-        _ActionButton(
-          icon: Icons.tune,
-          text: action.label,
-          label: _running
-              ? l10n.actionRunningSpoken(action.label)
-              : widget.connected
-              ? action.label
-              : l10n.actionOfflineSpoken(action.label),
-          running: _running,
-          // Needs the device: not while offline or (re)connecting (TC-DSH-014).
-          onPressed: widget.connected && !_running ? () => _runAction(action) : null,
-        ),
+      if (widget.syncNow case final sync?) _button(sync, Icons.sync),
+      if (widget.action case final action?) _button(action, Icons.tune),
     ];
     if (buttons.isEmpty) return const SizedBox.shrink();
     return Row(

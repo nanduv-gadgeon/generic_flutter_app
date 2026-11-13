@@ -16,7 +16,7 @@ Source:
   - Time sync characteristic (write + read, 9 bytes): `90bd6468-59c3-47ed-bbf8-745bfb95e91f`
   - Battery Service `180F` / Battery Level `2A19` (read + notify)
   - Device Information `180A`: Manufacturer `2A29`, Model `2A24`, Serial `2A25`, Hardware Revision `2A27`, Firmware Revision `2A26`, Software Revision `2A28`, System ID `2A23`, Regulatory list `2A2A`, PnP ID `2A50`
-  - Pairing: none. Plain GATT works (`bond: false`).
+  - Pairing: required (`bond: true`). The sensor asks to pair as soon as it connects, and the phone shows its pairing-key dialog; the key comes with the device and is never stored in the app or config. Requests made before pairing finishes are lost, so the app pairs first and only then discovers and subscribes (found on hardware, 2026-11-13; the vendor document does not mention pairing).
 - Wi‑Fi: not used.
 
 What the app does, from the profile:

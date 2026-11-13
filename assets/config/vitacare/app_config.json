@@ -348,7 +348,7 @@
           "uuid": "90bd6468-59c3-47ed-bbf8-745bfb95e91f",
           "fields": ["year16le", "month", "day", "hour", "minute", "second", "millis16le"]
         },
-        "bond": false,
+        "bond": true,
         "batteryService": true,
         "batteryPollSeconds": 60
       },

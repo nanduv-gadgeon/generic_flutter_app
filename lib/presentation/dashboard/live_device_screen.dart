@@ -180,6 +180,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
               const SizedBox(height: 18),
               DashboardActions(
                 deviceId: deviceId,
+                syncNow: dashboard.syncNow,
                 action: dashboard.action,
                 connected: linkState == LinkState.connected,
               ),

@@ -8,6 +8,12 @@ import 'package:generic_flutter_app/presentation/dashboard/dashboard_actions.dar
 import '../../fixtures/dashboard_harness.dart';
 import '../../fixtures/scripted_live_readings.dart';
 
+const _syncNow = DeviceAction(
+  label: 'Sync now',
+  command: 'request_logs',
+  done: 'Fetching the readings stored on the device.',
+);
+
 const _findBand = DeviceAction(
   label: 'Find band',
   command: 'vibrate',
@@ -23,8 +29,8 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     DeviceAction? action = _findBand,
+    DeviceAction? syncNow,
     bool connected = true,
-    bool cloud = false,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -32,11 +38,15 @@ void main() {
           live: live,
           devices: const [],
           now: DateTime.utc(2026, 11, 12, 9),
-          cloud: cloud,
         ),
         child: dashboardApp(
           Scaffold(
-            body: DashboardActions(deviceId: 7, action: action, connected: connected),
+            body: DashboardActions(
+              deviceId: 7,
+              syncNow: syncNow,
+              action: action,
+              connected: connected,
+            ),
           ),
         ),
       ),
@@ -102,11 +112,13 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('one button takes the whole width; Sync now joins it with the cloud', (tester) async {
+  testWidgets('one button takes the whole width; Sync now joins it when configured', (
+    tester,
+  ) async {
     await pump(tester);
     final alone = tester.getSize(find.byType(OutlinedButton)).width;
 
-    await pump(tester, cloud: true);
+    await pump(tester, syncNow: _syncNow);
     expect(find.byType(OutlinedButton), findsNWidgets(2));
     expect(tester.getSize(find.byType(OutlinedButton).first).width, lessThan(alone));
   });
@@ -142,7 +154,32 @@ void main() {
     expect(find.text('Identify: done.'), findsOneWidget);
   });
 
-  testWidgets('no action and no cloud: nothing is shown', (tester) async {
+  testWidgets('Sync now sends its command (request the stored logs) and says so', (tester) async {
+    await pump(tester, action: null, syncNow: _syncNow);
+
+    await tester.tap(find.text('Sync now'));
+    await tester.pump();
+
+    expect(live.commands, [(7, 'request_logs')]);
+    expect(find.text('Fetching the readings stored on the device.'), findsOneWidget);
+  });
+
+  testWidgets('Sync now is disabled while the device is not connected', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester, action: null, syncNow: _syncNow, connected: false);
+
+    await tester.tap(find.text('Sync now'), warnIfMissed: false);
+    await tester.pump();
+
+    expect(live.commands, isEmpty);
+    expect(
+      find.bySemanticsLabel('Sync now, available when the device is connected'),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('no Sync now and no action: nothing is shown', (tester) async {
     await pump(tester, action: null);
 
     expect(find.byType(OutlinedButton), findsNothing);

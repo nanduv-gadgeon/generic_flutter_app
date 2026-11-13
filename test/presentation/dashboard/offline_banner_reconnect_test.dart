@@ -12,6 +12,7 @@ final _now = DateTime.utc(2026, 11, 12, 9);
 
 const _sensor = UserDevice(id: 1, name: 'Finger sensor', profileId: 'ppg_motion_v1');
 const _thermometer = UserDevice(id: 4, name: 'Thermometer', profileId: 'thermometer_v1');
+const _patch = UserDevice(id: 5, name: 'Patch', profileId: 'ief_device_v1');
 
 const _bannerHeard = 'Offline · last heartbeat 5 min ago. Showing last readings.';
 const _bannerNever = 'Offline · no data from the device yet. Showing last readings.';
@@ -26,7 +27,6 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     UserDevice device = _sensor,
-    bool cloud = false,
     Size size = const Size(390, 1400),
   }) async {
     tester.view
@@ -37,9 +37,8 @@ void main() {
       ProviderScope(
         overrides: dashboardOverrides(
           live: live,
-          devices: const [_sensor, _thermometer],
+          devices: const [_sensor, _thermometer, _patch],
           now: _now,
-          cloud: cloud,
         ),
         child: dashboardApp(LiveDeviceScreen(deviceId: device.id)),
       ),
@@ -166,7 +165,9 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('TC-DSH-012: no Sync now in Phase 1', (tester) async {
+    testWidgets('the PPG sensor has no Sync now (nothing stored to fetch), only Identify', (
+      tester,
+    ) async {
       await pump(tester);
       await send(tester, [const LiveStatusChanged(LiveStatus.streaming)]);
 
@@ -174,16 +175,15 @@ void main() {
       expect(find.text('Identify sensor'), findsOneWidget);
     });
 
-    testWidgets('with the cloud, Sync now shows next to the action (a Phase 2 hook)', (
-      tester,
-    ) async {
-      await pump(tester, cloud: true);
+    testWidgets('the IEF patch: Sync now from its config requests the stored logs', (tester) async {
+      await pump(tester, device: _patch);
       await send(tester, [const LiveStatusChanged(LiveStatus.streaming)]);
       await show(tester, find.text('Sync now'));
 
       await tester.tap(find.text('Sync now'));
       await tester.pump();
-      expect(find.text('Sync now comes with cloud sync.'), findsOneWidget);
+      expect(live.commands, [(_patch.id, 'request_logs')]);
+      expect(find.text('Fetching the readings stored on the device.'), findsOneWidget);
     });
 
     testWidgets('PPG sensor: Identify flashes its red LED three times and says so', (tester) async {

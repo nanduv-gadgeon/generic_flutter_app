@@ -230,6 +230,12 @@ void main() {
       },
       '/deviceProfiles/0/dashboard/action/command: "vibrate" is not a command of test_device_v1',
     ),
+    'a Sync now whose command the profile does not have': (
+      (p) => p['dashboard'] = {
+        'syncNow': {'label': 'Sync now', 'command': 'request_logs'},
+      },
+      '/deviceProfiles/0/dashboard/syncNow/command: "request_logs" is not a command of test_device_v1',
+    ),
     'an action step whose command the profile does not have': (
       (p) => p['dashboard'] = {
         'action': {

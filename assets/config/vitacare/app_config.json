@@ -188,7 +188,14 @@
         "repeat": ["request_logs"]
       },
       "heartbeat": { "intervalSeconds": 60, "offlineAfterMissed": 3 },
-      "dashboard": { "strip": "state" }
+      "dashboard": {
+        "strip": "state",
+        "syncNow": {
+          "label": "Sync now",
+          "command": "request_logs",
+          "done": "Fetching the readings stored on the device."
+        }
+      }
     },
     {
       "id": "thermometer_v1",

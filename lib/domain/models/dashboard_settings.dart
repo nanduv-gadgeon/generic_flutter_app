@@ -58,6 +58,10 @@ abstract class DashboardSettings with _$DashboardSettings {
     /// In screen order. Empty: a gauge for the first reading and tiles for the rest.
     @Default([]) List<DashboardView> views,
 
+    /// The Sync now button at the bottom of Live: what to send to fetch the data the device
+    /// stored, e.g. request its logs (nothing to do with the cloud); none when null.
+    DeviceAction? syncNow,
+
     /// The device action button at the bottom of Live, e.g. "Find band"; none when null.
     DeviceAction? action,
   }) = _DashboardSettings;

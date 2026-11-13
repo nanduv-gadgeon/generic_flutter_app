@@ -95,7 +95,7 @@ These come from the profile's `signal.ppgOximetry` block. They are ported from t
 - **Perfusion index:** PI = AC / DC × 100, per colour. AC is the standard deviation of the band-pass signal over the last 100 samples; DC is the mean of the low-pass signal over the same 100.
 - **SpO₂:**
   - R = PI(Red) / PI(IR)
-  - SpO₂ = round(1.6·R² − 35·R + 113), kept within 60–110
+  - SpO₂ = round(1.6·R² − 35·R + 113), kept within 60–100 (INOS allows up to 110; above 100 % is not a real saturation)
   - averaged over the last 8 values
 - **Heart rate:**
   - The band-pass IR signal fills a 600-sample buffer. Once it's full, the first 500 samples are searched for peaks and the oldest 100 dropped.

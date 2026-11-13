@@ -405,7 +405,7 @@
           "lowPass": [[2.46193005e-6, 4.92386009e-6, 2.46193005e-6, 1, -1.99555712, 0.995566972]],
           "window": 100,
           "emitEvery": 100,
-          "spo2": { "key": "spo2", "coefficients": [1.6, -35, 113], "min": 60, "max": 110, "average": 8 },
+          "spo2": { "key": "spo2", "coefficients": [1.6, -35, 113], "min": 60, "max": 100, "average": 8 },
           "heartRate": {
             "key": "heart_rate",
             "buffer": 600,

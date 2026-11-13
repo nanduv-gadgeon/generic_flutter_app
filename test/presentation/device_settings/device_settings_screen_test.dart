@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/device_settings/device_settings_sections.dart';
+import 'package:generic_flutter_app/presentation/device_settings/heartbeat_card.dart';
 import 'package:generic_flutter_app/presentation/strings/device_settings_strings.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -26,7 +27,7 @@ void main() {
     for (final heading in ['CONNECTION', 'HEARTBEAT', 'ALERTS']) {
       expect(find.text(heading), findsOneWidget);
     }
-    // The sampling interval is a row in the heartbeat card now, not its own section.
+    // The sampling interval is a row in the Connection card, not its own section.
     expect(find.text('SAMPLING INTERVAL'), findsNothing);
   });
 
@@ -153,13 +154,16 @@ void main() {
     verifyNever(() => devices.rename(any(), any()));
   });
 
-  testWidgets('the sampling interval is a row under Device status, from the config', (
+  testWidgets('the sampling interval is a row in the Connection card, from the config', (
     tester,
   ) async {
     await pumpSettings(tester, device: band);
 
     // The test config sets no rate, so the device decides.
-    expect(_row('Sampling interval', 'Set by the device'), findsOneWidget);
+    final row = _row('Sampling interval', 'Set by the device');
+    expect(row, findsOneWidget);
+    expect(find.ancestor(of: row, matching: find.byType(ConnectionCard)), findsOneWidget);
+    expect(find.ancestor(of: row, matching: find.byType(HeartbeatCard)), findsNothing);
     for (final option in ['1 s', '5 s', '30 s', '1 min']) {
       expect(find.text(option), findsNothing); // no longer a hard-coded choice
     }

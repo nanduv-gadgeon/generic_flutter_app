@@ -81,14 +81,22 @@ class InfoRow extends StatelessWidget {
   }
 }
 
-/// Type, connection, address, signal, firmware and battery.
+/// Type, connection, address, signal, firmware, battery and the sampling interval.
 class ConnectionCard extends StatelessWidget {
-  const ConnectionCard({super.key, required this.device, required this.typeLabel});
+  const ConnectionCard({
+    super.key,
+    required this.device,
+    required this.typeLabel,
+    required this.readingsEvery,
+  });
 
   final DeviceDetails device;
 
   /// The device type's label from the config, e.g. "Smart band".
   final String typeLabel;
+
+  /// How often readings come, from the config ([readingsInterval]); null when the device decides.
+  final Duration? readingsEvery;
 
   @override
   Widget build(BuildContext context) {
@@ -117,13 +125,20 @@ class ConnectionCard extends StatelessWidget {
           label: context.l10n.deviceSettingsBatteryRow,
           value: _or(context, device.batteryPercent, context.l10n.deviceSettingsBattery),
         ),
+        InfoRow(
+          label: context.l10n.deviceSettingsSampling,
+          value: switch (readingsEvery) {
+            final every? => context.l10n.deviceSettingsEvery(every),
+            null => context.l10n.deviceSettingsSetByDevice,
+          },
+        ),
       ],
     );
   }
 }
 
 /// How often the device type gives readings, from its config (requirement 8.3); null when the
-/// config does not say. Shown under Device status; not changeable, as neither shipped device
+/// config does not say. Shown in the Connection card; not changeable, as neither shipped device
 /// accepts a new rate from the app.
 /// - Worked-out readings (`signal.ppgOximetry`): one per `emitEvery` samples at `sampleRateHz`,
 ///   e.g. 100 samples at 100 Hz is every 1 s.

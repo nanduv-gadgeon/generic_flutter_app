@@ -53,8 +53,56 @@
   "shellHistoryTab": "History",
   "shellAlertsTab": "Alerts",
   "shellProfileTab": "Profile",
-  "shellHistoryPlaceholder": "History",
   "shellAlertsPlaceholder": "Alerts",
+  "historyTitle": "History",
+  "historySubtitle": "{count, plural, =1{Today · {range}} other{Last {count} days · {range}}}",
+  "@historySubtitle": {
+    "description": "Under the History title: how many days are kept and their dates, e.g. 'Last 7 days · 20–26 Oct'.",
+    "placeholders": { "count": { "type": "int" }, "range": { "type": "String" } }
+  },
+  "historyRangeOneMonth": "{firstDay}–{lastDay} {month}",
+  "@historyRangeOneMonth": {
+    "description": "Dates of the History window within one month, e.g. '20–26 Oct'.",
+    "placeholders": {
+      "firstDay": { "type": "String" },
+      "lastDay": { "type": "String" },
+      "month": { "type": "String" }
+    }
+  },
+  "historyRangeTwoMonths": "{firstDay} {firstMonth} – {lastDay} {lastMonth}",
+  "@historyRangeTwoMonths": {
+    "description": "Dates of the History window across two months, e.g. '28 Oct – 3 Nov'.",
+    "placeholders": {
+      "firstDay": { "type": "String" },
+      "firstMonth": { "type": "String" },
+      "lastDay": { "type": "String" },
+      "lastMonth": { "type": "String" }
+    }
+  },
+  "historyNoDevices": "Add a device to see its history here.",
+  "historyDevicesSpoken": "Device",
+  "@historyDevicesSpoken": { "description": "Screen reader name of the row of device chips on History." },
+  "historyByDay": "By day",
+  "historySummaryTab": "{count}-day summary",
+  "@historySummaryTab": { "placeholders": { "count": { "type": "int" } } },
+  "historyToday": "Today",
+  "@historyToday": { "description": "The last tile of the History day strip." },
+  "historyComplete": "Complete",
+  "historyPartial": "Partial",
+  "historyNoData": "No data",
+  "historyDaySpoken": "{date}, {status}",
+  "@historyDaySpoken": {
+    "description": "Screen reader label of a day tile, e.g. 'Thursday, October 22, No data'.",
+    "placeholders": { "date": { "type": "String" }, "status": { "type": "String" } }
+  },
+  "historyTodaySpoken": "Today, {date}, {status}",
+  "@historyTodaySpoken": {
+    "placeholders": { "date": { "type": "String" }, "status": { "type": "String" } }
+  },
+  "historyDayLoadingSpoken": "{date}, checking data",
+  "@historyDayLoadingSpoken": { "placeholders": { "date": { "type": "String" } } },
+  "historyTodayLoadingSpoken": "Today, {date}, checking data",
+  "@historyTodayLoadingSpoken": { "placeholders": { "date": { "type": "String" } } },
   "authLogIn": "Log in",
   "authSigningIn": "Signing in",
   "authEnterPassword": "Enter your password.",
@@ -738,7 +786,6 @@
   "@dashboardHistory": {
     "description": "Tab that opens the device's stored readings."
   },
-  "dashboardHistorySoon": "History for this device is coming in a later update.",
   "dashboardChannel": "Channel {number}",
   "@dashboardChannel": {
     "description": "One option of the read-only Enabled channels view, e.g. 'Channel 5'.",

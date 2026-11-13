@@ -13,6 +13,7 @@ import '../../presentation/dashboard/device_page_states.dart';
 import '../../presentation/dashboard/live_device_screen.dart';
 import '../../presentation/device_settings/device_settings_screen.dart';
 import '../../presentation/devices/home_screen.dart';
+import '../../presentation/history/history_screen.dart';
 import '../../presentation/profile/edit_profile_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/shell/app_shell.dart';
@@ -85,8 +86,7 @@ GoRouter goRouter(Ref ref) {
               GoRoute(
                 path: Routes.history,
                 redirect: (_, _) => _featureOff(ref, (f) => f.history) ? Routes.home : null,
-                builder: (context, _) =>
-                    PlaceholderScreen(title: context.l10n.shellHistoryPlaceholder),
+                builder: (_, _) => const HistoryScreen(),
               ),
             ],
           ),

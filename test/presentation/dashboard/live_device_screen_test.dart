@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:generic_flutter_app/application/history_provider.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/models/user_device.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
@@ -175,17 +176,46 @@ void main() {
     expect(find.text('7 values'), findsOneWidget);
   });
 
-  testWidgets('History shows that it comes later; Live brings the views back', (tester) async {
-    await pump(tester);
+  testWidgets('the History tab opens History on this device, By day and today', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/device/3',
+      routes: [
+        GoRoute(path: '/device/:id', builder: (_, _) => const LiveDeviceScreen(deviceId: 3)),
+        GoRoute(
+          path: '/history',
+          builder: (_, _) => Consumer(
+            builder: (_, ref, _) => Text('history page ${ref.watch(historyControllerProvider)}'),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: dashboardOverrides(live: live, devices: const [_sensor, _band], now: _now),
+        child: MaterialApp.router(
+          theme: buildTheme(testTheme, Brightness.light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+    }
+    final container = ProviderScope.containerOf(tester.element(find.byType(LiveDeviceScreen)));
+    // An earlier visit to History left another device and the summary tab picked.
+    container.read(historyControllerProvider.notifier)
+      ..pickDevice(1)
+      ..pickMode(HistoryMode.summary);
+
     await tester.tap(find.bySemanticsLabel('History'));
-    await tester.pump();
+    for (var i = 0; i < 3; i++) {
+      await tester.pump();
+    }
 
-    expect(find.text('History for this device is coming in a later update.'), findsOneWidget);
-    expect(find.text('All readings'), findsNothing);
-
-    await tester.tap(find.bySemanticsLabel('Live'));
-    await tester.pump();
-    expect(find.text('All readings'), findsOneWidget);
+    expect(container.read(historyControllerProvider), const HistorySelection(deviceId: 3));
+    expect(find.textContaining('history page'), findsOneWidget);
   });
 
   final statuses = {LiveStatus.syncing: 'Getting stored readings…'};

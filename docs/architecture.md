@@ -186,7 +186,7 @@ If Option A is chosen, the C interface (init, start/stop, set auth, add/remove d
 
 ## Local database
 
-Drift (SQLite) encrypted with SQLCipher; the DB key is in Keychain / Keystore. A daily job deletes readings older than 7 days and heartbeats older than 24 h (in Phase 2, only once sent).
+Drift (SQLite) encrypted with SQLCipher; the DB key is in Keychain / Keystore. A daily job sums up each finished day's readings, then deletes readings older than 7 days and heartbeats older than 24 h (in Phase 2, only once sent).
 
 | Table | Holds |
 | --- | --- |
@@ -194,7 +194,7 @@ Drift (SQLite) encrypted with SQLCipher; the DB key is in Keychain / Keystore. A
 | --- | --- |
 | devices | Name, profile, transport, address, firmware, battery, last heartbeat, sort order |
 | --- | --- |
-| readings, daily\_summary | Readings (1-minute averages after 24 h) and per-day min/avg/max/coverage for History and Export |
+| readings, daily\_summary | Readings (1-minute averages after 24 h: not done in Phase 1, see the 2026-11-13 decision) and per-day min/avg/max/coverage for History and Export |
 | --- | --- |
 | heartbeats | Last 24 h of device health |
 | --- | --- |

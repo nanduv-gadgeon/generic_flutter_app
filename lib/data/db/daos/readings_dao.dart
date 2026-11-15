@@ -4,6 +4,17 @@ import '../app_database.dart';
 
 part 'readings_dao.g.dart';
 
+/// One hour of one device's readings of one key, added up (see [ReadingsDao.hourStats]).
+typedef HourRow = ({
+  int deviceId,
+  String key,
+  int bucket,
+  double min,
+  double max,
+  double sum,
+  int count,
+});
+
 /// Stored device readings. Values are health data: never log them.
 @DriftAccessor(tables: [Readings])
 class ReadingsDao extends DatabaseAccessor<AppDatabase> with _$ReadingsDaoMixin {
@@ -37,6 +48,36 @@ class ReadingsDao extends DatabaseAccessor<AppDatabase> with _$ReadingsDaoMixin 
     variables: [Variable.withInt(deviceId)],
     readsFrom: {readings},
   ).watch().map((rows) => [for (final row in rows) readings.map(row.data)]);
+
+  /// The readings measured from [fromMs] to [toMs] (not included), of [deviceId] or of every
+  /// device, added up per device, key and hour: `bucket` counts whole hours from [fromMs]. One
+  /// pass over the table, so a whole week costs one query.
+  Future<List<HourRow>> hourStats(int fromMs, int toMs, {int? deviceId}) =>
+      customSelect(
+        'SELECT device_id, "key", (at_ms - ?1) / 3600000 AS bucket, MIN(value) AS lo, '
+        'MAX(value) AS hi, SUM(value) AS total, COUNT(*) AS n FROM readings '
+        'WHERE at_ms >= ?1 AND at_ms < ?2${deviceId == null ? '' : ' AND device_id = ?3'} '
+        'GROUP BY device_id, "key", bucket',
+        variables: [
+          Variable.withInt(fromMs),
+          Variable.withInt(toMs),
+          if (deviceId != null) Variable.withInt(deviceId),
+        ],
+        readsFrom: {readings},
+      ).get().then(
+        (rows) => [
+          for (final r in rows)
+            (
+              deviceId: r.read<int>('device_id'),
+              key: r.read<String>('key'),
+              bucket: r.read<int>('bucket'),
+              min: r.read<double>('lo'),
+              max: r.read<double>('hi'),
+              sum: r.read<double>('total'),
+              count: r.read<int>('n'),
+            ),
+        ],
+      );
 
   /// Deletes readings measured before [beforeMs]; returns how many.
   Future<int> deleteOlderThan(int beforeMs) =>

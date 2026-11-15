@@ -1,7 +1,10 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/core/jobs/reading_cleanup_job.dart';
+import 'package:generic_flutter_app/data/history/local_daily_summary_repository.dart';
 import 'package:generic_flutter_app/data/readings/local_reading_repository.dart';
+import 'package:generic_flutter_app/domain/history/local_day.dart';
+import 'package:generic_flutter_app/domain/services/daily_summary_repository.dart';
 import 'package:generic_flutter_app/domain/services/device_event_repository.dart';
 import 'package:generic_flutter_app/domain/services/heartbeat_repository.dart';
 import 'package:generic_flutter_app/domain/services/reading_repository.dart';
@@ -14,6 +17,8 @@ class MockReadingRepository extends Mock implements ReadingRepository {}
 class MockHeartbeatRepository extends Mock implements HeartbeatRepository {}
 
 class MockDeviceEventRepository extends Mock implements DeviceEventRepository {}
+
+class MockDailySummaryRepository extends Mock implements DailySummaryRepository {}
 
 void main() {
   final now = DateTime.utc(2026, 11, 10, 9);
@@ -140,6 +145,72 @@ void main() {
       async.flushMicrotasks();
 
       verify(() => heartbeats.deleteOlderThan(any())).called(1);
+    });
+  });
+
+  group('daily summaries', () {
+    late MockReadingRepository readings;
+    late MockDailySummaryRepository summaries;
+    final today = startOfDay(now);
+
+    setUp(() {
+      readings = MockReadingRepository();
+      when(() => readings.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      summaries = MockDailySummaryRepository();
+      when(
+        () => summaries.refresh(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(() => summaries.deleteBefore(any())).thenAnswer((_) async => 0);
+    });
+
+    // daysOnPhone → first day summed up: the days kept are today and the ones before it.
+    final windows = {7: addDays(startOfDay(now), -6), 1: startOfDay(now)};
+    for (final MapEntry(key: daysOnPhone, value: from) in windows.entries) {
+      test('sums up the finished days kept and deletes older summaries ($daysOnPhone)', () async {
+        await ReadingCleanupJob(
+          readings,
+          daysOnPhone,
+          summaries: summaries,
+          now: () => now,
+        ).runOnce();
+
+        verify(() => summaries.refresh(from: from, to: today)).called(1);
+        verify(() => summaries.deleteBefore(from)).called(1);
+      });
+    }
+
+    test('a failed summary does not stop the clean-up', () async {
+      when(
+        () => summaries.refresh(
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenThrow(StateError('locked'));
+
+      await ReadingCleanupJob(readings, 7, summaries: summaries, now: () => now).runOnce();
+
+      verify(() => readings.deleteOlderThan(any())).called(1);
+    });
+
+    test('a run stores yesterday\'s summary in the database', () async {
+      final db = memoryDatabase();
+      final repo = LocalReadingRepository(db);
+      final store = LocalDailySummaryRepository(db, now: () => now);
+      final userId = await db.usersDao.insertUser(fakeUser());
+      final deviceId = await db.devicesDao.addDevice(fakeDevice(userId));
+      final yesterday = addDays(today, -1);
+      await repo.addAll(deviceId, [
+        Sample('spo2', 96, yesterday.add(const Duration(hours: 9))),
+        Sample('spo2', 98, yesterday.add(const Duration(hours: 10))),
+      ]);
+
+      await ReadingCleanupJob(repo, 7, summaries: store, now: () => now).runOnce();
+
+      final day = (await store.watch(deviceId, 'spo2', yesterday).first).single;
+      expect((day.day, day.min, day.avg, day.max), (yesterday, 96, 97, 98));
     });
   });
 }

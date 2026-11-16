@@ -59,6 +59,10 @@ class PpgOximetry {
   final _peakBuffer = <double>[];
   final _spo2Values = <int>[];
   final _heartRates = <int>[];
+
+  /// Whether the latest pair gave an SpO₂ within the limits. SpO₂ is given only then, so the
+  /// average of earlier values is not repeated while the signal is bad (e.g. a finger coming off).
+  bool _spo2Now = false;
   double? _red;
   double? _ir;
   int _pairs = 0;
@@ -109,7 +113,8 @@ class PpgOximetry {
     _keep(_dcIr, _lowPassIr.filter(ir), _s.window);
 
     final spo2 = _spo2();
-    if (spo2 > 0) _keep(_spo2Values, spo2, _s.spo2.average);
+    _spo2Now = spo2 > 0;
+    if (_spo2Now) _keep(_spo2Values, spo2, _s.spo2.average);
 
     final hr = _s.heartRate;
     _peakBuffer.add(irBand);
@@ -145,14 +150,25 @@ class PpgOximetry {
     final dcRed = _mean(_dcRed);
     final dcIr = _mean(_dcIr);
     return [
-      if (_spo2Values.isNotEmpty) Sample(_s.spo2.key, _average(_spo2Values), at),
+      if (_spo2Now && _spo2Values.isNotEmpty) Sample(_s.spo2.key, _average(_spo2Values), at),
       if (_heartRates.isNotEmpty) Sample(_s.heartRate.key, _average(_heartRates), at),
-      if (dcRed != 0) Sample(_s.perfusion.red, _stdDev(_acRed) / dcRed * 100, at),
-      if (dcIr != 0) Sample(_s.perfusion.ir, _stdDev(_acIr) / dcIr * 100, at),
+      if (dcRed != 0)
+        if (_perfusion(_stdDev(_acRed) / dcRed * 100) case final pi?)
+          Sample(_s.perfusion.red, pi, at),
+      if (dcIr != 0)
+        if (_perfusion(_stdDev(_acIr) / dcIr * 100) case final pi?) Sample(_s.perfusion.ir, pi, at),
     ];
   }
 
-  /// a·R² + b·R + c, rounded and kept in range; 0 when there is no signal yet.
+  /// [pi], or null (not given) when it is above the profile's limit, e.g. while a finger comes
+  /// off the sensor. SpO₂ uses its own ratio of the signals, so it is not changed by this.
+  double? _perfusion(double pi) => switch (_s.perfusion.max) {
+    final max? when pi > max => null,
+    _ => pi,
+  };
+
+  /// a·R² + b·R + c, rounded; 0 (left out of the average) when there is no signal yet or the
+  /// result is outside the profile's limits, e.g. while a finger comes off the sensor.
   int _spo2() {
     final dcRed = _mean(_dcRed);
     final dcIr = _mean(_dcIr);
@@ -160,7 +176,8 @@ class PpgOximetry {
     if (dcRed == 0 || dcIr == 0 || acIr == 0) return 0;
     final r = (_stdDev(_acRed) / dcRed) / (acIr / dcIr);
     final [a, b, c] = _s.spo2.coefficients;
-    return (a * r * r + b * r + c).round().clamp(_s.spo2.min, _s.spo2.max);
+    final spo2 = (a * r * r + b * r + c).round();
+    return spo2 < _s.spo2.min || spo2 > _s.spo2.max ? 0 : spo2;
   }
 
   /// Beats per minute from the first two peaks of the inverted signal, or null when there are

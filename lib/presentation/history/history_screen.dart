@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../application/history_provider.dart';
+import '../../domain/models/reading.dart';
 import '../../domain/services/device_service.dart';
 import '../dashboard/dashboard_format.dart';
 import '../strings/history_strings.dart';
 import '../widgets/dashed_border_box.dart';
 import '../widgets/segment_tabs.dart';
+import 'history_banner.dart';
 import 'history_pickers.dart';
+import 'history_reading_card.dart';
 
-/// History (requirement 6, mockup 22–24): the last days of one device, read from the phone. This
-/// part has the title, the device picker, By day / 7-day summary and the day picker; the day's
-/// details and the summary come in later steps.
+/// History (requirement 6, mockup 22–24): the last days of one device, read from the phone: the
+/// title, the device picker, By day / 7-day summary, then By day's day picker, the day's banner
+/// and one card per reading. The 7-day summary comes in a later step.
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
@@ -100,6 +104,7 @@ class _DeviceHistory extends ConsumerWidget {
     final pick = ref.watch(historyControllerProvider);
     final controller = ref.read(historyControllerProvider.notifier);
     final device = historyDevice(devices, pick.deviceId)!;
+    final selected = pickedDayIndex(days, pick.day);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,13 +122,57 @@ class _DeviceHistory extends ConsumerWidget {
           HistoryDayStrip(
             days: days,
             statuses: ref.watch(historyDayStatusesProvider(device.id)).value,
-            selected: pickedDayIndex(days, pick.day),
+            selected: selected,
             onPick: (day) => controller.pickDay(days, day),
           ),
           const SizedBox(height: 14),
           const HistoryDayLegend(),
+          const SizedBox(height: 14),
+          _DayDetail(device: device, day: days[selected]),
         ],
       ],
+    );
+  }
+}
+
+/// The picked [day] of [device]: the banner, then one card per reading of its profile.
+class _DayDetail extends ConsumerWidget {
+  const _DayDetail({required this.device, required this.day});
+
+  final UserDevice device;
+  final HistoryDay day;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final registry = ref.watch(deviceProfileRegistryProvider).value;
+    final readings = registry != null && registry.contains(device.profileId)
+        ? historyReadings(registry.byId(device.profileId))
+        : const <Reading>[];
+    final detail = ref.watch(historyDayDetailProvider(device.id, day.start));
+    final now = ref.watch(historyNowProvider).value ?? ref.watch(clockProvider)();
+
+    // Keeps the last day shown while the next minute's figures load.
+    if (detail.value case final value?) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HistoryDayBanner(detail: value, deviceName: device.name, now: now),
+          for (final reading in readings) ...[
+            const SizedBox(height: 14),
+            HistoryReadingCard(deviceId: device.id, reading: reading, detail: value),
+          ],
+        ],
+      );
+    }
+    if (detail.hasError) {
+      return Text(l10n.historyDayFailed, style: TextStyle(color: context.tokens.danger));
+    }
+    return Center(
+      child: Semantics(
+        label: l10n.historyDayLoading,
+        child: const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()),
+      ),
     );
   }
 }

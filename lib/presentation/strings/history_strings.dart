@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 
+import '../../domain/history/day_detail.dart';
 import '../../domain/history/history_days.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -46,4 +47,24 @@ extension HistoryStrings on AppLocalizations {
       (false, null) => historyDayLoadingSpoken(date),
     };
   }
+
+  /// "Thu 22 Oct", for the banner.
+  String historyBannerDate(DateTime day) => historyShortDate(
+    DateFormat.E(localeName).format(day),
+    DateFormat.d(localeName).format(day),
+    DateFormat.MMM(localeName).format(day),
+  );
+
+  /// The wall-clock [hour] of [day] ("06:00"); "24:00", the day's end, when null.
+  String historyHour(HistoryDay day, int? hour) => hour == null
+      ? historyEndOfDay
+      : DateFormat.Hm(localeName)
+            .format(DateTime(day.start.year, day.start.month, day.start.day, hour));
+
+  /// "00:00–07:00, 22:00–24:00" for runs of hours (first, last) of [day]. A run ends where the
+  /// next hour of the day starts.
+  String historyRanges(HistoryDay day, List<(int, int)> ranges) => [
+    for (final (first, last) in ranges)
+      historyHourRange(historyHour(day, first), historyHour(day, nextHourOf(day, last))),
+  ].join(historyListSeparator);
 }

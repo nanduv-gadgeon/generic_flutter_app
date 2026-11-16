@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/history_harness.dart';
 
-const _band = UserDevice(id: 1, name: 'Test band', profileId: 'test_device_v1');
-const _sensor = UserDevice(id: 2, name: 'Test sensor', profileId: 'test_device_v1');
+const _band = UserDevice(id: 1, name: 'Test band', profileId: 'ppg_motion_v1');
+const _sensor = UserDevice(id: 2, name: 'Test sensor', profileId: 'ppg_motion_v1');
 
 final _allDay = List.generate(24, (h) => h);
 
@@ -65,7 +64,13 @@ void main() {
 
   testWidgets('each day says its status in words (TC-1.4-004, TC-1.4-010)', (tester) async {
     final semantics = tester.ensureSemantics();
-    await pumpHistory(tester, devices: const [_band], slots: {1: _bandSlots});
+    await pumpHistory(
+      tester,
+      devices: const [_band],
+      readings: {
+        1: {'heart_rate': _bandSlots},
+      },
+    );
 
     expect(_label('Tuesday, October 20, Complete'), findsOneWidget);
     expect(_label('Wednesday, October 21, Partial'), findsOneWidget);
@@ -93,7 +98,10 @@ void main() {
     final repo = await pumpHistory(
       tester,
       devices: const [_band, _sensor],
-      slots: {1: _bandSlots, 2: _sensorSlots},
+      readings: {
+        1: {'heart_rate': _bandSlots},
+        2: {'spo2': _sensorSlots},
+      },
     );
     expect(tester.getSemantics(_label('Test band')), isSemantics(isSelected: true));
     expect(tester.getSemantics(_label('Test sensor')), isSemantics(isSelected: false));
@@ -104,13 +112,19 @@ void main() {
     expect(tester.getSemantics(_label('Test sensor')), isSemantics(isSelected: true));
     expect(_label('Thursday, October 22, Complete'), findsOneWidget);
     expect(_label('Tuesday, October 20, No data'), findsOneWidget);
-    verify(() => repo.dataSlots(2, DateTime(2026, 10, 20), DateTime(2026, 10, 27))).called(1);
+    expect(repo.watched, contains((2, 'spo2', DateTime(2026, 10, 20))));
     semantics.dispose();
   });
 
   testWidgets('today is picked first; tapping a day picks it', (tester) async {
     final semantics = tester.ensureSemantics();
-    await pumpHistory(tester, devices: const [_band], slots: {1: _bandSlots});
+    await pumpHistory(
+      tester,
+      devices: const [_band],
+      readings: {
+        1: {'heart_rate': _bandSlots},
+      },
+    );
     final today = _label('Today, Monday, October 26, Partial');
     final thursday = _label('Thursday, October 22, No data');
     expect(tester.getSemantics(today), isSemantics(isSelected: true, isButton: true));
@@ -187,7 +201,9 @@ void main() {
     await pumpHistory(
       tester,
       devices: const [_band, _sensor],
-      slots: {1: _bandSlots},
+      readings: {
+        1: {'heart_rate': _bandSlots},
+      },
       size: const Size(320, 568),
     );
 

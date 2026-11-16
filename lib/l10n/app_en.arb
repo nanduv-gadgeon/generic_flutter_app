@@ -103,6 +103,74 @@
   "@historyDayLoadingSpoken": { "placeholders": { "date": { "type": "String" } } },
   "historyTodayLoadingSpoken": "Today, {date}, checking data",
   "@historyTodayLoadingSpoken": { "placeholders": { "date": { "type": "String" } } },
+  "historyShortDate": "{weekday} {day} {month}",
+  "@historyShortDate": {
+    "description": "A day in the History banner, e.g. 'Thu 22 Oct'.",
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "day": { "type": "String" },
+      "month": { "type": "String" }
+    }
+  },
+  "historyBannerNoDataTitle": "No data on {date}",
+  "@historyBannerNoDataTitle": { "placeholders": { "date": { "type": "String" } } },
+  "historyBannerNoDataText": "No readings were received from {device} on this day.",
+  "@historyBannerNoDataText": { "placeholders": { "device": { "type": "String" } } },
+  "historyBannerPartialTitle": "Partial data · {percent}% of the day",
+  "@historyBannerPartialTitle": { "placeholders": { "percent": { "type": "int" } } },
+  "historyBannerPartialText": "Missing {ranges} (device not connected).",
+  "@historyBannerPartialText": { "placeholders": { "ranges": { "type": "String" } } },
+  "historyBannerTodayTitle": "Today so far",
+  "historyBannerTodayText": "All readings received up to {time}.",
+  "@historyBannerTodayText": { "placeholders": { "time": { "type": "String" } } },
+  "historyBannerCompleteTitle": "Complete day",
+  "historyBannerCompleteText": "All readings received for {date}.",
+  "@historyBannerCompleteText": { "placeholders": { "date": { "type": "String" } } },
+  "historyHourRange": "{from}–{to}",
+  "@historyHourRange": {
+    "description": "Hours with no data, e.g. '02:00–06:00'.",
+    "placeholders": { "from": { "type": "String" }, "to": { "type": "String" } }
+  },
+  "historyListSeparator": ", ",
+  "@historyListSeparator": { "description": "Between hour ranges, e.g. '00:00–07:00, 22:00–24:00'." },
+  "historyEndOfDay": "24:00",
+  "@historyEndOfDay": { "description": "The end of a day, at the right of the 24-hour bar." },
+  "historyMin": "Min",
+  "historyAverage": "Average",
+  "historyMax": "Max",
+  "historyGapNote": "No data {ranges}",
+  "@historyGapNote": { "placeholders": { "ranges": { "type": "String" } } },
+  "historyNoDataDay": "No data received this day",
+  "historyGoalOf": "of {goal} goal",
+  "@historyGoalOf": {
+    "description": "After a day's value of a reading with a goal, e.g. '6,482 of 10,000 goal'.",
+    "placeholders": { "goal": { "type": "String" } }
+  },
+  "historyChartSpoken": "{label} through the day: hourly average {low} to {high}",
+  "@historyChartSpoken": {
+    "description": "Screen reader label of a reading's chart through the day, e.g. 'SpO₂ through the day: hourly average 95 % to 97 %'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "low": { "type": "String" },
+      "high": { "type": "String" }
+    }
+  },
+  "historyChartGapsSpoken": "{label} through the day: hourly average {low} to {high}, no data {ranges}",
+  "@historyChartGapsSpoken": {
+    "placeholders": {
+      "label": { "type": "String" },
+      "low": { "type": "String" },
+      "high": { "type": "String" },
+      "ranges": { "type": "String" }
+    }
+  },
+  "historyValueWithUnit": "{value} {unit}",
+  "@historyValueWithUnit": {
+    "description": "A value and its unit, e.g. '97 %' or '72 bpm'.",
+    "placeholders": { "value": { "type": "String" }, "unit": { "type": "String" } }
+  },
+  "historyDayLoading": "Loading this day",
+  "historyDayFailed": "Couldn't load this day.",
   "authLogIn": "Log in",
   "authSigningIn": "Signing in",
   "authEnterPassword": "Enter your password.",

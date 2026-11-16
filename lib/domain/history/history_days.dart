@@ -1,25 +1,30 @@
-/// The days History shows and whether each has data. Pure Dart: times are compared as instants,
-/// so readings stored in UTC fall on the right local day.
+/// The days History shows and whether each has data. Hours are wall-clock hours 0–23, the way
+/// the daily summaries store them (`DaySummary.hours`). Pure Dart.
 library;
 
-/// One local calendar day: from local midnight [start] to the next local midnight [end], so 23 or
-/// 25 hours long on a clock change.
+import 'local_day.dart';
+
+/// One local calendar day: from local midnight [start] to the next local midnight [end].
 class HistoryDay {
-  const HistoryDay(this.start, this.end);
+  HistoryDay(this.start) : end = nextDay(start);
 
   final DateTime start;
   final DateTime end;
 
   bool contains(DateTime time) => !time.isBefore(start) && time.isBefore(end);
 
-  /// How many hours the day has (rounded up, for a 30-minute clock change).
-  int get hours => (end.difference(start).inMinutes + 59) ~/ 60;
+  /// The wall-clock hours the day has, in order: 0–23, without the hour skipped when the clocks go
+  /// forward. The hour repeated when they go back is one hour, as in the daily summaries.
+  late final List<int> clockHours = [
+    for (var h = 0; h < 24; h++)
+      if (DateTime(start.year, start.month, start.day, h).hour == h) h,
+  ];
 
   @override
-  bool operator ==(Object other) => other is HistoryDay && other.start == start && other.end == end;
+  bool operator ==(Object other) => other is HistoryDay && other.start == start;
 
   @override
-  int get hashCode => Object.hash(start, end);
+  int get hashCode => start.hashCode;
 
   @override
   String toString() => 'HistoryDay($start)';
@@ -40,42 +45,28 @@ enum DayStatus {
 /// The last [count] local days up to and including the day [now] is in, oldest first. Worked out
 /// from the clock every time, so the strip moves on at midnight.
 List<HistoryDay> historyDays(DateTime now, int count) {
-  final local = now.toLocal();
-  return [
-    for (var back = count - 1; back >= 0; back--)
-      HistoryDay(
-        DateTime(local.year, local.month, local.day - back),
-        DateTime(local.year, local.month, local.day - back + 1),
-      ),
-  ];
+  final today = startOfDay(now);
+  return [for (var back = count - 1; back >= 0; back--) HistoryDay(addDays(today, -back))];
 }
 
 /// The hours of [day] that should have data at [now]: all of them for a past day; for today the
 /// hours begun so far (the current one included); none for a day not begun.
-int hoursToCover(HistoryDay day, DateTime now) {
-  if (now.isBefore(day.start)) return 0;
-  if (!now.isBefore(day.end)) return day.hours;
-  final begun = now.difference(day.start).inHours + 1;
-  return begun > day.hours ? day.hours : begun;
+Set<int> hoursToCheck(HistoryDay day, DateTime now) {
+  if (now.isBefore(day.start)) return const {};
+  if (!now.isBefore(day.end)) return day.clockHours.toSet();
+  final hour = now.toLocal().hour;
+  return {
+    for (final h in day.clockHours)
+      if (h <= hour) h,
+  };
 }
 
-/// Complete, Partial or No data, from the hours of the day (0 = the first hour after midnight)
-/// that have data and the number of hours that should.
-DayStatus dayStatus(Set<int> hoursWithData, int hoursToCover) {
-  final covered = hoursWithData.where((h) => h >= 0 && h < hoursToCover).length;
+/// Complete, Partial or No data, from the hours that have data and the hours that should.
+DayStatus dayStatus(Set<int> withData, Set<int> toCheck) {
+  final covered = toCheck.where(withData.contains).length;
   if (covered == 0) return DayStatus.noData;
-  return covered == hoursToCover ? DayStatus.complete : DayStatus.partial;
+  return covered == toCheck.length ? DayStatus.complete : DayStatus.partial;
 }
-
-/// The status of each of [days] at [now], from the start times of the stretches of time that have
-/// data ([slots], e.g. 15-minute slots). A slot counts for the hour of the day it starts in.
-List<DayStatus> dayStatuses(List<HistoryDay> days, Iterable<DateTime> slots, DateTime now) => [
-  for (final day in days)
-    dayStatus({
-      for (final slot in slots)
-        if (day.contains(slot)) slot.difference(day.start).inHours,
-    }, hoursToCover(day, now)),
-];
 
 /// The index in [days] of the day the user picked ([picked] is its start; null means today): the
 /// last day when it is today or not set, the oldest when the picked day has left the window.

@@ -45,7 +45,9 @@ void main() {
   Future<void> stream(int seconds, {double irLevel = 300000}) async {
     for (var f = 0; f < seconds * 10; f++) {
       double wave(int i) => math.sin(2 * math.pi * 1.2 * (f * 10 + i) / 100);
-      link.data(ppgFrame((i) => 200000 + 2000 * wave(i), (i) => irLevel + 6000 * wave(i)));
+      // Like a real finger: PI ≈ 0.07 (red) and 0.14 (IR), within the profile's limit of 1, and
+      // red / IR ≈ 0.5, so SpO₂ ≈ 96.
+      link.data(ppgFrame((i) => 200000 + 200 * wave(i), (i) => irLevel + 600 * wave(i)));
       now = now.add(const Duration(milliseconds: 100));
       await pumpEventQueue();
     }

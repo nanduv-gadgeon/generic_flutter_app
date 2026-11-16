@@ -97,8 +97,8 @@ abstract class PpgOximetrySettings with _$PpgOximetrySettings {
       _$PpgOximetrySettingsFromJson(json);
 }
 
-/// SpO₂ = a·R² + b·R + c with R = PI(red) / PI(ir), kept within [min, max] and averaged over the
-/// last [average] values.
+/// SpO₂ = a·R² + b·R + c with R = PI(red) / PI(ir), averaged over the last [average] values. A
+/// value outside [min, max] (e.g. while a finger comes off the sensor) is left out of the average.
 @freezed
 abstract class Spo2Settings with _$Spo2Settings {
   const factory Spo2Settings({
@@ -137,7 +137,14 @@ abstract class HeartRateSettings with _$HeartRateSettings {
 /// Reading keys of the perfusion index (AC / DC × 100) of each colour.
 @freezed
 abstract class PerfusionSettings with _$PerfusionSettings {
-  const factory PerfusionSettings({required String red, required String ir}) = _PerfusionSettings;
+  const factory PerfusionSettings({
+    required String red,
+    required String ir,
+
+    /// The highest perfusion index given; a larger one (e.g. while a finger comes off the sensor)
+    /// is left out, so it is neither shown nor stored. No limit when null.
+    double? max,
+  }) = _PerfusionSettings;
 
   factory PerfusionSettings.fromJson(Map<String, dynamic> json) =>
       _$PerfusionSettingsFromJson(json);

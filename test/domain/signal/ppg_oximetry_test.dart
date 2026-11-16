@@ -17,9 +17,16 @@ List<Sample> _pulse(int pairs, {double hz = 1.2, double redAc = 2000, double irA
   ];
 }
 
-/// Results by the number of pairs fed when they came.
-Map<int, Map<String, double>> _run(List<Sample> samples) {
-  final oximetry = PpgOximetry(ppgMotionProfile().signal!.ppgOximetry!.copyWith(finger: null));
+/// Results by the number of pairs fed when they came. Without the profile's PI limit unless
+/// [capped], so the values compare with the INOS processor's.
+Map<int, Map<String, double>> _run(List<Sample> samples, {bool capped = false}) {
+  final settings = ppgMotionProfile().signal!.ppgOximetry!;
+  final oximetry = PpgOximetry(
+    settings.copyWith(
+      finger: null,
+      perfusion: capped ? settings.perfusion : settings.perfusion.copyWith(max: null),
+    ),
+  );
   final results = <int, Map<String, double>>{};
   var pairs = 0;
   for (final sample in samples) {
@@ -76,12 +83,54 @@ void main() {
     expect(flat[3000]!['spo2'], 80);
   });
 
-  test('SpO₂ is never above 100, even when the formula gives more', () {
-    // R ≈ 0.05 gives about 111 from the formula.
-    final spo2 = [for (final r in _run(_pulse(1000, redAc: 200)).values) ?r['spo2']];
+  test('SpO₂ above 100 is left out, even when the formula gives it', () {
+    // R ≈ 0.05 gives about 111 from the formula once the filters settle; only the values within
+    // 60–100 from before then are averaged.
+    final results = _run(_pulse(1000, redAc: 200));
+    final spo2 = [for (final r in results.values) ?r['spo2']];
 
     expect(spo2, everyElement(lessThanOrEqualTo(100)));
-    expect(spo2.last, 100); // Once the filters settle.
+    // Once settled the formula gives about 111: no SpO₂ at all, rather than 100.
+    expect([
+      for (final n in [800, 900, 1000]) results[n]!['spo2'],
+    ], everyElement(isNull));
+  });
+
+  test('SpO₂ outside the limits is left out, not given as the limit', () {
+    // This signal reads about 96 %; with an upper limit of 90 every value is out of range.
+    final settings = ppgMotionProfile().signal!.ppgOximetry!;
+    final oximetry = PpgOximetry(
+      settings.copyWith(finger: null, spo2: settings.spo2.copyWith(max: 90)),
+    );
+
+    final seconds = [
+      for (final s in _pulse(1500))
+        if (oximetry.feed(s) case final out when out.isNotEmpty)
+          {for (final r in out) r.key: r.value},
+    ];
+    final settled = seconds.skip(5); // once the filters have settled (500 samples)
+
+    // Not given as 90, and earlier values are not repeated.
+    expect(settled.where((r) => r.containsKey('spo2')), isEmpty);
+    expect(settled.where((r) => r.containsKey('heart_rate')), isNotEmpty); // the rest still comes
+  });
+
+  test("PI above the profile's limit of 1 is left out; SpO₂ is not changed by it", () {
+    // This signal's PI (IR) is about 1.3–2.1 without the limit (see the INOS values above).
+    final limited = _run(_pulse(1500), capped: true);
+    final free = _run(_pulse(1500));
+
+    expect(ppgMotionProfile().signal!.ppgOximetry!.perfusion.max, 1);
+    for (final pairs in limited.keys) {
+      final l = limited[pairs]!;
+      final f = free[pairs]!;
+      for (final key in ['pi_ir', 'pi_red']) {
+        expect(l[key], f[key]! > 1 ? isNull : f[key], reason: '$key after $pairs samples');
+      }
+      expect(l['spo2'], f['spo2'], reason: 'after $pairs samples');
+    }
+    expect(limited[1000]!.containsKey('pi_ir'), isFalse);
+    expect(limited[1000]!['pi_red'], closeTo(0.7206638766125473, 1e-9)); // below the limit
   });
 
   test('ignores other readings and waits for both colours', () {

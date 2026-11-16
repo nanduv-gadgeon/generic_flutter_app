@@ -5,6 +5,7 @@ import 'package:generic_flutter_app/application/device_profiles_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/config/device_profile_registry.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
+import 'package:generic_flutter_app/domain/services/reading_repository.dart';
 
 import '../fixtures/add_device_fakes.dart';
 import '../fixtures/fake_auth.dart';
@@ -61,6 +62,7 @@ void main() {
       overrides: [
         deviceServiceProvider.overrideWithValue(slow),
         deviceProfileRegistryProvider.overrideWith((ref) async => registry),
+        readingRepositoryProvider.overrideWithValue(_NoReadings()),
       ],
     );
     addTearDown(container.dispose);
@@ -70,6 +72,15 @@ void main() {
     expect(await toggle.toggle(fakeUser.id), 1);
     expect(slow.devices, hasLength(1));
   });
+}
+
+/// Takes the dummies' made-up readings and keeps none.
+class _NoReadings implements ReadingRepository {
+  @override
+  Future<void> addAll(int deviceId, List<Sample> samples) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 /// Like the real database: answers after a moment, not straight away.

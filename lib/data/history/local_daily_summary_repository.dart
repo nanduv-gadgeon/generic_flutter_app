@@ -50,6 +50,10 @@ class LocalDailySummaryRepository implements DailySummaryRepository {
   }
 
   @override
+  Future<List<HourStats>> hours(int deviceId, DateTime day) =>
+      _hours(day, nextDay(day), deviceId: deviceId);
+
+  @override
   Future<int> deleteBefore(DateTime day) => _db.dailySummariesDao.deleteBefore(dayNumber(day));
 
   Future<List<HourStats>> _hours(DateTime from, DateTime to, {int? deviceId}) async {

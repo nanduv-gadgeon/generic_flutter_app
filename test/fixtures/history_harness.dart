@@ -202,6 +202,7 @@ Future<FakeDailySummaryRepository> pumpHistory(
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
   String? openedFrom,
+  List<Override> overrides = const [],
 }) async {
   tester.view
     ..physicalSize = size
@@ -226,6 +227,7 @@ Future<FakeDailySummaryRepository> pumpHistory(
       authServiceProvider.overrideWithValue(auth),
       deviceServiceProvider.overrideWithValue(deviceService),
       ...historyOverrides(summaries: summaries, now: time, clock: clock, daysOnPhone: daysOnPhone),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);

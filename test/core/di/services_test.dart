@@ -12,6 +12,7 @@ import 'package:generic_flutter_app/data/cloud/local_backend_health.dart';
 import 'package:generic_flutter_app/data/devices/cloud_device_registration.dart';
 import 'package:generic_flutter_app/data/devices/local_device_service.dart';
 import 'package:generic_flutter_app/data/devices/no_device_registration.dart';
+import 'package:generic_flutter_app/data/export/local_export_service.dart';
 import 'package:generic_flutter_app/data/upload/cloud_uploader.dart';
 import 'package:generic_flutter_app/domain/models/new_device.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
@@ -19,12 +20,12 @@ import 'package:generic_flutter_app/data/upload/no_uploader.dart';
 
 import '../../fixtures/test_config.dart';
 
-Future<ProviderContainer> _containerFor({required bool isCloud}) async {
+Future<ProviderContainer> _containerFor({required bool isCloud, bool export = true}) async {
+  final json = validConfigJson(isCloud: isCloud);
+  (json['features'] as Map<String, dynamic>)['export'] = export;
   final container = ProviderContainer(
     overrides: [
-      appConfigProvider.overrideWith(
-        (ref) async => AppConfig.fromJson(validConfigJson(isCloud: isCloud)),
-      ),
+      appConfigProvider.overrideWith((ref) async => AppConfig.fromJson(json)),
       appDatabaseProvider.overrideWith((ref) async {
         final db = AppDatabase(NativeDatabase.memory());
         ref.onDispose(db.close);
@@ -58,6 +59,25 @@ void main() {
     expect(container.read(authServiceProvider), isA<CloudAuthService>());
     expect(container.read(deviceRegistrationProvider), isA<CloudDeviceRegistration>());
     expect(container.read(cloudRegistrationAvailableProvider), isTrue);
+  });
+
+  // (isCloud, features.export) -> Export offered on History
+  final exportCases = {(false, true): true, (true, true): false, (false, false): false};
+  for (final MapEntry(key: (isCloud, export), value: offered) in exportCases.entries) {
+    test('export offered: isCloud $isCloud, feature $export -> $offered', () async {
+      final container = await _containerFor(isCloud: isCloud, export: export);
+      expect(container.read(exportAvailableProvider), offered);
+    });
+  }
+
+  test('export makes files from the local database', () async {
+    final container = await _containerFor(isCloud: false);
+    expect(container.read(exportServiceProvider), isA<LocalExportService>());
+  });
+
+  test('the PDF font comes from the config\'s theme font', () {
+    expect(reportFontPath('Nunito', bold: false), 'assets/fonts/Nunito/Nunito-Regular.ttf');
+    expect(reportFontPath('Nunito', bold: true), 'assets/fonts/Nunito/Nunito-Bold.ttf');
   });
 
   // Phase 1 must not register anywhere; the Phase 2 hook is empty until the cloud API exists.

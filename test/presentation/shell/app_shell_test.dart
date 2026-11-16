@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
+import 'package:generic_flutter_app/application/history_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/presentation/shell/app_shell.dart';
 import 'package:go_router/go_router.dart';
@@ -70,6 +71,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('page $path'), findsOneWidget, reason: label);
     }
+  });
+
+  testWidgets('a tab tapped in the bottom bar drops History\'s way back to a dashboard', (
+    tester,
+  ) async {
+    await _pumpShell(tester);
+    final container = ProviderScope.containerOf(tester.element(find.byType(AppShell)));
+    container.listen(historyControllerProvider, (_, _) {});
+    container.read(historyControllerProvider.notifier).openDevice(2, from: '/device/2');
+
+    await tester.tap(find.text('History'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(historyControllerProvider).backRoute, isNull);
+    expect(container.read(historyControllerProvider).deviceId, 2);
   });
 
   // (history on, alerts on) -> tabs shown

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/app_config_provider.dart';
+import '../../application/history_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../l10n/l10n.dart';
 
@@ -45,11 +46,15 @@ class AppShell extends ConsumerWidget {
           data: _barTheme(context, tokens),
           child: NavigationBar(
             selectedIndex: selected < 0 ? 0 : selected,
-            onDestinationSelected: (i) => shell.goBranch(
-              tabs[i].branch,
-              // Tapping the current tab again goes back to its first screen.
-              initialLocation: tabs[i].branch == shell.currentIndex,
-            ),
+            onDestinationSelected: (i) {
+              // History opened from the bar has no page to go back to.
+              ref.read(historyControllerProvider.notifier).clearBack();
+              shell.goBranch(
+                tabs[i].branch,
+                // Tapping the current tab again goes back to its first screen.
+                initialLocation: tabs[i].branch == shell.currentIndex,
+              );
+            },
             destinations: [
               for (final t in tabs) NavigationDestination(icon: Icon(t.icon), label: t.label),
             ],

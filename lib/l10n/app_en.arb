@@ -171,6 +171,59 @@
   },
   "historyDayLoading": "Loading this day",
   "historyDayFailed": "Couldn't load this day.",
+  "historyReadingsSpoken": "Reading",
+  "@historyReadingsSpoken": { "description": "Screen reader name of the row of reading chips on the History summary." },
+  "historySummaryDailyAverage": "{reading} · daily average",
+  "@historySummaryDailyAverage": {
+    "description": "Title of the History summary chart, e.g. 'Heart rate · daily average'.",
+    "placeholders": { "reading": { "type": "String" } }
+  },
+  "historySummaryDailyTotal": "{reading} · daily total",
+  "@historySummaryDailyTotal": {
+    "description": "Title of the History summary chart for a reading with a goal, e.g. 'Steps · daily total'.",
+    "placeholders": { "reading": { "type": "String" } }
+  },
+  "historySummaryAvgUnit": "{unit} avg",
+  "@historySummaryAvgUnit": {
+    "description": "After the big average of the History summary chart, e.g. '72 bpm avg'.",
+    "placeholders": { "unit": { "type": "String" } }
+  },
+  "historySummaryAvg": "avg",
+  "@historySummaryAvg": { "description": "After the big average of the History summary chart, for a value without a unit." },
+  "historySummaryChartSpoken": "{title}, {count, plural, =1{today} other{last {count} days}}",
+  "@historySummaryChartSpoken": {
+    "description": "Screen reader label of the History summary chart, e.g. 'Heart rate · daily average, last 7 days'.",
+    "placeholders": { "title": { "type": "String" }, "count": { "type": "int" } }
+  },
+  "historySummaryDaySpoken": "{date}, {value}, {status}",
+  "@historySummaryDaySpoken": {
+    "description": "Screen reader label of a bar or row of the History summary, e.g. 'Tuesday, October 20, 74 bpm, Normal'.",
+    "placeholders": {
+      "date": { "type": "String" },
+      "value": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+  "historySummaryTodaySpoken": "Today, {date}, {value}, {status}",
+  "@historySummaryTodaySpoken": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "value": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+  "historyTodayDate": "Today · {date}",
+  "@historyTodayDate": {
+    "description": "The first row of the History summary's day list, e.g. 'Today · Mon 26 Oct'.",
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "historyMissing": "Missing",
+  "@historyMissing": { "description": "Status of a day without data in the History summary's day list." },
+  "historySummaryEmpty": "{count, plural, =1{No readings today} other{No readings in the last {count} days}}",
+  "@historySummaryEmpty": { "placeholders": { "count": { "type": "int" } } },
+  "historySummaryNoReadings": "This device has no readings to summarise.",
+  "historySummaryLoading": "Loading the summary",
+  "historySummaryFailed": "Couldn't load the summary.",
   "historyDemoName": "{typeLabel} (history demo)",
   "@historyDemoName": {
     "description": "Debug builds only: the name of the test device with made-up history.",

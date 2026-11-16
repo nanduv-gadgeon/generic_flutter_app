@@ -66,6 +66,16 @@ void main() {
     expect(light.lerp(dark, 0.5).radius, 15);
   });
 
+  test('chart bars other than the highlighted one are a soft tint of the config colour', () {
+    final light = AppTokens.light(primary: Colors.teal, radius: 10, radiusSmall: 4);
+    final dark = AppTokens.dark(accent: Colors.cyan, radius: 20, radiusSmall: 8);
+
+    expect(light.barSoft, Colors.teal.withAlpha(0x40));
+    expect(dark.barSoft, Colors.cyan.withAlpha(0x55));
+    expect(light.copyWith().barSoft, light.barSoft);
+    expect(light.lerp(dark, 1).barSoft, dark.barSoft);
+  });
+
   group('mockup component styles', () {
     final theme = buildTheme(config, Brightness.light);
     final tokens = theme.extension<AppTokens>()!;

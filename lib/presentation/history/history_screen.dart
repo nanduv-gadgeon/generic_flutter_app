@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
@@ -9,14 +10,16 @@ import '../../domain/services/device_service.dart';
 import '../dashboard/dashboard_format.dart';
 import '../strings/history_strings.dart';
 import '../widgets/dashed_border_box.dart';
+import '../widgets/form_widgets.dart';
 import '../widgets/segment_tabs.dart';
 import 'history_banner.dart';
 import 'history_pickers.dart';
 import 'history_reading_card.dart';
+import 'history_summary_view.dart';
 
 /// History (requirement 6, mockup 22–24): the last days of one device, read from the phone: the
-/// title, the device picker, By day / 7-day summary, then By day's day picker, the day's banner
-/// and one card per reading. The 7-day summary comes in a later step.
+/// title, the device picker, By day / 7-day summary, then either By day's day picker, the day's
+/// banner and one card per reading, or the 7-day summary of one reading.
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
@@ -26,48 +29,77 @@ class HistoryScreen extends ConsumerWidget {
     final days = ref.watch(historyWindowProvider);
     final devices = ref.watch(myDevicesProvider);
     final list = devices.value;
+    final backRoute = ref.watch(historyControllerProvider.select((p) => p.backRoute));
+    void back() {
+      ref.read(historyControllerProvider.notifier).clearBack();
+      if (backRoute != null) context.go(backRoute);
+    }
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        // SafeArea already clears the status bar; the mockup's 56 px top included it.
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Header(subtitle: l10n.historyWindowText(days)),
-            const SizedBox(height: 14),
-            if (list == null)
-              const SizedBox.shrink()
-            else if (list.isEmpty)
-              const _NoDevices()
-            else
-              _DeviceHistory(devices: list, days: days),
-          ],
+    // Opened from a device's dashboard, the system back goes there too, like the button.
+    return PopScope(
+      canPop: backRoute == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) back();
+      },
+      child: SafeArea(
+        child: SingleChildScrollView(
+          // SafeArea already clears the status bar; the mockup's 56 px top included it.
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _Header(
+                subtitle: l10n.historyWindowText(days),
+                onBack: backRoute == null ? null : back,
+              ),
+              const SizedBox(height: 14),
+              if (list == null)
+                const SizedBox.shrink()
+              else if (list.isEmpty)
+                const _NoDevices()
+              else
+                _DeviceHistory(devices: list, days: days),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// "History" and the days shown; a back button before them when History was opened from another
+/// page ([onBack]).
 class _Header extends StatelessWidget {
-  const _Header({required this.subtitle});
+  const _Header({required this.subtitle, this.onBack});
 
   final String subtitle;
+  final VoidCallback? onBack;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Semantics(
-        header: true,
-        child: Text(
-          context.l10n.historyTitle,
-          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+  Widget build(BuildContext context) {
+    final title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            context.l10n.historyTitle,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+          ),
         ),
-      ),
-      Text(subtitle, style: TextStyle(fontSize: 13, color: context.tokens.muted)),
-    ],
-  );
+        Text(subtitle, style: TextStyle(fontSize: 13, color: context.tokens.muted)),
+      ],
+    );
+    final back = onBack;
+    if (back == null) return title;
+    return Row(
+      children: [
+        CircleBackButton(onPressed: back),
+        const SizedBox(width: 12),
+        Expanded(child: title),
+      ],
+    );
+  }
 }
 
 /// "Add a device to see its history here." (TC-1.4-009).
@@ -116,8 +148,10 @@ class _DeviceHistory extends ConsumerWidget {
           selected: pick.mode.index,
           onChanged: (i) => controller.pickMode(HistoryMode.values[i]),
         ),
-        // 7-day summary: built in a later step.
-        if (pick.mode == HistoryMode.byDay) ...[
+        if (pick.mode == HistoryMode.summary) ...[
+          const SizedBox(height: 14),
+          HistorySummaryView(deviceId: device.id),
+        ] else ...[
           const SizedBox(height: 14),
           HistoryDayStrip(
             days: days,

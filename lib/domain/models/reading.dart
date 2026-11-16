@@ -47,6 +47,10 @@ abstract class Reading with _$Reading {
     /// A shorter label where space is tight, e.g. "HR" on a device card; [label] when not set.
     String? shortLabel,
     required String unit,
+
+    /// The unit History writes a day's value in, where [unit] is written for Live, e.g. "steps"
+    /// for a step count whose Live unit is "today"; [unit] when not set.
+    String? historyUnit,
     required ReadingIcon icon,
     @Default(0) int decimals,
 

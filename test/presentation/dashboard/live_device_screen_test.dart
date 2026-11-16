@@ -176,7 +176,9 @@ void main() {
     expect(find.text('7 values'), findsOneWidget);
   });
 
-  testWidgets('the History tab opens History on this device, By day and today', (tester) async {
+  testWidgets('the History tab opens History on this device, By day and today, with a way back', (
+    tester,
+  ) async {
     final router = GoRouter(
       initialLocation: '/device/3',
       routes: [
@@ -214,7 +216,10 @@ void main() {
       await tester.pump();
     }
 
-    expect(container.read(historyControllerProvider), const HistorySelection(deviceId: 3));
+    expect(
+      container.read(historyControllerProvider),
+      const HistorySelection(deviceId: 3, backRoute: '/device/3'),
+    );
     expect(find.textContaining('history page'), findsOneWidget);
   });
 

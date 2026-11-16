@@ -171,6 +171,11 @@
   },
   "historyDayLoading": "Loading this day",
   "historyDayFailed": "Couldn't load this day.",
+  "historyDemoName": "{typeLabel} (history demo)",
+  "@historyDemoName": {
+    "description": "Debug builds only: the name of the test device with made-up history.",
+    "placeholders": { "typeLabel": { "type": "String" } }
+  },
   "authLogIn": "Log in",
   "authSigningIn": "Signing in",
   "authEnterPassword": "Enter your password.",

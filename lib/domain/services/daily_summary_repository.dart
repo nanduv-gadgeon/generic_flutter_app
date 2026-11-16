@@ -23,6 +23,10 @@ abstract interface class DailySummaryRepository {
   /// Today's summaries so far for each of the device's keys, worked out now and not stored.
   Future<List<DaySummary>> today(int deviceId);
 
+  /// The device's readings of the local day starting [day], added up per key and hour (for
+  /// History's chart through the day), worked out now and not stored.
+  Future<List<HourStats>> hours(int deviceId, DateTime day);
+
   /// Deletes the summaries of days before the local midnight [day]; returns how many.
   Future<int> deleteBefore(DateTime day);
 }

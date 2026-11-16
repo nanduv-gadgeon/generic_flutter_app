@@ -92,10 +92,10 @@ Byte order: big endian for samples. The timestamp's year and milliseconds are li
 These come from the profile's `signal.ppgOximetry` block. They are ported from the INOS app and **not clinically validated**.
 
 - **Filters:** each colour (Red and IR) has its own band-pass filter (4 second-order sections) and low-pass filter (1 section). They run in Direct Form II transposed, with the INOS coefficients copied into the profile.
-- **Perfusion index:** PI = AC / DC × 100, per colour. AC is the standard deviation of the band-pass signal over the last 100 samples; DC is the mean of the low-pass signal over the same 100.
+- **Perfusion index:** PI = AC / DC × 100, per colour. AC is the standard deviation of the band-pass signal over the last 100 samples; DC is the mean of the low-pass signal over the same 100. A PI above 1 (profile `perfusion.max`) is left out, neither shown nor stored: when a finger comes off the sensor PI jumps far above the sensor's range (0–1), which would throw off the day's average in History. INOS has no limit.
 - **SpO₂:**
   - R = PI(Red) / PI(IR)
-  - SpO₂ = round(1.6·R² − 35·R + 113), kept within 60–100 (INOS allows up to 110; above 100 % is not a real saturation)
+  - SpO₂ = round(1.6·R² − 35·R + 113); a value outside 60–100 is left out (INOS clamps to 60–110; above 100 % is not a real saturation, and out-of-range values come from a finger coming off). SpO₂ is given only while the current value is within the limits, so the average of earlier values is not repeated during a bad signal
   - averaged over the last 8 values
 - **Heart rate:**
   - The band-pass IR signal fills a 600-sample buffer. Once it's full, the first 500 samples are searched for peaks and the oldest 100 dropped.

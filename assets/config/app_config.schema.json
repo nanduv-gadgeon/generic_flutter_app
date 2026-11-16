@@ -301,7 +301,11 @@
               "type": "object",
               "additionalProperties": false,
               "required": ["red", "ir"],
-              "properties": { "red": { "$ref": "#/definitions/key" }, "ir": { "$ref": "#/definitions/key" } }
+              "properties": {
+                "red": { "$ref": "#/definitions/key" },
+                "ir": { "$ref": "#/definitions/key" },
+                "max": { "type": "number", "exclusiveMinimum": 0 }
+              }
             },
             "finger": {
               "type": "object",

@@ -78,7 +78,10 @@ void main() {
   });
 
   test('a finger settles for 5 s before results are given', () {
-    final seconds = _run(PpgOximetry(_settings()), List.filled(12, true));
+    // Without the PI limit: this synthetic signal's PI (IR) is about 1.4, above the profile's 1.
+    final settings = _settings();
+    final unlimited = settings.copyWith(perfusion: settings.perfusion.copyWith(max: null));
+    final seconds = _run(PpgOximetry(unlimited), List.filled(12, true));
     final contacts = seconds.map((s) => s.contact).toList();
     final settling = contacts.where((c) => c == SensorContact.settling).length;
     final firstOk = contacts.indexOf(SensorContact.ok);

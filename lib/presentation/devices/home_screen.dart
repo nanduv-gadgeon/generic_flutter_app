@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/auth_controller.dart';
 import '../../application/debug_dummy_devices.dart';
+import '../../application/debug_history_seed.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../strings/devices_strings.dart';
@@ -31,14 +32,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Reorder mode (mockup 09): compact rows with drag handles instead of the cards.
   bool _reordering = false;
 
-  /// Debug builds only: adds or removes dummy devices for trying the list without hardware.
+  /// Debug builds only: adds or removes the dummy devices (one per type, each with a week of
+  /// made-up readings) and the PPG history device (a week of readings, one a minute), for trying
+  /// the list, the dashboards and History without hardware.
   Future<void> _toggleDummies() async {
     final l10n = context.l10n;
     final userId = ref.read(authControllerProvider).value?.id;
     if (userId == null) return;
     final messenger = ScaffoldMessenger.of(context);
+    final dummies = ref.read(dummyDevicesProvider)(l10n.devicesDummyName);
+    final history = ref.read(demoHistorySeedProvider)(l10n.historyDemoName);
     try {
-      final change = await ref.read(dummyDevicesProvider)(l10n.devicesDummyName).toggle(userId);
+      var change = await dummies.toggle(userId);
+      // The history device follows the others: added with them, removed with them.
+      if ((change > 0) != await history.isAdded(userId)) {
+        await history.toggle(userId);
+        change += change > 0 ? 1 : -1;
+      }
       messenger.showSnackBar(SnackBar(content: Text(l10n.devicesDummyChanged(change))));
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.devicesDummyFailed)));

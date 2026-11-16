@@ -2,9 +2,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/di/services.dart';
 import '../domain/devices/demo_devices.dart';
+import '../domain/devices/demo_history.dart';
 import '../domain/models/device_profile.dart';
 import '../domain/services/device_service.dart';
+import '../domain/services/reading_repository.dart';
 import 'device_profiles_provider.dart';
+import 'devices_provider.dart';
 
 part 'debug_dummy_devices.g.dart';
 
@@ -13,9 +16,15 @@ part 'debug_dummy_devices.g.dart';
 /// [DeviceService], with made-up addresses, so they can never connect; a demo feed plays made-up
 /// readings for them instead. Release builds never offer this.
 class DummyDevices {
-  DummyDevices(this._devices, this._offered, this._name);
+  DummyDevices(this._devices, this._offered, this._name, {this.readings, DateTime Function()? now})
+    : _now = now ?? DateTime.now;
 
   final DeviceService _devices;
+
+  /// When set, each dummy also gets a week of made-up readings (one every 5 minutes), so History
+  /// has something to show.
+  final ReadingRepository? readings;
+  final DateTime Function() _now;
 
   /// The device types the config offers, in order.
   final Future<List<DeviceProfile>> Function() _offered;
@@ -40,7 +49,7 @@ class DummyDevices {
     final types = await _offered();
     for (final (i, type) in types.indexed) {
       final n = i + 1;
-      await _devices.addDevice(
+      final added = await _devices.addDevice(
         NewDevice(
           userId: userId,
           profileId: type.id,
@@ -50,6 +59,17 @@ class DummyDevices {
         ),
         type.alerts,
       );
+      final store = readings;
+      if (store != null) {
+        final samples = demoHistory(_now(), [
+          for (final r in type.readings)
+            if (r.source == ReadingSource.device) r,
+        ], everyMinutes: 5);
+        for (var i = 0; i < samples.length; i += 5000) {
+          final end = i + 5000 < samples.length ? i + 5000 : samples.length;
+          await store.addAll(added.id, samples.sublist(i, end));
+        }
+      }
     }
     return types.length;
   }
@@ -59,8 +79,16 @@ class DummyDevices {
 @riverpod
 DummyDevices Function(String Function(String typeLabel) name) dummyDevices(Ref ref) {
   final service = ref.watch(deviceServiceProvider);
+  final readings = ref.watch(readingRepositoryProvider);
+  final clock = ref.watch(clockProvider);
   // Taken now: home reads this provider once without listening, so it is disposed while toggle
   // runs, and its ref can no longer be used then.
   final registry = ref.watch(deviceProfileRegistryProvider.future);
-  return (name) => DummyDevices(service, () async => (await registry).offered, name);
+  return (name) => DummyDevices(
+    service,
+    () async => (await registry).offered,
+    name,
+    readings: readings,
+    now: clock,
+  );
 }

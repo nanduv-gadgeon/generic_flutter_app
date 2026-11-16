@@ -6,6 +6,7 @@ import '../../application/dashboard_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
+import '../../application/history_provider.dart';
 import '../../application/live_device_provider.dart';
 import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
@@ -33,6 +34,9 @@ class LiveDeviceScreen extends ConsumerStatefulWidget {
   /// to go back to).
   static const homeRoute = '/home';
 
+  /// Where the History tab goes: the app's History tab, on this device.
+  static const historyRoute = '/history';
+
   final int deviceId;
 
   @override
@@ -43,8 +47,13 @@ class LiveDeviceScreen extends ConsumerStatefulWidget {
 enum _Reconnect { idle, trying, failed }
 
 class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
-  bool _history = false;
   _Reconnect _reconnect = _Reconnect.idle;
+
+  /// The History tab opens the app's History tab with this device picked.
+  void _openHistory() {
+    ref.read(historyControllerProvider.notifier).openDevice(deviceId);
+    context.go(LiveDeviceScreen.historyRoute);
+  }
 
   Future<void> _startReconnect() async {
     setState(() => _reconnect = _Reconnect.trying);
@@ -137,54 +146,50 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
               ),
             ],
             const SizedBox(height: 14),
-            DashboardTabs(history: _history, onChanged: (h) => setState(() => _history = h)),
-            if (_history) ...[
-              const SizedBox(height: 24),
-              Text(
-                context.l10n.dashboardHistorySoon,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: context.tokens.muted),
-              ),
-            ] else ...[
-              // The banner already says Offline and when; the status line would repeat it.
-              if (!streaming && !showBanner) ...[
-                const SizedBox(height: 14),
-                LiveStatusLine(
-                  status: live.status,
-                  offline: live.online
-                      ? null
-                      : context.l10n.deviceOffline(switch (live.lastHeartbeatAt) {
-                          final at? => now.difference(at),
-                          null => null,
-                        }),
-                ),
-              ],
-              if (live.status == LiveStatus.streaming)
-                if (context.l10n.deviceContact(live.contact) case final hint?) ...[
-                  const SizedBox(height: 14),
-                  ContactHint(text: hint),
-                ],
-              if (failure != null) ...[
-                const SizedBox(height: 12),
-                ErrorMessage(context.l10n.deviceFailure(failure)),
-                if (!showBanner)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
-                      child: Text(context.l10n.deviceTryAgain),
-                    ),
-                  ),
-              ],
-              for (final view in views) ...[const SizedBox(height: 14), buildView(data, view)],
-              const SizedBox(height: 18),
-              DashboardActions(
-                deviceId: deviceId,
-                syncNow: dashboard.syncNow,
-                action: dashboard.action,
-                connected: linkState == LinkState.connected,
+            DashboardTabs(
+              history: false,
+              onChanged: (history) {
+                if (history) _openHistory();
+              },
+            ),
+            // The banner already says Offline and when; the status line would repeat it.
+            if (!streaming && !showBanner) ...[
+              const SizedBox(height: 14),
+              LiveStatusLine(
+                status: live.status,
+                offline: live.online
+                    ? null
+                    : context.l10n.deviceOffline(switch (live.lastHeartbeatAt) {
+                        final at? => now.difference(at),
+                        null => null,
+                      }),
               ),
             ],
+            if (live.status == LiveStatus.streaming)
+              if (context.l10n.deviceContact(live.contact) case final hint?) ...[
+                const SizedBox(height: 14),
+                ContactHint(text: hint),
+              ],
+            if (failure != null) ...[
+              const SizedBox(height: 12),
+              ErrorMessage(context.l10n.deviceFailure(failure)),
+              if (!showBanner)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
+                    child: Text(context.l10n.deviceTryAgain),
+                  ),
+                ),
+            ],
+            for (final view in views) ...[const SizedBox(height: 14), buildView(data, view)],
+            const SizedBox(height: 18),
+            DashboardActions(
+              deviceId: deviceId,
+              syncNow: dashboard.syncNow,
+              action: dashboard.action,
+              connected: linkState == LinkState.connected,
+            ),
           ],
         ),
       ),

@@ -416,7 +416,7 @@
             "max": 120,
             "average": 8
           },
-          "perfusion": { "red": "pi_red", "ir": "pi_ir" },
+          "perfusion": { "red": "pi_red", "ir": "pi_ir", "max": 1 },
           "finger": { "minDcIr": 12000, "minAcIr": 35, "settleSeconds": 5 }
         }
       },

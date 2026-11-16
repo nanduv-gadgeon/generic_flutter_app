@@ -2,7 +2,9 @@ import 'package:intl/intl.dart';
 
 import '../../domain/history/day_detail.dart';
 import '../../domain/history/history_days.dart';
-import '../../l10n/app_localizations.dart';
+import '../../domain/history/summary_chart.dart';
+import '../../domain/models/reading.dart';
+import '../dashboard/dashboard_format.dart';
 
 /// History text that needs logic: dates in the phone's language and day statuses.
 extension HistoryStrings on AppLocalizations {
@@ -67,4 +69,51 @@ extension HistoryStrings on AppLocalizations {
     for (final (first, last) in ranges)
       historyHourRange(historyHour(day, first), historyHour(day, nextHourOf(day, last))),
   ].join(historyListSeparator);
+
+  /// "Heart rate · daily average" or, for a reading with a goal, "Steps · daily total".
+  String historySummaryTitle(Reading reading, DailyValue daily) => switch (daily) {
+    DailyValue.average => historySummaryDailyAverage(reading.label),
+    DailyValue.total => historySummaryDailyTotal(reading.label),
+  };
+
+  /// The unit History writes a day's value in: the profile's history unit, else its unit; none
+  /// for hours written as "7h 12m".
+  String historyUnitOf(Reading reading) =>
+      reading.format == ReadingFormat.hoursMinutes ? '' : reading.historyUnit ?? reading.unit;
+
+  /// "bpm avg", after the big average; "avg" without a unit.
+  String historyAvgSuffix(Reading reading) => switch (historyUnitOf(reading)) {
+    '' => historySummaryAvg,
+    final unit => historySummaryAvgUnit(unit),
+  };
+
+  /// "72 bpm", "6,482 steps", "7h 12m".
+  String historyValueText(Reading reading, double value) => switch (historyUnitOf(reading)) {
+    '' => this.value(reading, value),
+    final unit => historyValueWithUnit(this.value(reading, value), unit),
+  };
+
+  /// The word of a row of the summary's day list.
+  String historyRowStatus(SummaryRowStatus status) => switch (status) {
+    SummaryRowStatus.missing => historyMissing,
+    SummaryRowStatus.high => statusHigh,
+    SummaryRowStatus.low => statusLow,
+    SummaryRowStatus.partial => historyPartial,
+    SummaryRowStatus.normal => statusNormal,
+  };
+
+  /// "Tuesday, October 20, 74 bpm, Normal" or "Thursday, October 22, No data", for screen
+  /// readers; "Today, …" for today.
+  String historySummaryDayLabel(Reading reading, SummaryDay day) {
+    final value = day.value;
+    if (value == null) {
+      return historyDayLabel(day.day.start, today: day.isToday, status: DayStatus.noData);
+    }
+    final date = DateFormat.MMMMEEEEd(localeName).format(day.day.start);
+    final text = historyValueText(reading, value);
+    final status = historyRowStatus(rowStatus(day));
+    return day.isToday
+        ? historySummaryTodaySpoken(date, text, status)
+        : historySummaryDaySpoken(date, text, status);
+  }
 }

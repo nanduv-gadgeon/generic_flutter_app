@@ -51,7 +51,9 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
 
   /// The History tab opens the app's History tab with this device picked.
   void _openHistory() {
-    ref.read(historyControllerProvider.notifier).openDevice(deviceId);
+    ref
+        .read(historyControllerProvider.notifier)
+        .openDevice(deviceId, from: GoRouterState.of(context).uri.toString());
     context.go(LiveDeviceScreen.historyRoute);
   }
 

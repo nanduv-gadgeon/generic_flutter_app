@@ -30,6 +30,13 @@ abstract class HistorySelection with _$HistorySelection {
 
     /// The start of the picked day; null for today, so the pick follows the clock at midnight.
     DateTime? day,
+
+    /// The reading picked on the 7-day summary; null for the device's first one.
+    String? readingKey,
+
+    /// Where History's back button goes: the page History was opened from (a device's
+    /// dashboard); null, and no back button, when it was opened from the bottom bar.
+    String? backRoute,
   }) = _HistorySelection;
 }
 
@@ -41,12 +48,21 @@ class HistoryController extends _$HistoryController {
   @override
   HistorySelection build() => const HistorySelection();
 
-  void pickDevice(int deviceId) => state = state.copyWith(deviceId: deviceId);
+  /// Picks another device; the back button goes, as it would lead to the device left behind.
+  void pickDevice(int deviceId) => state = state.copyWith(deviceId: deviceId, backRoute: null);
 
-  /// Opens History on [deviceId] from its dashboard: By day, today.
-  void openDevice(int deviceId) => state = HistorySelection(deviceId: deviceId);
+  /// Opens History on [deviceId] from its dashboard: By day, today; the back button returns to
+  /// [from], the dashboard's route.
+  void openDevice(int deviceId, {String? from}) =>
+      state = HistorySelection(deviceId: deviceId, backRoute: from);
+
+  /// Forgets the page History was opened from, e.g. after going back or switching tabs.
+  void clearBack() => state = state.copyWith(backRoute: null);
 
   void pickMode(HistoryMode mode) => state = state.copyWith(mode: mode);
+
+  /// Picks the reading the 7-day summary shows.
+  void pickReading(String key) => state = state.copyWith(readingKey: key);
 
   /// Picks [day] of [days]; the last one is today, which is kept as "today".
   void pickDay(List<HistoryDay> days, HistoryDay day) =>

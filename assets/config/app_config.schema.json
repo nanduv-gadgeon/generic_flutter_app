@@ -570,6 +570,7 @@
         "label": { "type": "string", "minLength": 1 },
         "shortLabel": { "type": "string", "minLength": 1 },
         "unit": { "type": "string" },
+        "historyUnit": { "type": "string", "minLength": 1 },
         "icon": {
           "enum": [
             "pulse", "drop", "heart", "thermo", "trend", "moon", "wind", "cloud",

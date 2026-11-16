@@ -13,6 +13,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     required this.chipBg,
     required this.accent,
     required this.soft,
+    required this.barSoft,
     required this.ok,
     required this.warn,
     required this.danger,
@@ -34,6 +35,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     chipBg: const Color(0xFFEEF1F5),
     accent: primary,
     soft: primary.withAlpha(0x17),
+    barSoft: primary.withAlpha(0x40),
     ok: const Color(0xFF15803D),
     warn: const Color(0xFFB45309),
     danger: const Color(0xFFB91C1C),
@@ -55,6 +57,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     chipBg: const Color(0xFF1E2838),
     accent: accent,
     soft: accent.withAlpha(0x26),
+    barSoft: accent.withAlpha(0x55),
     ok: const Color(0xFF4ADE80),
     warn: const Color(0xFFFBBF24),
     danger: const Color(0xFFF87171),
@@ -71,6 +74,9 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color chipBg;
   final Color accent;
   final Color soft;
+
+  /// Bars of a chart other than the highlighted one (today), e.g. the 7-day summary.
+  final Color barSoft;
   final Color ok;
   final Color warn;
   final Color danger;
@@ -88,6 +94,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? chipBg,
     Color? accent,
     Color? soft,
+    Color? barSoft,
     Color? ok,
     Color? warn,
     Color? danger,
@@ -103,6 +110,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
     chipBg: chipBg ?? this.chipBg,
     accent: accent ?? this.accent,
     soft: soft ?? this.soft,
+    barSoft: barSoft ?? this.barSoft,
     ok: ok ?? this.ok,
     warn: warn ?? this.warn,
     danger: danger ?? this.danger,
@@ -125,6 +133,7 @@ class AppTokens extends ThemeExtension<AppTokens> {
       chipBg: c(chipBg, other.chipBg),
       accent: c(accent, other.accent),
       soft: c(soft, other.soft),
+      barSoft: c(barSoft, other.barSoft),
       ok: c(ok, other.ok),
       warn: c(warn, other.warn),
       danger: c(danger, other.danger),

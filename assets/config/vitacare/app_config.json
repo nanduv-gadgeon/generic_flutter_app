@@ -50,7 +50,7 @@
         { "key": "bp", "label": "Blood pressure", "unit": "mmHg", "icon": "heart", "normal": [90, 120], "scale": [80, 180], "pair": "bp_dia" },
         { "key": "bp_dia", "label": "Diastolic pressure", "unit": "mmHg", "icon": "heart" },
         { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2], "scale": [34, 40] },
-        { "key": "steps", "label": "Steps", "unit": "today", "icon": "trend", "goal": 10000 },
+        { "key": "steps", "label": "Steps", "unit": "today", "historyUnit": "steps", "icon": "trend", "goal": 10000 },
         { "key": "sleep", "label": "Sleep", "unit": "last night", "icon": "moon", "decimals": 1, "goal": 8, "format": "hoursMinutes" },
         { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20], "scale": [8, 30] }
       ],
@@ -90,7 +90,7 @@
         { "key": "temp", "label": "Skin temp", "unit": "°C", "icon": "thermo", "decimals": 1, "normal": [36.1, 37.2], "scale": [34, 40] },
         { "key": "resp", "label": "Respiration", "unit": "br/min", "icon": "wind", "normal": [12, 20], "scale": [8, 30] },
         { "key": "hrv", "label": "HRV", "unit": "ms", "icon": "trend", "normal": [20, 70], "scale": [0, 100] },
-        { "key": "active", "label": "Active time", "unit": "min today", "icon": "bolt", "goal": 150 }
+        { "key": "active", "label": "Active time", "unit": "min today", "historyUnit": "min", "icon": "bolt", "goal": 150 }
       ],
       "alerts": [{ "key": "hr", "above": 120 }, { "key": "temp", "above": 37.8 }, { "key": "battery", "below": 15 }]
     },

@@ -18,6 +18,7 @@ import 'package:generic_flutter_app/domain/history/local_day.dart';
 import 'package:generic_flutter_app/domain/services/daily_summary_repository.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/presentation/history/history_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'fake_auth.dart';
@@ -45,12 +46,16 @@ class FakeDailySummaryRepository implements DailySummaryRepository {
   FakeDailySummaryRepository({
     this.readings = const {},
     this.figures = const {},
+    this.dayFigures = const {},
     required DateTime today,
     this.pending = false,
   }) : _today = startOfDay(today);
 
   final Map<int, Map<String, Set<DateTime>>> readings;
   final Map<int, Map<String, Figures>> figures;
+
+  /// Figures of one day (by its local midnight), instead of [figures].
+  final Map<int, Map<String, Map<DateTime, Figures>>> dayFigures;
   final bool pending;
   final DateTime _today;
 
@@ -67,7 +72,10 @@ class FakeDailySummaryRepository implements DailySummaryRepository {
   ];
 
   DaySummary _summary(int deviceId, String key, DateTime day, Iterable<DateTime> times) {
-    final f = figures[deviceId]?[key] ?? (min: 1.0, avg: 1.0, max: 1.0);
+    final f =
+        dayFigures[deviceId]?[key]?[day] ??
+        figures[deviceId]?[key] ??
+        (min: 1.0, avg: 1.0, max: 1.0);
     return DaySummary(
       deviceId: deviceId,
       key: key,
@@ -179,7 +187,8 @@ Set<DateTime> slotsAt(DateTime day, Iterable<int> hours) => {
 
 /// Pumps History with fake devices and made-up daily summaries (see [FakeDailySummaryRepository]).
 /// The clock is [now] (Mon 26 Oct 2026 10:42 unless given) unless [clock] streams other times
-/// (e.g. past midnight). Returns the fake summaries.
+/// (e.g. past midnight). [openedFrom] opens History from that page, as a device's dashboard does.
+/// Returns the fake summaries.
 Future<FakeDailySummaryRepository> pumpHistory(
   WidgetTester tester, {
   List<UserDevice> devices = const [],
@@ -187,10 +196,12 @@ Future<FakeDailySummaryRepository> pumpHistory(
   Stream<DateTime>? clock,
   Map<int, Map<String, Set<DateTime>>> readings = const {},
   Map<int, Map<String, Figures>> figures = const {},
+  Map<int, Map<String, Map<DateTime, Figures>>> dayFigures = const {},
   bool pending = false,
   int daysOnPhone = 7,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 844),
+  String? openedFrom,
 }) async {
   tester.view
     ..physicalSize = size
@@ -205,6 +216,7 @@ Future<FakeDailySummaryRepository> pumpHistory(
   final summaries = FakeDailySummaryRepository(
     readings: readings,
     figures: figures,
+    dayFigures: dayFigures,
     today: time,
     pending: pending,
   );
@@ -220,15 +232,41 @@ Future<FakeDailySummaryRepository> pumpHistory(
   await container.read(authControllerProvider.future);
   await container.read(appConfigProvider.future);
 
+  final from = openedFrom;
+  if (from != null) {
+    container.read(historyControllerProvider.notifier).openDevice(devices.first.id, from: from);
+  }
+  // Opened from another page: History is routed, and that page is a stand-in.
+  final router = from == null
+      ? null
+      : GoRouter(
+          initialLocation: '/history',
+          routes: [
+            GoRoute(
+              path: '/history',
+              builder: (_, _) => const Scaffold(body: HistoryScreen()),
+            ),
+            GoRoute(path: from, builder: (_, _) => Text('page $from')),
+          ],
+        );
+  addTearDown(() => router?.dispose());
+
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: buildTheme(_theme, brightness),
-        home: const Scaffold(body: HistoryScreen()),
-      ),
+      child: router == null
+          ? MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: buildTheme(_theme, brightness),
+              home: const Scaffold(body: HistoryScreen()),
+            )
+          : MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: buildTheme(_theme, brightness),
+              routerConfig: router,
+            ),
     ),
   );
   if (pending) {

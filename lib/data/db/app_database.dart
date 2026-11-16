@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.steps.dart';
+import 'daos/daily_summaries_dao.dart';
 import 'daos/device_events_dao.dart';
 import 'daos/devices_dao.dart';
 import 'daos/heartbeats_dao.dart';
@@ -19,7 +20,17 @@ part 'app_database.g.dart';
 /// Changing the schema: bump [schemaVersion], run `dart run drift_dev make-migrations`, then
 /// write the migration step and its test.
 @DriftDatabase(
-  tables: [Users, Sessions, Devices, AppSettings, DeviceAlerts, Readings, Heartbeats, DeviceEvents],
+  tables: [
+    Users,
+    Sessions,
+    Devices,
+    AppSettings,
+    DeviceAlerts,
+    Readings,
+    Heartbeats,
+    DeviceEvents,
+    DailySummaries,
+  ],
   daos: [
     UsersDao,
     SessionDao,
@@ -28,6 +39,7 @@ part 'app_database.g.dart';
     ReadingsDao,
     HeartbeatsDao,
     DeviceEventsDao,
+    DailySummariesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -35,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -71,6 +83,11 @@ class AppDatabase extends _$AppDatabase {
       from5To6: (m, schema) async {
         await m.createTable(schema.deviceEvents);
         await m.createIndex(schema.deviceEventsDeviceTime);
+      },
+      // v7 (task 1.4.3): daily summaries of the readings, for History and Export.
+      from6To7: (m, schema) async {
+        await m.createTable(schema.dailySummaries);
+        await m.createIndex(schema.dailySummariesDeviceKeyDay);
       },
     ),
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),

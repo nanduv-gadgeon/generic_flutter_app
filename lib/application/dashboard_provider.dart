@@ -5,22 +5,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/di/services.dart';
 import '../domain/dashboard/event_summary.dart';
 import '../domain/decoder/decoded_packet.dart';
+import '../domain/history/local_day.dart';
 import '../domain/models/device_profile.dart';
 import 'devices_provider.dart';
 import 'live_device_provider.dart';
 
 export '../domain/dashboard/event_summary.dart';
+export '../domain/history/local_day.dart' show startOfDay;
 
 part 'dashboard_provider.g.dart';
 
 /// How far back a gauge's trend line goes.
 const trendWindow = Duration(minutes: 30);
-
-/// The start of the local day that [now] is in.
-DateTime startOfDay(DateTime now) {
-  final local = now.toLocal();
-  return DateTime(local.year, local.month, local.day);
-}
 
 /// The time now, once a second, so "updated 2 s ago" and today's run time keep up.
 @riverpod

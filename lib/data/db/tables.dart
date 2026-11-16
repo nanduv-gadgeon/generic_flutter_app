@@ -151,3 +151,29 @@ class DeviceEvents extends Table {
   /// When the device logged it: UTC milliseconds since 1970.
   IntColumn get atMs => integer()();
 }
+
+/// Each device's readings summed up per key and calendar day (added in schema v7), for History
+/// and Export: lowest, average and highest value, how many, and which local hours had any. Only
+/// finished days are stored; they are worked out again when late readings arrive and once a day,
+/// and kept as long as readings.
+///
+/// Values are health data: never log them.
+@DataClassName('DailySummaryRow')
+@TableIndex(name: 'daily_summaries_device_key_day', columns: {#deviceId, #key, #day}, unique: true)
+class DailySummaries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
+
+  /// A reading key of the device's profile, e.g. `heart_rate`.
+  TextColumn get key => text()();
+
+  /// The local calendar day as yyyymmdd, e.g. 20261113.
+  IntColumn get day => integer()();
+  RealColumn get minValue => real()();
+  RealColumn get avgValue => real()();
+  RealColumn get maxValue => real()();
+  IntColumn get readingCount => integer()();
+
+  /// The local hours with readings: bit h for the hour starting at h:00.
+  IntColumn get hours => integer()();
+}

@@ -19,6 +19,7 @@ import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
 import '../../data/events/local_device_event_repository.dart';
 import '../../data/heartbeats/local_heartbeat_repository.dart';
+import '../../data/history/local_daily_summary_repository.dart';
 import '../../data/readings/local_reading_repository.dart';
 import '../../data/devices/local_device_service.dart';
 import '../../data/devices/no_device_registration.dart';
@@ -31,6 +32,7 @@ import '../../domain/services/app_settings_service.dart';
 import '../../domain/services/auth_service.dart';
 import '../../domain/services/backend_health.dart';
 import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/daily_summary_repository.dart';
 import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
@@ -92,11 +94,20 @@ DeviceService deviceService(Ref ref) => LocalDeviceService(
   ref.watch(devicePairingProvider),
 );
 
-/// Stored readings: the local database in both phases.
+/// Stored readings: the local database in both phases. Late readings from an earlier day have
+/// that day's summary worked out again.
 // TODO(phase2): the uploader reads the rows it has not sent yet.
 @Riverpod(keepAlive: true)
-ReadingRepository readingRepository(Ref ref) =>
-    LocalReadingRepository(ref.watch(appDatabaseProvider).requireValue);
+ReadingRepository readingRepository(Ref ref) => LocalReadingRepository(
+  ref.watch(appDatabaseProvider).requireValue,
+  summaries: ref.watch(dailySummaryRepositoryProvider),
+);
+
+/// Each device's readings summed up per key and day, for History and Export: the local
+/// database in both phases.
+@Riverpod(keepAlive: true)
+DailySummaryRepository dailySummaryRepository(Ref ref) =>
+    LocalDailySummaryRepository(ref.watch(appDatabaseProvider).requireValue);
 
 /// Stored heartbeats: the local database in both phases.
 // TODO(phase2): the uploader sends them with the readings.
@@ -110,8 +121,9 @@ HeartbeatRepository heartbeatRepository(Ref ref) =>
 DeviceEventRepository deviceEventRepository(Ref ref) =>
     LocalDeviceEventRepository(ref.watch(appDatabaseProvider).requireValue);
 
-/// Deletes readings and device events older than the config's `history.daysOnPhone`, and
-/// heartbeats older than 24 hours, now and once a day.
+/// Sums up each finished day's readings, then deletes readings, device events and summaries
+/// older than the config's `history.daysOnPhone`, and heartbeats older than 24 hours, now and
+/// once a day.
 @Riverpod(keepAlive: true)
 ReadingCleanupJob readingCleanupJob(Ref ref) {
   final days = ref.watch(appConfigProvider).requireValue.history.daysOnPhone;
@@ -120,6 +132,7 @@ ReadingCleanupJob readingCleanupJob(Ref ref) {
     days,
     heartbeats: ref.watch(heartbeatRepositoryProvider),
     events: ref.watch(deviceEventRepositoryProvider),
+    summaries: ref.watch(dailySummaryRepositoryProvider),
   )..start();
   ref.onDispose(job.stop);
   return job;

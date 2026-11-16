@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/readings/local_reading_repository.dart';
+import 'package:generic_flutter_app/domain/services/daily_summary_repository.dart';
 import 'package:generic_flutter_app/domain/services/reading_repository.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/test_db.dart';
+
+class MockDailySummaryRepository extends Mock implements DailySummaryRepository {}
 
 void main() {
   late AppDatabase db;
@@ -74,5 +78,37 @@ void main() {
     await repo.addAll(deviceId, [Sample('spo2', 97, at(0).toLocal())]);
 
     expect((await repo.watchLatest(deviceId).first)['spo2']!.at.isUtc, isTrue);
+  });
+
+  group('daily summaries', () {
+    late MockDailySummaryRepository summaries;
+
+    setUp(() {
+      summaries = MockDailySummaryRepository();
+      repo = LocalReadingRepository(db, summaries: summaries);
+    });
+
+    test('stored readings have their days worked out again (late logs)', () async {
+      when(() => summaries.refreshDaysOf(any(), any())).thenAnswer((_) async {});
+
+      await repo.addAll(deviceId, [Sample('spo2', 97, at(0)), Sample('spo2', 98, at(1000))]);
+
+      final times = verify(() => summaries.refreshDaysOf(deviceId, captureAny())).captured.single;
+      expect(times, [at(0), at(1000)]);
+    });
+
+    test('nothing to store, nothing to work out', () async {
+      await repo.addAll(deviceId, const []);
+
+      verifyNever(() => summaries.refreshDaysOf(any(), any()));
+    });
+
+    test('a failed summary does not lose the readings', () async {
+      when(() => summaries.refreshDaysOf(any(), any())).thenThrow(StateError('locked'));
+
+      await repo.addAll(deviceId, [Sample('spo2', 97, at(0))]);
+
+      expect(await repo.watchRange(deviceId, 'spo2', t).first, [Sample('spo2', 97, at(0))]);
+    });
   });
 }

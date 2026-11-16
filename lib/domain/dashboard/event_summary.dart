@@ -1,4 +1,5 @@
 import '../decoder/decoded_packet.dart';
+import '../history/local_day.dart';
 import '../models/reading.dart';
 
 /// Today's therapy sessions worked out from the device's START / STOP / ERROR events.
@@ -71,9 +72,7 @@ final class EventSummary {
 EventSummary summarise(Iterable<DeviceEvent> events, {required DateTime dayStart}) {
   final sorted = [...events]..sort((a, b) => a.at.compareTo(b.at));
   if (sorted.isEmpty) return EventSummary.empty;
-  final dayEnd = dayStart.isUtc
-      ? DateTime.utc(dayStart.year, dayStart.month, dayStart.day + 1)
-      : DateTime(dayStart.year, dayStart.month, dayStart.day + 1);
+  final dayEnd = nextDay(dayStart);
   bool isToday(DeviceEvent e) => !e.at.isBefore(dayStart) && e.at.isBefore(dayEnd);
 
   var sessions = 0;

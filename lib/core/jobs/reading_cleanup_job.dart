@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../domain/history/local_day.dart';
+import '../../domain/services/daily_summary_repository.dart';
 import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/heartbeat_repository.dart';
 import '../../domain/services/reading_repository.dart';
 
 /// Keeps [daysOnPhone] days of readings and device events (the config's `history.daysOnPhone`)
 /// and [heartbeatsKept] of heartbeats: deletes older ones when [start] is called, then once a day
-/// while the app runs.
+/// while the app runs. First it sums up each finished day still kept ([summaryFrom] to
+/// yesterday), so History has them, and deletes the summaries of older days.
 // TODO(phase2): delete only readings, events and heartbeats the uploader has sent.
 class ReadingCleanupJob {
   ReadingCleanupJob(
@@ -16,12 +19,14 @@ class ReadingCleanupJob {
     this.daysOnPhone, {
     this._heartbeats,
     this._events,
+    this._summaries,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
   final ReadingRepository _readings;
   final HeartbeatRepository? _heartbeats;
   final DeviceEventRepository? _events;
+  final DailySummaryRepository? _summaries;
   final int daysOnPhone;
   final DateTime Function() _now;
   Timer? _timer;
@@ -33,6 +38,10 @@ class ReadingCleanupJob {
 
   /// Readings measured before this are deleted.
   DateTime get cutoff => _now().toUtc().subtract(Duration(days: daysOnPhone));
+
+  /// The first day summed up: the [daysOnPhone] days kept are today and the ones before it, so
+  /// the day [cutoff] falls in, which is only partly kept, is not.
+  DateTime get summaryFrom => addDays(startOfDay(_now()), 1 - daysOnPhone);
 
   void start() {
     _timer?.cancel();
@@ -46,6 +55,15 @@ class ReadingCleanupJob {
   }
 
   Future<void> runOnce() async {
+    if (_summaries case final summaries?) {
+      try {
+        final days = await summaries.refresh(from: summaryFrom, to: startOfDay(_now()));
+        final deleted = await summaries.deleteBefore(summaryFrom);
+        if (kDebugMode) debugPrint('Summaries: days summed up $days, old ones deleted $deleted');
+      } catch (e) {
+        if (kDebugMode) debugPrint('Summaries: failed: ${e.runtimeType}');
+      }
+    }
     try {
       final deleted = await _readings.deleteOlderThan(cutoff);
       if (kDebugMode) debugPrint('Readings: deleted $deleted older than $daysOnPhone days');

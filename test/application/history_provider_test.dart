@@ -191,6 +191,28 @@ void main() {
       expect(d.gaps, isEmpty);
     });
 
+    test("today's banner and charts come from one read, so they always agree", () async {
+      final today = DateTime(2026, 10, 26);
+      final times = {
+        ...slotsAt(today, [9]),
+      };
+      final (c, _) = await withData({'heart_rate': times});
+      Future<Set<int>> chartHours() async => {
+        for (final h in await c.read(historyDayHoursProvider(3, today).future))
+          h.start.toLocal().hour,
+      };
+      expect((await detail(c, today)).withData, {9});
+
+      // A reading arrives at 10:05; the chart is read again before the minute's refresh, e.g. when
+      // its card is drawn again. The banner and gaps follow it.
+      times.add(DateTime(2026, 10, 26, 10, 5));
+      c.invalidate(historyDayHoursProvider(3, today));
+
+      expect(await chartHours(), {9, 10});
+      expect((await detail(c, today)).withData, {9, 10});
+      expect((await detail(c, today)).gaps, [(0, 8)]);
+    });
+
     test('a day with nothing stored: No data, no figures', () async {
       final (c, _) = await withData(const {});
 

@@ -128,7 +128,10 @@ class FakeDailySummaryRepository implements DailySummaryRepository {
   /// One hour of made-up figures: every reading in it has the reading's average, except that the
   /// hour holds the day's lowest and highest too.
   HourStats _hour(int deviceId, String key, DateTime day, int hour, Iterable<DateTime> times) {
-    final f = figures[deviceId]?[key] ?? (min: 1.0, avg: 1.0, max: 1.0);
+    final f =
+        dayFigures[deviceId]?[key]?[day] ??
+        figures[deviceId]?[key] ??
+        (min: 1.0, avg: 1.0, max: 1.0);
     return HourStats(
       deviceId: deviceId,
       key: key,

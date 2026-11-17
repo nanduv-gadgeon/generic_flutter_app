@@ -70,6 +70,23 @@ extension HistoryStrings on AppLocalizations {
       historyHourRange(historyHour(day, first), historyHour(day, nextHourOf(day, last))),
   ].join(historyListSeparator);
 
+  /// "14:00–15:00 · avg 72 bpm · 65–80 · 34 readings" for the [hour] of [day] picked on a chart
+  /// through the day; "14:00–15:00 · 97 % · 1 reading" when every reading in it was the same.
+  /// "· Below normal" or "· Above normal" follows when its average, as shown, is outside the
+  /// reading's normal range.
+  String historyHourText(Reading reading, HistoryDay day, int hour, HourFigures f) {
+    final hours = historyHourRange(historyHour(day, hour), historyHour(day, nextHourOf(day, hour)));
+    String withUnit(double v) => reading.unit.isEmpty
+        ? value(reading, v)
+        : historyValueWithUnit(value(reading, v), reading.unit);
+    final side = sideOfNormal(f.avg, reading.normal, reading.decimals)?.name ?? 'none';
+    final low = value(reading, f.min);
+    final high = value(reading, f.max);
+    return low == high
+        ? historyHourDetailSteady(hours, withUnit(f.avg), f.count, side)
+        : historyHourDetail(hours, withUnit(f.avg), low, high, f.count, side);
+  }
+
   /// "Heart rate · daily average" or, for a reading with a goal, "Steps · daily total".
   String historySummaryTitle(Reading reading, DailyValue daily) => switch (daily) {
     DailyValue.average => historySummaryDailyAverage(reading.label),

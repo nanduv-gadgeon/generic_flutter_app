@@ -63,7 +63,8 @@ void main() {
   });
 
   test('without a finger block there is no contact state and results always come', () {
-    final oximetry = PpgOximetry(_settings().copyWith(finger: null));
+    // SpO₂ as in INOS, which gives a value even without a pulse.
+    final oximetry = PpgOximetry(inosSpo2(_settings()).copyWith(finger: null));
     final seconds = _run(oximetry, List.filled(3, false));
 
     expect(seconds.map((s) => s.contact), everyElement(isNull));

@@ -109,10 +109,21 @@ abstract class Spo2Settings with _$Spo2Settings {
     required int min,
     required int max,
     required int average,
+
+    /// What the last [average] values are: one per sample pair (INOS; well under a second) or one
+    /// per result given (about [average] seconds), which smooths out short dips.
+    @Default(Spo2AverageOf.pairs) Spo2AverageOf averageOf,
+
+    /// When true, SpO₂ is given only while the heart-rate search finds a pulse, so a signal with
+    /// no pulse (a finger going on, moving or coming off) gives none.
+    @Default(false) bool needsPulse,
   }) = _Spo2Settings;
 
   factory Spo2Settings.fromJson(Map<String, dynamic> json) => _$Spo2SettingsFromJson(json);
 }
+
+/// What SpO₂'s average is taken over (see [Spo2Settings.averageOf]).
+enum Spo2AverageOf { pairs, results }
 
 /// Heart rate from peaks in the inverted band-pass infrared signal: once [buffer] samples are
 /// held, the first [window] are searched and the oldest [step] dropped. A peak is higher than its

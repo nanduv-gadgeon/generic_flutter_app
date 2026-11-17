@@ -17,16 +17,23 @@ List<Sample> _pulse(int pairs, {double hz = 1.2, double redAc = 2000, double irA
   ];
 }
 
-/// Results by the number of pairs fed when they came. Without the profile's PI limit unless
-/// [capped], so the values compare with the INOS processor's.
+/// Results by the number of pairs fed when they came. With SpO₂ as in INOS and without the
+/// profile's PI limit unless [capped], so the values compare with the INOS processor's.
 Map<int, Map<String, double>> _run(List<Sample> samples, {bool capped = false}) {
-  final settings = ppgMotionProfile().signal!.ppgOximetry!;
-  final oximetry = PpgOximetry(
-    settings.copyWith(
-      finger: null,
-      perfusion: capped ? settings.perfusion : settings.perfusion.copyWith(max: null),
+  final settings = inosSpo2(ppgMotionProfile().signal!.ppgOximetry!);
+  return _results(
+    PpgOximetry(
+      settings.copyWith(
+        finger: null,
+        perfusion: capped ? settings.perfusion : settings.perfusion.copyWith(max: null),
+      ),
     ),
+    samples,
   );
+}
+
+/// What [oximetry] gives for [samples], by the number of pairs fed when it came.
+Map<int, Map<String, double>> _results(PpgOximetry oximetry, List<Sample> samples) {
   final results = <int, Map<String, double>>{};
   var pairs = 0;
   for (final sample in samples) {
@@ -98,7 +105,7 @@ void main() {
 
   test('SpO₂ outside the limits is left out, not given as the limit', () {
     // This signal reads about 96 %; with an upper limit of 90 every value is out of range.
-    final settings = ppgMotionProfile().signal!.ppgOximetry!;
+    final settings = inosSpo2(ppgMotionProfile().signal!.ppgOximetry!);
     final oximetry = PpgOximetry(
       settings.copyWith(finger: null, spo2: settings.spo2.copyWith(max: 90)),
     );

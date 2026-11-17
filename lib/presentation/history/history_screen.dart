@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../application/history_provider.dart';
+import '../../core/di/services.dart';
 import '../../domain/models/reading.dart';
 import '../../domain/services/device_service.dart';
 import '../dashboard/dashboard_format.dart';
@@ -16,6 +17,7 @@ import 'history_banner.dart';
 import 'history_pickers.dart';
 import 'history_reading_card.dart';
 import 'history_summary_view.dart';
+import 'export_sheet.dart';
 
 /// History (requirement 6, mockup 22–24): the last days of one device, read from the phone: the
 /// title, the device picker, By day / 7-day summary, then either By day's day picker, the day's
@@ -35,6 +37,12 @@ class HistoryScreen extends ConsumerWidget {
       if (backRoute != null) context.go(backRoute);
     }
 
+    // Export is offered in local mode only (`exportAvailable`), for the device History shows.
+    final device = list == null
+        ? null
+        : historyDevice(list, ref.watch(historyControllerProvider.select((p) => p.deviceId)));
+    final exportFor = ref.watch(exportAvailableProvider) ? device : null;
+
     // Opened from a device's dashboard, the system back goes there too, like the button.
     return PopScope(
       canPop: backRoute == null,
@@ -51,6 +59,7 @@ class HistoryScreen extends ConsumerWidget {
               _Header(
                 subtitle: l10n.historyWindowText(days),
                 onBack: backRoute == null ? null : back,
+                onExport: exportFor == null ? null : () => showExportSheet(context, exportFor),
               ),
               const SizedBox(height: 14),
               if (list == null)
@@ -68,12 +77,13 @@ class HistoryScreen extends ConsumerWidget {
 }
 
 /// "History" and the days shown; a back button before them when History was opened from another
-/// page ([onBack]).
+/// page ([onBack]), and the Export button after them when export is offered ([onExport]).
 class _Header extends StatelessWidget {
-  const _Header({required this.subtitle, this.onBack});
+  const _Header({required this.subtitle, this.onBack, this.onExport});
 
   final String subtitle;
   final VoidCallback? onBack;
+  final VoidCallback? onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -91,13 +101,55 @@ class _Header extends StatelessWidget {
       ],
     );
     final back = onBack;
-    if (back == null) return title;
+    final export = onExport;
+    if (back == null && export == null) return title;
     return Row(
       children: [
-        CircleBackButton(onPressed: back),
-        const SizedBox(width: 12),
+        if (back != null) ...[CircleBackButton(onPressed: back), const SizedBox(width: 12)],
         Expanded(child: title),
+        if (export != null) ...[const SizedBox(width: 8), _ExportButton(onPressed: export)],
       ],
+    );
+  }
+}
+
+/// The outlined "Export" pill with a download icon (mockup 24, 33).
+class _ExportButton extends StatelessWidget {
+  const _ExportButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    // With large text there is no room for the label next to the title: the icon alone, with
+    // its name as tooltip and screen reader label.
+    if (MediaQuery.textScalerOf(context).scale(10) >= 15) {
+      return IconButton(
+        tooltip: context.l10n.exportButton,
+        onPressed: onPressed,
+        icon: const Icon(Icons.download, size: 22),
+        style: IconButton.styleFrom(
+          fixedSize: const Size.square(44),
+          backgroundColor: tokens.surface,
+          side: BorderSide(color: tokens.border),
+          shape: const CircleBorder(),
+        ),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.download, size: 20),
+      label: Text(context.l10n.exportButton),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 44),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        backgroundColor: tokens.surface,
+        foregroundColor: context.textColor,
+        side: BorderSide(color: tokens.border),
+        shape: const StadiumBorder(),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+      ),
     );
   }
 }

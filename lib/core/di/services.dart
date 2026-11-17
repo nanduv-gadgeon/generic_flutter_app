@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +19,8 @@ import '../../data/devices/demo_live_readings.dart';
 import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
 import '../../data/events/local_device_event_repository.dart';
+import '../../data/export/local_export_service.dart';
+import '../../data/export/share_plus_sharer.dart';
 import '../../data/heartbeats/local_heartbeat_repository.dart';
 import '../../data/history/local_daily_summary_repository.dart';
 import '../../data/readings/local_reading_repository.dart';
@@ -36,6 +39,7 @@ import '../../domain/services/daily_summary_repository.dart';
 import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/device_registration.dart';
 import '../../domain/services/device_service.dart';
+import '../../domain/services/export_service.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/heartbeat_repository.dart';
 import '../../domain/services/live_readings.dart';
@@ -203,6 +207,33 @@ AuthService authService(Ref ref) {
 /// otherwise, without checking isCloud itself.
 @Riverpod(keepAlive: true)
 bool autoSyncAvailable(Ref ref) => ref.watch(appConfigProvider).requireValue.isCloud;
+
+/// Export (requirement 6.6) is offered in local mode only, and only when the config turns the
+/// feature on: with the cloud on, History hides its Export button (decision 2026-11-16). History
+/// reads this instead of checking isCloud itself.
+@Riverpod(keepAlive: true)
+bool exportAvailable(Ref ref) {
+  final config = ref.watch(appConfigProvider).requireValue;
+  return !config.isCloud && config.features.export;
+}
+
+/// Makes CSV and PDF files from the local database and shares them. Only reached when
+/// [exportAvailable] is true.
+/// The PDF uses the customer's font (`theme.font`), bundled as
+/// `assets/fonts/<Font>/<Font>-Regular.ttf` and `-Bold.ttf`.
+@Riverpod(keepAlive: true)
+ExportService exportService(Ref ref) {
+  final font = ref.watch(appConfigProvider).requireValue.theme.font;
+  return LocalExportService(
+    ref.watch(appDatabaseProvider).requireValue,
+    sharer: const SharePlusSharer(),
+    tempDir: getTemporaryDirectory,
+    fonts: () async => (
+      regular: await rootBundle.load(reportFontPath(font, bold: false)),
+      bold: await rootBundle.load(reportFontPath(font, bold: true)),
+    ),
+  );
+}
 
 /// Notifications are local in both phases, so no isCloud branch.
 @Riverpod(keepAlive: true)

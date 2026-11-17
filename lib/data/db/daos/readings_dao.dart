@@ -79,6 +79,19 @@ class ReadingsDao extends DatabaseAccessor<AppDatabase> with _$ReadingsDaoMixin 
         ],
       );
 
+  /// Every reading of [deviceId] measured from [fromMs] to [toMs] (not included), oldest first:
+  /// what an export holds. One pass over the device's part of the (device, key, time) index.
+  Future<List<Reading>> between(int deviceId, int fromMs, int toMs) =>
+      (select(readings)
+            ..where(
+              (r) =>
+                  r.deviceId.equals(deviceId) &
+                  r.atMs.isBiggerOrEqualValue(fromMs) &
+                  r.atMs.isSmallerThanValue(toMs),
+            )
+            ..orderBy([(r) => OrderingTerm.asc(r.atMs)]))
+          .get();
+
   /// Deletes readings measured before [beforeMs]; returns how many.
   Future<int> deleteOlderThan(int beforeMs) =>
       (delete(readings)..where((r) => r.atMs.isSmallerThanValue(beforeMs))).go();

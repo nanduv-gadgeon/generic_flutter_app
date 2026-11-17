@@ -2,6 +2,8 @@
 /// get a card. The figures themselves are the daily summaries ([DaySummary]). Pure Dart.
 library;
 
+import 'dart:math' as math;
+
 import '../models/device_profile.dart';
 import 'day_summary.dart';
 import 'history_days.dart';
@@ -85,21 +87,82 @@ List<Reading> historyReadings(DeviceProfile profile) {
   ];
 }
 
-/// The average value in each wall-clock hour of the reading [key], from [hours] (figures per key
-/// and hour; each belongs to the local hour it starts in, so the hour repeated when the clocks go
-/// back is one hour). Hours without readings are left out.
-Map<int, double> hourlyAverages(Iterable<HourStats> hours, String key) {
-  final totals = <int, (double, int)>{};
+/// One wall-clock hour of one reading on the chart through the day: its lowest, average and
+/// highest value and how many readings it had. Health data: never log it.
+typedef HourFigures = ({double min, double avg, double max, int count});
+
+/// The figures of each wall-clock hour of the reading [key], from [hours] (figures per key and
+/// hour; each belongs to the local hour it starts in, so the hour repeated when the clocks go back
+/// is one hour). Hours without readings are left out.
+Map<int, HourFigures> hourlyStats(Iterable<HourStats> hours, String key) {
+  final totals = <int, ({double min, double max, double sum, int count})>{};
   for (final h in hours) {
     if (h.key != key || h.count <= 0) continue;
     final hour = h.start.toLocal().hour;
-    final (sum, count) = totals[hour] ?? (0.0, 0);
-    totals[hour] = (sum + h.sum, count + h.count);
+    final t = totals[hour];
+    totals[hour] = t == null
+        ? (min: h.min, max: h.max, sum: h.sum, count: h.count)
+        : (
+            min: h.min < t.min ? h.min : t.min,
+            max: h.max > t.max ? h.max : t.max,
+            sum: t.sum + h.sum,
+            count: t.count + h.count,
+          );
   }
-  return {for (final MapEntry(:key, value: (sum, count)) in totals.entries) key: sum / count};
+  return {
+    for (final MapEntry(:key, value: t) in totals.entries)
+      key: (min: t.min, avg: t.sum / t.count, max: t.max, count: t.count),
+  };
 }
 
-/// The bottom and top of a chart of [values] (not empty). With a [normal] range, the chart always
+/// Which side of the normal range a value is on.
+enum NormalSide { below, above }
+
+/// The side of [normal] that [value] is on as it is shown, rounded to [decimals]: 94.75 shown
+/// with no decimals is 95, inside 95–100, so the chart agrees with the text. Null when inside, or
+/// without a normal range.
+NormalSide? sideOfNormal(double value, NormalRange? normal, int decimals) {
+  if (normal == null) return null;
+  final scale = math.pow(10, decimals);
+  final shown = (value * scale).round() / scale;
+  if (shown < normal.low) return NormalSide.below;
+  if (shown > normal.high) return NormalSide.above;
+  return null;
+}
+
+/// What the strip under a chart through the day shows for an hour.
+enum HourCoverage { data, missing, notYet }
+
+/// Each wall-clock hour of [day] in order, with whether it has data, should have had data and has
+/// none, or has not begun yet (later hours of today).
+List<(int, HourCoverage)> hourCoverage(HistoryDay day, Set<int> withData, Set<int> toCheck) => [
+  for (final h in day.clockHours)
+    (
+      h,
+      withData.contains(h)
+          ? HourCoverage.data
+          : toCheck.contains(h)
+          ? HourCoverage.missing
+          : HourCoverage.notYet,
+    ),
+];
+
+/// The hour of [hours] whose middle is nearest to [at] (hours of the day, e.g. 14.3); the earlier
+/// one on a tie, null when there are none. A tap on the chart picks the nearest hour with data.
+int? nearestHour(Iterable<int> hours, double at) {
+  int? best;
+  for (final h in hours) {
+    final distance = (h + 0.5 - at).abs();
+    if (best == null ||
+        distance < (best + 0.5 - at).abs() ||
+        (distance == (best + 0.5 - at).abs() && h < best)) {
+      best = h;
+    }
+  }
+  return best;
+}
+
+/// The bottom and top of a chart of [values] (not empty; the hours' lowest and highest values). With a [normal] range, the chart always
 /// takes it in too, so the normal band shows and the line is seen above, in or below it; the span
 /// is then widened by 10 % on each side. Without one, the values' range is widened by 35 % (as in
 /// the mockup). Widened by 1 when everything is the same value.

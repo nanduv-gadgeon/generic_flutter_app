@@ -96,7 +96,8 @@ These come from the profile's `signal.ppgOximetry` block. They are ported from t
 - **SpO₂:**
   - R = PI(Red) / PI(IR)
   - SpO₂ = round(1.6·R² − 35·R + 113); a value outside 60–100 is left out (INOS clamps to 60–110; above 100 % is not a real saturation, and out-of-range values come from a finger coming off). SpO₂ is given only while the current value is within the limits, so the average of earlier values is not repeated during a bad signal
-  - averaged over the last 8 values
+  - averaged over the last 8 values. INOS works out a value for every sample pair, so its average covers well under a second. This profile (`spo2.averageOf: "results"`) instead keeps one value per result given and averages the last 8, about 8 s, so a short dip (a finger moving) is smoothed out instead of shown
+  - given only while the heart-rate search finds a pulse (`spo2.needsPulse`), so a signal with no pulse (a finger going on, moving or coming off) gives no SpO₂. INOS has neither setting
 - **Heart rate:**
   - The band-pass IR signal fills a 600-sample buffer. Once it's full, the first 500 samples are searched for peaks and the oldest 100 dropped.
   - A peak is found in the inverted signal. It must be above its 3 neighbours on each side and above the mean of the signal's positive values, and the signal must have dipped below zero since the last peak.
@@ -105,7 +106,7 @@ These come from the profile's `signal.ppgOximetry` block. They are ported from t
 
 Known behaviour, kept for parity with INOS and listed for review in `docs/decisions.md`:
 - a 180/min pulse reads as about 91 bpm
-- a signal with no pulse still gives SpO₂ 80 while the filters ring
+- a signal with no pulse still gives SpO₂ 80 while the filters ring (not in this profile: `spo2.needsPulse`)
 
 ## AGC (LED gain)
 Profile block `agc`. Automatic only:

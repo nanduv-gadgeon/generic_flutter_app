@@ -1,9 +1,8 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:generic_flutter_app/core/theme/app_tokens.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/presentation/history/history_day_chart.dart';
+import 'package:generic_flutter_app/presentation/history/history_day_plot.dart';
 
 import '../../fixtures/history_harness.dart';
 
@@ -80,66 +79,16 @@ void main() {
       ),
       findsOneWidget,
     );
-    // One chart, on the only reading with data that day.
-    expect(find.byType(LineChart), findsOneWidget);
+    // One chart, on the only reading with data that day, with the hint above it.
+    expect(find.byKey(HistoryDayChart.plotKey), findsOneWidget);
+    expect(find.text('Tap the chart to see an hour'), findsOneWidget);
     // Drawn with a real size (an empty, zero-height graphic once slipped through).
-    final size = tester.getSize(find.byType(LineChart));
-    expect(size.height, 70);
+    final size = tester.getSize(find.byKey(HistoryDayChart.plotKey));
+    expect(size.height, HistoryDayPlot.height);
     expect(size.width, greaterThan(300));
     // The PPG's other readings sent nothing that day.
     expect(find.text('No data received this day'), findsNWidgets(3));
     semantics.dispose();
-  });
-
-  for (final (brightness, alpha) in [
-    (Brightness.light, HistoryDayChart.missingAlphaLight),
-    (Brightness.dark, HistoryDayChart.missingAlphaDark),
-  ]) {
-    testWidgets('missing hours are shaded at ${alpha * 100}% in ${brightness.name} mode', (
-      tester,
-    ) async {
-      await pumpHistory(
-        tester,
-        devices: const [_ppg],
-        readings: {
-          1: {'heart_rate': slotsAt(_oct(21), _allDay.where((h) => h < 2 || h >= 6))},
-        },
-        brightness: brightness,
-      );
-      await pickDay(tester, 21);
-
-      final shading = tester.widget<HistoryChartShading>(find.byType(HistoryChartShading));
-      expect(shading.gaps, [(2.0, 6.0)]);
-      // Solid, so it looks the same over the normal range or not: the danger colour at [alpha]
-      // laid once over the card.
-      final theme = Theme.of(tester.element(find.byType(HistoryChartShading)));
-      final tokens = theme.extension<AppTokens>()!;
-      expect(shading.missingColour.a, 1);
-      expect(
-        shading.missingColour,
-        Color.alphaBlend(tokens.danger.withValues(alpha: alpha), tokens.surface),
-      );
-    });
-  }
-
-  testWidgets('the normal band shows even when the day stays below it', (tester) async {
-    await pumpHistory(
-      tester,
-      devices: const [_ppg],
-      readings: {
-        1: {
-          'spo2': slotsAt(_oct(26), [9, 10]),
-        },
-      },
-      figures: {
-        1: {'spo2': (min: 67.0, avg: 89.0, max: 98.0)},
-      },
-    );
-
-    final shading = tester.widget<HistoryChartShading>(find.byType(HistoryChartShading));
-    expect(shading.normal, (95.0, 100.0)); // the profile's SpO₂ range
-    expect(shading.low, lessThan(89)); // the line
-    expect(shading.high, greaterThan(100)); // and the whole band
   });
 
   testWidgets('a day with no data: banner and empty cards, never zeros (TC-1.4-007)', (

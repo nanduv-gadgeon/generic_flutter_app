@@ -63,6 +63,12 @@ class PpgOximetry {
   /// Whether the latest pair gave an SpO₂ within the limits. SpO₂ is given only then, so the
   /// average of earlier values is not repeated while the signal is bad (e.g. a finger coming off).
   bool _spo2Now = false;
+
+  /// The latest pair's SpO₂, kept for averaging per result ([Spo2AverageOf.results]).
+  int _spo2Latest = 0;
+
+  /// Whether the latest heart-rate search found a pulse, for [Spo2Settings.needsPulse].
+  bool _pulseNow = false;
   double? _red;
   double? _ir;
   int _pairs = 0;
@@ -112,14 +118,17 @@ class PpgOximetry {
     _keep(_dcRed, _lowPassRed.filter(red), _s.window);
     _keep(_dcIr, _lowPassIr.filter(ir), _s.window);
 
-    final spo2 = _spo2();
-    _spo2Now = spo2 > 0;
-    if (_spo2Now) _keep(_spo2Values, spo2, _s.spo2.average);
+    _spo2Latest = _spo2();
+    _spo2Now = _spo2Latest > 0;
+    if (_spo2Now && _s.spo2.averageOf == Spo2AverageOf.pairs) {
+      _keep(_spo2Values, _spo2Latest, _s.spo2.average);
+    }
 
     final hr = _s.heartRate;
     _peakBuffer.add(irBand);
     if (_peakBuffer.length > hr.buffer) {
       final bpm = _heartRate(_peakBuffer.sublist(0, hr.window));
+      _pulseNow = bpm != null;
       if (bpm != null) _keep(_heartRates, bpm, hr.average);
       _peakBuffer.removeRange(0, hr.step);
     }
@@ -140,6 +149,7 @@ class PpgOximetry {
     } else if (_withFinger > 0) {
       // Lifted: values from before are stale, so start the averages and peak search again.
       _withFinger = 0;
+      _pulseNow = false;
       _spo2Values.clear();
       _heartRates.clear();
       _peakBuffer.clear();
@@ -149,8 +159,12 @@ class PpgOximetry {
   List<Sample> _results(DateTime at) {
     final dcRed = _mean(_dcRed);
     final dcIr = _mean(_dcIr);
+    final spo2Ok = _spo2Now && (_pulseNow || !_s.spo2.needsPulse);
+    if (spo2Ok && _s.spo2.averageOf == Spo2AverageOf.results) {
+      _keep(_spo2Values, _spo2Latest, _s.spo2.average);
+    }
     return [
-      if (_spo2Now && _spo2Values.isNotEmpty) Sample(_s.spo2.key, _average(_spo2Values), at),
+      if (spo2Ok && _spo2Values.isNotEmpty) Sample(_s.spo2.key, _average(_spo2Values), at),
       if (_heartRates.isNotEmpty) Sample(_s.heartRate.key, _average(_heartRates), at),
       if (dcRed != 0)
         if (_perfusion(_stdDev(_acRed) / dcRed * 100) case final pi?)

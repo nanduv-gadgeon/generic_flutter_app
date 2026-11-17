@@ -154,33 +154,97 @@ void main() {
     }
   });
 
-  group('hourlyAverages', () {
-    HourStats hour(String key, int h, double sum, int count) => HourStats(
+  group('hourlyStats', () {
+    HourStats hour(String key, int h, double min, double max, double sum, int count) => HourStats(
       deviceId: 1,
       key: key,
       start: DateTime(2026, 10, 21, h).toUtc(),
-      min: 0,
-      max: 0,
+      min: min,
+      max: max,
       sum: sum,
       count: count,
     );
 
-    test('the average of each hour of one reading; other readings and empty hours left out', () {
+    test('lowest, average, highest and count of each hour of one reading', () {
       final hours = [
-        hour('spo2', 9, 970, 10),
-        hour('spo2', 10, 1920, 20),
-        hour('heart_rate', 9, 720, 10),
-        hour('spo2', 11, 0, 0),
+        hour('spo2', 9, 95, 99, 970, 10),
+        hour('spo2', 10, 94, 98, 1920, 20),
+        hour('heart_rate', 9, 60, 80, 720, 10),
+        hour('spo2', 11, 0, 0, 0, 0),
       ];
 
-      expect(hourlyAverages(hours, 'spo2'), {9: 97.0, 10: 96.0});
+      expect(hourlyStats(hours, 'spo2'), {
+        9: (min: 95.0, avg: 97.0, max: 99.0, count: 10),
+        10: (min: 94.0, avg: 96.0, max: 98.0, count: 20),
+      });
     });
 
     test('two figures for the same wall-clock hour are one hour', () {
-      final hours = [hour('spo2', 1, 950, 10), hour('spo2', 1, 990, 10)];
+      final hours = [hour('spo2', 1, 93, 96, 950, 10), hour('spo2', 1, 97, 99, 990, 10)];
 
-      expect(hourlyAverages(hours, 'spo2'), {1: 97.0});
+      expect(hourlyStats(hours, 'spo2'), {1: (min: 93.0, avg: 97.0, max: 99.0, count: 20)});
     });
+
+    test('nothing for a reading without figures', () {
+      expect(hourlyStats([hour('spo2', 1, 97, 97, 97, 1)], 'heart_rate'), isEmpty);
+    });
+  });
+
+  group('sideOfNormal: decided on the value as shown', () {
+    const spo2 = NormalRange(low: 95, high: 100);
+    final cases = <({String name, double value, int decimals, NormalSide? side})>[
+      (name: '94.75 shows as 95: inside', value: 94.75, decimals: 0, side: null),
+      (name: '94.4 shows as 94: below', value: 94.4, decimals: 0, side: NormalSide.below),
+      (name: '100.4 shows as 100: inside', value: 100.4, decimals: 0, side: null),
+      (name: '100.5 shows as 101: above', value: 100.5, decimals: 0, side: NormalSide.above),
+      (name: 'with a decimal, 94.96 shows as 95.0: inside', value: 94.96, decimals: 1, side: null),
+      (
+        name: 'with a decimal, 94.94 shows as 94.9: below',
+        value: 94.94,
+        decimals: 1,
+        side: NormalSide.below,
+      ),
+    ];
+    for (final c in cases) {
+      test(c.name, () => expect(sideOfNormal(c.value, spo2, c.decimals), c.side));
+    }
+
+    test('no normal range: never outside', () => expect(sideOfNormal(5, null, 0), isNull));
+  });
+
+  group('hourCoverage', () {
+    test('each hour of the day: data, missing, or not begun yet', () {
+      final day = HistoryDay(DateTime(2026, 10, 26));
+      final coverage = hourCoverage(day, {9, 10}, {for (var h = 0; h <= 10; h++) h});
+
+      expect(coverage.length, day.clockHours.length);
+      expect(coverage[0], (0, HourCoverage.missing));
+      expect(coverage[9], (9, HourCoverage.data));
+      expect(coverage[10], (10, HourCoverage.data));
+      expect(coverage[11], (11, HourCoverage.notYet));
+      expect(coverage.last, (23, HourCoverage.notYet));
+    });
+
+    test('an hour skipped by the clocks has no entry', () {
+      final coverage = hourCoverage(_ShortDay(1), {}, {0, 2});
+
+      expect(coverage.map((c) => c.$1), isNot(contains(1)));
+      expect(coverage.take(2), [(0, HourCoverage.missing), (2, HourCoverage.missing)]);
+    });
+  });
+
+  group('nearestHour', () {
+    final cases = <({String name, List<int> hours, double at, int? hour})>[
+      (name: 'inside an hour with data', hours: [9, 14, 21], at: 14.2, hour: 14),
+      (name: 'between two: the nearer middle', hours: [9, 14], at: 12.9, hour: 14),
+      (name: 'a tie: the earlier hour', hours: [9, 11], at: 10.5, hour: 9),
+      (name: 'before the first hour', hours: [9, 14], at: 0, hour: 9),
+      (name: 'after the last hour', hours: [9, 14], at: 24, hour: 14),
+      (name: 'no hours', hours: [], at: 12, hour: null),
+    ];
+    for (final c in cases) {
+      test(c.name, () => expect(nearestHour(c.hours, c.at), c.hour));
+    }
   });
 
   group('chartRange', () {

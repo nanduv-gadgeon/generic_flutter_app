@@ -164,6 +164,30 @@
       "ranges": { "type": "String" }
     }
   },
+  "historyChartHint": "Tap the chart to see an hour",
+  "@historyChartHint": { "description": "Above a reading's chart through the day, before an hour is picked." },
+  "historyHourDetail": "{hours} · avg {average} · {low}–{high} · {count, plural, =1{1 reading} other{{count} readings}}{side, select, below{ · Below normal} above{ · Above normal} other{}}",
+  "@historyHourDetail": {
+    "description": "The hour picked on a chart through the day, e.g. '14:00–15:00 · avg 72 bpm · 65–80 · 34 readings'; side is 'below' or 'above' when the average is outside the normal range, else 'none'.",
+    "placeholders": {
+      "hours": { "type": "String" },
+      "average": { "type": "String" },
+      "low": { "type": "String" },
+      "high": { "type": "String" },
+      "count": { "type": "int", "format": "decimalPattern" },
+      "side": { "type": "String" }
+    }
+  },
+  "historyHourDetailSteady": "{hours} · {value} · {count, plural, =1{1 reading} other{{count} readings}}{side, select, below{ · Below normal} above{ · Above normal} other{}}",
+  "@historyHourDetailSteady": {
+    "description": "The hour picked on a chart through the day when every reading in it was the same, e.g. '14:00–15:00 · 97 % · 1 reading'; side as in historyHourDetail.",
+    "placeholders": {
+      "hours": { "type": "String" },
+      "value": { "type": "String" },
+      "count": { "type": "int", "format": "decimalPattern" },
+      "side": { "type": "String" }
+    }
+  },
   "historyValueWithUnit": "{value} {unit}",
   "@historyValueWithUnit": {
     "description": "A value and its unit, e.g. '97 %' or '72 bpm'.",

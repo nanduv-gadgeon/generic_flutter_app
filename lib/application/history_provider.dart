@@ -5,6 +5,7 @@ import '../core/di/services.dart';
 import '../domain/history/day_detail.dart';
 import '../domain/history/history_days.dart';
 import '../domain/history/local_day.dart';
+import '../domain/history/summarise_day.dart';
 import '../domain/services/daily_summary_repository.dart';
 import '../domain/services/device_service.dart';
 import 'app_config_provider.dart';
@@ -126,11 +127,12 @@ Stream<List<DaySummary>> historyStoredDays(Ref ref, int deviceId, String key) =>
     .watch(dailySummaryRepositoryProvider)
     .watch(deviceId, key, ref.watch(historyFirstDayProvider));
 
-/// Today's summaries so far of the device, worked out again every minute.
+/// Today's summaries so far of the device, worked out again every minute. Made from the same read
+/// as today's charts ([historyDayHours]), so the banner, the gaps and the charts always agree.
 @riverpod
-Future<List<DaySummary>> historyTodayDays(Ref ref, int deviceId) {
-  ref.watch(historyNowProvider);
-  return ref.watch(dailySummaryRepositoryProvider).today(deviceId);
+Future<List<DaySummary>> historyTodayDays(Ref ref, int deviceId) async {
+  final today = ref.watch(historyTodayProvider);
+  return summariseDays(await ref.watch(historyDayHoursProvider(deviceId, today).future));
 }
 
 /// Sums up yesterday for the device when History opens and when the day turns. The daily job runs

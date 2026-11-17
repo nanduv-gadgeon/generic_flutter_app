@@ -279,7 +279,9 @@
                 "coefficients": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "number" } },
                 "min": { "type": "integer" },
                 "max": { "type": "integer" },
-                "average": { "type": "integer", "minimum": 1 }
+                "average": { "type": "integer", "minimum": 1 },
+                "averageOf": { "enum": ["pairs", "results"] },
+                "needsPulse": { "type": "boolean" }
               }
             },
             "heartRate": {

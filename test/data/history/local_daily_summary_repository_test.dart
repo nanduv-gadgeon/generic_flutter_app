@@ -141,4 +141,47 @@ void main() {
 
     expect(await db.select(db.dailySummaries).get(), isEmpty);
   });
+
+  group('hours of a day (History\'s chart through the day)', () {
+    /// (key, local hour, min, max, sum, count) of each hour, in no particular order.
+    Future<List<(String, int, double, double, double, int)>> hoursOf(
+      int deviceId,
+      DateTime day,
+    ) async => [
+      for (final h in await summaries.hours(deviceId, day))
+        (h.key, h.start.toLocal().hour, h.min, h.max, h.sum, h.count),
+    ];
+
+    test('adds up that device\'s readings of the day per key and hour', () async {
+      await readings.addAll(band, [
+        Sample('hr', 60, on(12, 9, 5)),
+        Sample('hr', 80, on(12, 9, 40)),
+        Sample('hr', 70, on(12, 14)),
+        Sample('spo2', 97, on(12, 9, 10)),
+        Sample('hr', 99, on(11, 23, 59)), // the day before
+        Sample('hr', 99, on(13, 0)), // the day after
+      ]);
+      await readings.addAll(patch, [Sample('current', 12, on(12, 9))]);
+
+      expect(
+        await hoursOf(band, DateTime(2026, 11, 12)),
+        unorderedEquals([
+          ('hr', 9, 60.0, 80.0, 140.0, 2),
+          ('hr', 14, 70.0, 70.0, 70.0, 1),
+          ('spo2', 9, 97.0, 97.0, 97.0, 1),
+        ]),
+      );
+    });
+
+    test('works for today too, which is not stored', () async {
+      await readings.addAll(band, [Sample('hr', 72, on(13, 8, 15))]);
+
+      expect(await hoursOf(band, today), [('hr', 8, 72.0, 72.0, 72.0, 1)]);
+      expect(await db.select(db.dailySummaries).get(), isEmpty);
+    });
+
+    test('a day without readings has no hours', () async {
+      expect(await summaries.hours(band, DateTime(2026, 11, 10)), isEmpty);
+    });
+  });
 }

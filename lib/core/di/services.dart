@@ -226,7 +226,7 @@ ExportService exportService(Ref ref) {
   final font = ref.watch(appConfigProvider).requireValue.theme.font;
   return LocalExportService(
     ref.watch(appDatabaseProvider).requireValue,
-    sharer: const SharePlusSharer(),
+    sharer: SharePlusSharer(tempDir: getTemporaryDirectory),
     tempDir: getTemporaryDirectory,
     fonts: () async => (
       regular: await rootBundle.load(reportFontPath(font, bold: false)),

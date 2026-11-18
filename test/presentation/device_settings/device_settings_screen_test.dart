@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
+import 'package:generic_flutter_app/presentation/device_settings/device_settings_screen.dart';
 import 'package:generic_flutter_app/presentation/device_settings/device_settings_sections.dart';
 import 'package:generic_flutter_app/presentation/device_settings/heartbeat_card.dart';
 import 'package:generic_flutter_app/presentation/strings/device_settings_strings.dart';
@@ -199,33 +200,33 @@ void main() {
     expect(find.byType(TextField), findsNothing);
   });
 
-  // TC-DST-003: a blank name is never saved, and leaving does not hide the message.
+  // TC-1.2-048 / TC-DST-003: a blank name is never saved; Back still leaves, with the old name kept,
+  // and the screen it returns to says why. It never traps the user (iOS has no system back button).
+  final backs = <String, Future<void> Function(WidgetTester)>{
+    'Back': (tester) => tester.tap(find.byTooltip('Back')),
+    "the phone's back": (tester) async => tester.binding.handlePopRoute(),
+  };
   for (final blank in ['', '   ']) {
-    testWidgets('Back with the name "$blank" stays, shows the message and keeps the old name', (
-      tester,
-    ) async {
-      await pumpSettings(tester, device: band);
+    for (final MapEntry(key: back, value: press) in backs.entries) {
+      testWidgets('$back with the name "$blank" leaves with the old name and says why', (
+        tester,
+      ) async {
+        await pumpSettings(tester, device: band);
 
-      await tester.enterText(find.byType(TextField), blank);
-      await tester.tap(find.byTooltip('Back'));
-      await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), blank);
+        await press(tester);
+        await press(tester); // a second Back leaves only once
+        await tester.pumpAndSettle();
 
-      expect(find.text('home page'), findsNothing);
-      expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
-      verifyNever(() => devices.rename(any(), any()));
-    });
+        expect(find.text('home page'), findsOneWidget);
+        expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
+        verifyNever(() => devices.rename(any(), any()));
 
-    testWidgets("the phone's back with the name \"$blank\" stays too", (tester) async {
-      await pumpSettings(tester, device: band);
-
-      await tester.enterText(find.byType(TextField), blank);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-
-      expect(find.text('home page'), findsNothing);
-      expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
-      verifyNever(() => devices.rename(any(), any()));
-    });
+        await tester.pump(DeviceSettingsScreen.invalidNameShownFor);
+        await tester.pumpAndSettle();
+        expect(find.text('Use letters or numbers, up to 40 characters.'), findsNothing);
+      });
+    }
   }
 
   testWidgets("the phone's back saves a changed name and returns", (tester) async {
@@ -242,8 +243,9 @@ void main() {
   testWidgets('after fixing a blank name, Back saves it and returns', (tester) async {
     await pumpSettings(tester, device: band);
     await tester.enterText(find.byType(TextField), '');
-    await tester.tap(find.byTooltip('Back'));
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
+    expect(find.text('Use letters or numbers, up to 40 characters.'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'Kitchen band');
     await tester.tap(find.byTooltip('Back'));

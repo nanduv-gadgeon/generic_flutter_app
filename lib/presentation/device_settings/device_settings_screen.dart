@@ -27,6 +27,9 @@ class DeviceSettingsScreen extends ConsumerStatefulWidget {
   static const path = '/device/:id/settings';
   static String route(int deviceId) => '/device/$deviceId/settings';
 
+  /// How long the screen Back returns to shows why an invalid name was not saved.
+  static const invalidNameShownFor = Duration(seconds: 1);
+
   @override
   ConsumerState<DeviceSettingsScreen> createState() => _DeviceSettingsScreenState();
 }
@@ -84,10 +87,25 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     return ok;
   }
 
-  /// The header's Back and the phone's back (gesture or button): saves a changed name first. An
-  /// invalid name keeps the screen open with its message (TC-DST-003); the old name stays saved.
+  /// Set once Back is leaving, so a second Back does not leave twice.
+  bool _leaving = false;
+
+  /// The header's Back and the phone's back (gesture or button): saves a changed name, then leaves.
+  /// An invalid name is not saved: the screen still leaves, with the old name kept, and the screen
+  /// it returns to says why. Back never traps the user (TC-1.2-048, TC-DST-003).
   Future<void> _back() async {
-    if (!await _saveName() || !mounted) return;
+    if (_leaving) return;
+    _leaving = true;
+    final messenger = ScaffoldMessenger.of(context);
+    final reason = context.l10n.addDeviceEnterDeviceName;
+    final saved = await _saveName();
+    if (!mounted) return;
+    if (!saved) {
+      setState(() => _nameError = null); // said on the next screen instead
+      messenger.showSnackBar(
+        SnackBar(content: Text(reason), duration: DeviceSettingsScreen.invalidNameShownFor),
+      );
+    }
     context.canPop() ? context.pop() : context.go(AddDeviceScreen.deviceRoute(widget.deviceId));
   }
 

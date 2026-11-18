@@ -29,6 +29,9 @@ class UniversalBleAdapter implements BleAdapter {
   };
 
   @override
+  Future<bool> enableBluetooth() => UniversalBle.enableBluetooth();
+
+  @override
   Stream<FoundDevice> get scanResults =>
       UniversalBle.scanStream.map((d) => FoundDevice(id: d.deviceId, name: d.name, rssi: d.rssi));
 

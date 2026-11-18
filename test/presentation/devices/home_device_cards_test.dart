@@ -39,6 +39,7 @@ void main() {
       ActiveLink? active,
       Size? size,
       Set<int> disconnected = const {},
+      bool bluetoothOff = false,
     }) => pumpHome(
       tester,
       devices: devices,
@@ -47,6 +48,7 @@ void main() {
       active: active,
       size: size ?? const Size(390, 1400),
       disconnected: disconnected,
+      bluetoothOff: bluetoothOff,
     );
 
     testWidgets('a device the user disconnected says Disconnected, not Offline', (tester) async {
@@ -124,6 +126,34 @@ void main() {
         semantics.dispose();
       });
     }
+
+    // The linked device waits for the phone's Bluetooth: it says so at once, not "Reconnecting…"
+    // and then Offline. The others stay Offline (only one is linked).
+    for (final status in [LiveStatus.reconnecting, LiveStatus.streaming]) {
+      testWidgets('Bluetooth off, link ${status.name}: the linked card says "Bluetooth off"', (
+        tester,
+      ) async {
+        await pump(
+          tester,
+          active: (deviceId: 2, status: status, online: status == LiveStatus.streaming),
+          bluetoothOff: true,
+        );
+
+        expect(find.text('Bluetooth off'), findsOneWidget);
+        expect(find.text('BLE · Reconnecting…'), findsNothing);
+        expect(find.byIcon(Icons.bluetooth_disabled), findsOneWidget); // not colour alone
+        expect(find.text('Offline'), findsNWidgets(2));
+      });
+    }
+
+    testWidgets('Bluetooth off: a device the user disconnected still says Disconnected', (
+      tester,
+    ) async {
+      await pump(tester, disconnected: {sensor.id}, bluetoothOff: true);
+
+      expect(find.text('Disconnected'), findsOneWidget);
+      expect(find.text('Bluetooth off'), findsNothing);
+    });
 
     testWidgets('tapping a card opens that device', (tester) async {
       await pump(tester);

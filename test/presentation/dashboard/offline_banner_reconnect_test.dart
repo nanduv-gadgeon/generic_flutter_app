@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/models/user_device.dart';
+import 'package:generic_flutter_app/domain/permissions/permission_problem.dart';
 import 'package:generic_flutter_app/domain/services/live_readings.dart';
 import 'package:generic_flutter_app/presentation/dashboard/live_device_screen.dart';
 
@@ -13,6 +15,12 @@ final _now = DateTime.utc(2026, 11, 12, 9);
 const _sensor = UserDevice(id: 1, name: 'Finger sensor', profileId: 'ppg_motion_v1');
 const _thermometer = UserDevice(id: 4, name: 'Thermometer', profileId: 'thermometer_v1');
 const _patch = UserDevice(id: 5, name: 'Patch', profileId: 'ief_device_v1');
+const _hub = UserDevice(
+  id: 6,
+  name: 'Hub sensor',
+  profileId: 'ppg_motion_v1',
+  transport: Transport.wifi,
+);
 
 const _bannerHeard = 'Offline · last heartbeat 5 min ago. Showing last readings.';
 const _bannerNever = 'Offline · no data from the device yet. Showing last readings.';
@@ -28,6 +36,7 @@ void main() {
     WidgetTester tester, {
     UserDevice device = _sensor,
     Size size = const Size(390, 1400),
+    bool bluetoothOff = false,
   }) async {
     tester.view
       ..physicalSize = size
@@ -37,8 +46,9 @@ void main() {
       ProviderScope(
         overrides: dashboardOverrides(
           live: live,
-          devices: const [_sensor, _thermometer, _patch],
+          devices: const [_sensor, _thermometer, _patch, _hub],
           now: _now,
+          bluetoothOff: bluetoothOff,
         ),
         child: dashboardApp(LiveDeviceScreen(deviceId: device.id)),
       ),
@@ -63,6 +73,61 @@ void main() {
     await tester.tap(find.text('Reconnect'));
     await tester.pump();
   }
+
+  // TC-1.2-044 follow-up: with the phone's Bluetooth off, Reconnect could not work; the page says
+  // why instead.
+  group('Bluetooth off', () {
+    testWidgets('replaces the offline banner on a Bluetooth device', (tester) async {
+      await pump(tester, bluetoothOff: true);
+      await send(tester, offline);
+
+      expect(find.text('Bluetooth is off'), findsOneWidget);
+      expect(find.text('Turn it on to reconnect Finger sensor.'), findsOneWidget);
+      expect(find.text(_bannerHeard), findsNothing);
+      expect(find.text('Reconnect'), findsNothing);
+    });
+
+    testWidgets('shows while the link waits to reconnect, and the Link cell says Bluetooth off', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, bluetoothOff: true);
+      await send(tester, [const LiveStatusChanged(LiveStatus.reconnecting)]);
+
+      expect(find.text('Bluetooth is off'), findsOneWidget);
+      expect(find.bySemanticsLabel('Link: Bluetooth off'), findsOneWidget); // not "Bluetooth"
+      semantics.dispose();
+    });
+
+    testWidgets('opening the device with Bluetooth off says so once, in the banner', (
+      tester,
+    ) async {
+      await pump(tester, bluetoothOff: true);
+      await send(tester, [
+        const LiveStatusChanged(LiveStatus.connecting),
+        const LiveFailure(
+          LiveFailureReason.bluetooth,
+          permission: PermissionProblem.bluetoothOff(),
+        ),
+      ]);
+
+      expect(find.text('Bluetooth is off'), findsOneWidget);
+      expect(
+        find.text(
+          'Bluetooth is off. Turn it on to find and connect to your devices, then try again.',
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('not on a Wi‑Fi device, which does not need it', (tester) async {
+      await pump(tester, device: _hub, bluetoothOff: true);
+      await send(tester, offline);
+
+      expect(find.text('Bluetooth is off'), findsNothing);
+      expect(find.text(_bannerHeard), findsOneWidget);
+    });
+  });
 
   group('offline banner', () {
     testWidgets('TC-DSH-010: offline shows the last heartbeat; Reconnect connects and it goes', (

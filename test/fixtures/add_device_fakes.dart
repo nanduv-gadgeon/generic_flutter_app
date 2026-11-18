@@ -38,6 +38,12 @@ class FakeBleScanner implements BleScanner {
   Stream<BleAvailability> get availability => Stream.value(power);
 
   @override
+  bool get canEnableBluetooth => false;
+
+  @override
+  Future<bool> enableBluetooth() async => false;
+
+  @override
   Stream<List<FoundDevice>> scan(DeviceProfile profile, {Duration? timeout}) {
     scans++;
     lastTimeout = timeout;

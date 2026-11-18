@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/bluetooth_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
@@ -43,10 +44,17 @@ class HomeDeviceCard extends ConsumerWidget {
     final quick = _quickReading(context, profile, latest);
     final off = ref.watch(disconnectedDevicesProvider).value ?? const <int>{};
     final state = linkStateFor(link, device.id, disconnected: off.contains(device.id));
-    final linkText = _linkText(context, state);
+    // The linked Bluetooth device waits for the phone's Bluetooth, not "Reconnecting…".
+    final bluetoothOff =
+        link?.deviceId == device.id &&
+        state != LinkState.disconnected &&
+        device.transport == Transport.ble &&
+        (ref.watch(bluetoothOffProvider).value ?? false);
+    final linkText = bluetoothOff ? context.l10n.linkBluetoothOff : _linkText(context, state);
     // Green when linked, amber while (re)connecting, red when Offline, grey when the user
     // disconnected it; the words say it too.
     final (chipColor, chipBg) = switch (state) {
+      _ when bluetoothOff => (tokens?.warn, tokens?.warnBg),
       LinkState.connected => (tokens?.ok, tokens?.okBg),
       LinkState.connecting || LinkState.reconnecting => (tokens?.warn, tokens?.warnBg),
       LinkState.offline || LinkState.onDemand => (tokens?.danger, tokens?.dangerBg),
@@ -137,7 +145,11 @@ class HomeDeviceCard extends ConsumerWidget {
                       ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.55),
                         child: _Chip(
-                          icon: device.transport == Transport.wifi ? Icons.wifi : Icons.bluetooth,
+                          icon: device.transport == Transport.wifi
+                              ? Icons.wifi
+                              : bluetoothOff
+                              ? Icons.bluetooth_disabled
+                              : Icons.bluetooth,
                           text: linkText,
                           color: chipColor,
                           background: chipBg,

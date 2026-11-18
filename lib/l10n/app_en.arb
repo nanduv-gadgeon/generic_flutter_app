@@ -911,6 +911,10 @@
     "description": "The button that opens this screen (device dashboard header)."
   },
   "deviceSettingsNotFound": "This device is no longer on this phone.",
+  "deviceSettingsNameChanged": "Name changed",
+  "@deviceSettingsNameChanged": {
+    "description": "Green snack bar after the device's new name is saved."
+  },
   "deviceSettingsNone": "—",
   "@deviceSettingsNone": {
     "description": "Shown for a value the app does not have yet."
@@ -1114,6 +1118,10 @@
   "linkWifi": "Wi‑Fi",
   "linkOnDemand": "On demand",
   "linkOffline": "Offline",
+  "linkBluetoothOff": "Bluetooth off",
+  "@linkBluetoothOff": {
+    "description": "Home card chip and the status strip's Link cell while the phone's Bluetooth is off."
+  },
   "agoSeconds": "{seconds} s ago",
   "@agoSeconds": {
     "placeholders": {
@@ -1345,6 +1353,19 @@
   "reconnectLabel": "Reconnect to the device",
   "reconnectingSpoken": "Reconnecting to the device",
   "reconnectFailed": "Could not reconnect. Check the device is on and nearby.",
+  "bluetoothOffTitle": "Bluetooth is off",
+  "bluetoothOffAllDevices": "Turn it on to reconnect your devices.",
+  "bluetoothOffDevice": "Turn it on to reconnect {name}.",
+  "@bluetoothOffDevice": {
+    "placeholders": { "name": { "type": "String", "example": "Test band" } }
+  },
+  "bluetoothOffAllDevicesIos": "Turn it on in Control Center or Settings to reconnect your devices.",
+  "bluetoothOffDeviceIos": "Turn it on in Control Center or Settings to reconnect {name}.",
+  "@bluetoothOffDeviceIos": {
+    "placeholders": { "name": { "type": "String", "example": "Test band" } }
+  },
+  "bluetoothTurnOn": "Turn on",
+  "bluetoothTurnOnLabel": "Turn on Bluetooth",
   "actionUnavailable": "{label} isn't available yet.",
   "@actionUnavailable": { "placeholders": { "label": { "type": "String" } } },
   "actionDone": "{label}: done.",

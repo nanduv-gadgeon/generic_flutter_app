@@ -20,6 +20,7 @@ class LiveStatusLine extends StatelessWidget {
     final offline = this.offline;
     final text = offline ?? context.l10n.deviceStatus(status);
     final live = offline == null && status == LiveStatus.streaming;
+    final disconnected = offline == null && status == LiveStatus.disconnected;
     final color = offline != null
         ? Theme.of(context).colorScheme.error
         : live
@@ -35,6 +36,8 @@ class LiveStatusLine extends StatelessWidget {
             Icon(Icons.portable_wifi_off, size: 20, color: color)
           else if (live)
             Icon(Icons.sensors, size: 20, color: color)
+          else if (disconnected)
+            Icon(Icons.link_off, size: 20, color: tokens?.muted)
           else
             const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
           const SizedBox(width: 10),
@@ -48,6 +51,28 @@ class LiveStatusLine extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Connect, for a device the user disconnected (Disconnect device in its settings).
+class ConnectButton extends StatelessWidget {
+  const ConnectButton({super.key, required this.onConnect});
+
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Semantics(
+      button: true,
+      label: context.l10n.deviceConnectLabel,
+      excludeSemantics: true,
+      child: OutlinedButton.icon(
+        onPressed: onConnect,
+        icon: const Icon(Icons.link),
+        label: Text(context.l10n.deviceConnect),
+      ),
+    ),
+  );
 }
 
 /// Tells the user to put a finger on the sensor, or to hold still while values settle.

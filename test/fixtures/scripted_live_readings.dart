@@ -45,6 +45,39 @@ class ScriptedLiveReadings implements LiveReadings {
   @override
   Future<void> stop() async {}
 
+  @override
+  Future<void> close(int deviceId) async {}
+
+  /// The ids Disconnect device was used on and not connected again.
+  final off = <int>{};
+  final _offChanges = StreamController<Set<int>>.broadcast();
+
+  /// When set, [disconnect] throws it (after marking the device off, like the real one).
+  Object? disconnectError;
+
+  /// When set, [disconnect] waits for it before it finishes.
+  Completer<void>? disconnectGate;
+
+  @override
+  Future<void> disconnect(int deviceId) async {
+    off.add(deviceId);
+    _offChanges.add({...off});
+    await disconnectGate?.future;
+    if (disconnectError case final e?) throw e;
+  }
+
+  @override
+  Future<void> connect(int deviceId) async {
+    off.remove(deviceId);
+    _offChanges.add({...off});
+  }
+
+  @override
+  Stream<Set<int>> watchDisconnected() async* {
+    yield {...off};
+    yield* _offChanges.stream;
+  }
+
   void send(LiveUpdate update) {
     for (final controller in _controllers) {
       if (!controller.isClosed && controller.hasListener) controller.add(update);

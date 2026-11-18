@@ -7,6 +7,7 @@ import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/data/transports/ble/ble_adapter.dart';
 import 'package:generic_flutter_app/data/transports/ble/ble_device_link.dart';
 import 'package:generic_flutter_app/data/transports/link_support.dart';
+import 'package:generic_flutter_app/domain/transport/ble_scanner.dart';
 import 'package:generic_flutter_app/domain/transport/device_link.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,6 +37,7 @@ void main() {
     when(() => adapter.subscribe(_id, any(), any())).thenAnswer((_) async {});
     when(() => adapter.values(_id, any())).thenAnswer((_) => const Stream.empty());
     when(() => adapter.connection(_id)).thenAnswer((_) => const Stream.empty());
+    when(() => adapter.availability).thenAnswer((_) => Stream.value(BleAvailability.on));
     when(() => adapter.requestMtu(_id, any())).thenAnswer((_) async => 247);
     when(
       () => adapter.write(_id, any(), any(), any(), withoutResponse: any(named: 'withoutResponse')),

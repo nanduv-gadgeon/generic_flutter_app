@@ -10,10 +10,13 @@
     <!-- mDNS discovery of Wi-Fi devices. -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
-    <!-- BLE devices (task 1.2.4). minSdk is 34, so no legacy or location permissions. -->
+    <!-- BLE devices (task 1.2.4). minSdk is 31 (Android 12): scan and connect only, never
+         location (neverForLocation). -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!-- Alerts as notifications (Android 13+ asks the user; requested when they turn them on). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:allowBackup="false"
         android:label="generic_flutter_app"
@@ -23,6 +26,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:screenOrientation="sensorPortrait"
             android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"

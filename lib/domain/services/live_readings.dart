@@ -1,6 +1,7 @@
 import '../decoder/decoded_packet.dart';
 import '../models/dashboard_settings.dart';
 import '../models/streaming_settings.dart';
+import '../permissions/permission_problem.dart';
 import '../signal/ppg_oximetry.dart';
 
 export '../decoder/decoded_packet.dart' show Sample;
@@ -10,7 +11,9 @@ export '../signal/ppg_oximetry.dart' show SensorContact;
 
 /// A saved device's readings as they arrive. One device is connected at a time: listening to a
 /// device connects it (and disconnects any other one); cancelling keeps it connected.
-abstract interface class LiveReadings {
+///
+/// What screens use is [LiveReadings], which adds the user's own Disconnect on top.
+abstract interface class LiveConnections {
   /// Updates for the saved device [deviceId], starting with its latest status and values. Values
   /// are health data: never log them.
   Stream<LiveUpdate> watch(int deviceId);
@@ -32,6 +35,26 @@ abstract interface class LiveReadings {
 
   /// Logged out: disconnects the device.
   Future<void> stop();
+
+  /// Disconnects [deviceId] if it is the connected device, without any Offline state. Watching it
+  /// again connects it again.
+  Future<void> close(int deviceId);
+}
+
+/// [LiveConnections] plus Disconnect device: the user's choice to close a device's link and keep
+/// it closed. A disconnected device stays saved with its history and alert limits; watching it
+/// shows [LiveStatus.disconnected] instead of connecting, until [connect]. It is never Offline,
+/// never retried, and lasts until the app closes or the user logs out.
+abstract interface class LiveReadings implements LiveConnections {
+  /// Closes [deviceId]'s link and stops its heartbeat and retries. Throws when closing fails;
+  /// the device then counts as disconnected anyway.
+  Future<void> disconnect(int deviceId);
+
+  /// Undoes [disconnect] and connects [deviceId] (Connect).
+  Future<void> connect(int deviceId);
+
+  /// The ids the user disconnected. Starts with the current set.
+  Stream<Set<int>> watchDisconnected();
 }
 
 /// The one device the phone is linked to, and how that is going. [online] is false once it has
@@ -49,6 +72,9 @@ enum LiveStatus {
 
   /// The device could not be reached; trying again soon.
   waiting,
+
+  /// The user disconnected it (Disconnect device); nothing happens until they tap Connect.
+  disconnected,
 }
 
 sealed class LiveUpdate {
@@ -93,12 +119,14 @@ final class LiveHeartbeat extends LiveUpdate {
   final DateTime? lastAt;
 }
 
-/// Why the readings stopped or are unreliable. [problem] is set when the device said why.
+/// Why the readings stopped or are unreliable. [problem] is set when the device said why;
+/// [permission] for [LiveFailureReason.bluetooth].
 final class LiveFailure extends LiveUpdate {
-  const LiveFailure(this.reason, {this.problem});
+  const LiveFailure(this.reason, {this.problem, this.permission});
 
   final LiveFailureReason reason;
   final DeviceProblem? problem;
+  final PermissionProblem? permission;
 }
 
 enum LiveFailureReason {
@@ -114,4 +142,7 @@ enum LiveFailureReason {
 
   /// The device reported a problem while sending.
   deviceProblem,
+
+  /// Bluetooth permission refused, or Bluetooth switched off ([LiveFailure.permission] says which).
+  bluetooth,
 }

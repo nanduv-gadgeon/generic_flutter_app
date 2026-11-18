@@ -19,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 import 'fixtures/fake_auth.dart';
 import 'fixtures/fake_live_readings.dart';
 import 'fixtures/test_config.dart';
+import 'fixtures/bluetooth_fakes.dart';
 
 class _NoDevices implements DeviceService {
   @override
@@ -74,6 +75,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...bluetoothOverrides(), // no Bluetooth plugin in tests
           appConfigProvider.overrideWith((ref) async => AppConfig.fromJson(json)),
           appDatabaseProvider.overrideWith((ref) async {
             final db = AppDatabase(NativeDatabase.memory());

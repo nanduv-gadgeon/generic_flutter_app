@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:generic_flutter_app/domain/services/permission_service.dart';
+import 'package:generic_flutter_app/domain/transport/ble_scanner.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/models/new_device.dart';
 import 'package:mocktail/mocktail.dart';
@@ -139,6 +141,41 @@ void main() {
     await tapAndSettle(tester, find.text('Try again'));
     expect(fakes.scanner.scans, 2);
   });
+
+  // what stops the scan -> message and the way out
+  final scanBlockers = {
+    (PermissionState.denied, BleAvailability.on): (
+      'Bluetooth permission is needed to find and connect to your devices. Allow it, then try '
+          'again.',
+      'Try again',
+    ),
+    (PermissionState.permanentlyDenied, BleAvailability.on): (
+      "Bluetooth permission is off for this app, so it can't find or connect to your devices. "
+          'Turn it on in Settings.',
+      'Open Settings',
+    ),
+    (PermissionState.granted, BleAvailability.off): (
+      'Bluetooth is off. Turn it on to find and connect to your devices, then try again.',
+      'Try again',
+    ),
+  };
+  for (final MapEntry(key: (permission, power), value: (message, action)) in scanBlockers.entries) {
+    testWidgets('scan with Bluetooth ${permission.name}, ${power.name}: "$action"', (tester) async {
+      fakes.permissions.states[AppPermission.bluetooth] = permission;
+      fakes.scanner.power = power;
+      await pumpAddDevice(tester);
+      await toScan(tester);
+
+      expect(find.text(message), findsOneWidget);
+      expect(fakes.scanner.scans, 0);
+      await tapAndSettle(tester, find.text(action));
+      if (action == 'Open Settings') {
+        expect(fakes.permissions.settingsOpened, 1);
+      } else {
+        expect(fakes.permissions.requested, hasLength(2)); // asked again
+      }
+    });
+  }
 
   testWidgets('the registering checklist says each stage in words', (tester) async {
     fakes.linkGate = Completer();

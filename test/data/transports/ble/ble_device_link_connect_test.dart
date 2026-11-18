@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/transports/ble/ble_adapter.dart';
 import 'package:generic_flutter_app/data/transports/ble/ble_device_link.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
+import 'package:generic_flutter_app/domain/transport/ble_scanner.dart';
 import 'package:generic_flutter_app/domain/transport/device_link.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -41,6 +42,7 @@ void main() {
     when(() => adapter.subscribe(_id, any(), any())).thenAnswer((_) async {});
     when(() => adapter.values(_id, any())).thenAnswer((_) => const Stream.empty());
     when(() => adapter.connection(_id)).thenAnswer((_) => const Stream.empty());
+    when(() => adapter.availability).thenAnswer((_) => Stream.value(BleAvailability.on));
   });
 
   BleDeviceLink link([BleSettings settings = _settings]) =>

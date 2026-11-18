@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import '../../../domain/models/device_profile.dart';
 import '../../../domain/transport/ble_scanner.dart';
@@ -7,22 +8,26 @@ import 'ble_adapter.dart';
 
 /// [BleScanner] that only looks for devices matching the profile's `ble` (or `wifi.bleSetup`) block.
 class BleScannerImpl implements BleScanner {
-  BleScannerImpl(this._adapter);
+  BleScannerImpl(this._adapter, {bool? isAndroid})
+    : canEnableBluetooth = isAndroid ?? Platform.isAndroid;
 
   final BleAdapter _adapter;
 
   @override
-  Stream<BleAvailability> get availability => _adapter.availability;
+  final bool canEnableBluetooth;
 
-  /// False when the request itself fails (e.g. Bluetooth not supported).
   @override
-  Future<bool> requestPermission() async {
+  Future<bool> enableBluetooth() async {
+    if (!canEnableBluetooth) return false;
     try {
-      return await _adapter.requestPermission();
+      return await _adapter.enableBluetooth();
     } catch (_) {
       return false;
     }
   }
+
+  @override
+  Stream<BleAvailability> get availability => _adapter.availability;
 
   /// Throws [NotConnectableException] when the profile has no `ble` block.
   @override

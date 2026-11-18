@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/app.dart';
@@ -46,5 +47,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
     expect(tester.takeException(), isNull); // database open: pipeline and clean-up start
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).debugShowCheckedModeBanner,
+      isFalse,
+      reason: 'no DEBUG banner',
+    );
   });
 }

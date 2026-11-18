@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../core/config/device_profile_registry.dart';
 import '../../core/di/services.dart';
 import '../../core/di/transports.dart';
 import '../../domain/devices/device_naming.dart';
+import '../../domain/permissions/bluetooth_ready.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/device_service.dart';
 import '../../domain/transport/ble_scanner.dart';
@@ -95,12 +95,11 @@ class AddDeviceController extends _$AddDeviceController {
   /// Step 3 (Bluetooth, or Wi‑Fi set up over Bluetooth). Also "Try again".
   Future<void> startScan() async {
     await _stopScan();
-    state = state.copyWith(phase: const Scanning(), error: null);
-    if (!await _scanner.requestPermission()) {
-      state = state.copyWith(error: AddDeviceError.bluetoothPermission);
-      return;
-    }
-    _listen();
+    state = state.copyWith(phase: const Scanning(), error: null, permission: null);
+    final permissions = ref.read(permissionServiceProvider);
+    final problem = await bluetoothProblem(permissions, _scanner.availability, ask: true);
+    if (problem == null) return _listen();
+    state = state.copyWith(permission: problem); // Refused or switched off: no scan.
   }
 
   /// Step 3 Wi‑Fi "Connect device": scans for the device, or asks the user to join its hotspot.

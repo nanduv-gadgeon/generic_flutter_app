@@ -33,7 +33,8 @@ void main() {
     biometricUser = FakeBiometricUserStore();
     photos = MockProfilePhotoStore();
     when(() => biometrics.isAvailable()).thenAnswer((_) async => true);
-    when(() => biometrics.authenticate(any())).thenAnswer((_) async => true);
+    when(() => biometrics.availability()).thenAnswer((_) async => BiometricOutcome.success);
+    when(() => biometrics.authenticate(any())).thenAnswer((_) async => BiometricOutcome.success);
     stubUnchangedEnrollment(biometrics);
     when(() => photos.delete(any())).thenAnswer((_) async {});
     auth = LocalAuthService(
@@ -149,7 +150,9 @@ void main() {
     for (final MapEntry(key: name, value: (lock, passes, email, type)) in cases.entries) {
       test(name, () async {
         when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => lock);
-        when(() => biometrics.authenticate(any())).thenAnswer((_) async => passes);
+        when(
+          () => biometrics.authenticate(any()),
+        ).thenAnswer((_) async => passes ? BiometricOutcome.success : BiometricOutcome.cancelled);
 
         final result = await auth.resetPassword(
           email: email,
@@ -190,7 +193,7 @@ void main() {
 
     test('keeps Face ID login on', () async {
       await auth.login('test@example.com', 'correct horse');
-      await auth.setBiometricLogin(enabled: true);
+      await auth.enableBiometricLogin(reason: _reason);
       await auth.logout();
 
       await auth.resetPassword(
@@ -208,7 +211,7 @@ void main() {
 
     Future<void> loginAndEnable() async {
       await auth.login('test@example.com', 'correct horse');
-      await auth.setBiometricLogin(enabled: true);
+      await auth.enableBiometricLogin(reason: _reason);
       await auth.logout();
     }
 
@@ -231,7 +234,8 @@ void main() {
 
     test('fails when the prompt is cancelled', () async {
       await loginAndEnable();
-      when(() => biometrics.authenticate(any())).thenAnswer((_) async => false);
+      when(() => biometrics.authenticate(any()))
+          .thenAnswer((_) async => BiometricOutcome.cancelled);
 
       expect(await auth.loginWithBiometrics(reason: _reason), isA<BiometricFailed>());
       expect(await auth.currentUser(), isNull);
@@ -248,7 +252,7 @@ void main() {
       await loginAndEnable();
       await auth.login('test@example.com', 'correct horse');
 
-      await auth.setBiometricLogin(enabled: false);
+      await auth.disableBiometricLogin();
 
       expect(biometricUser.userId, isNull);
       expect(await auth.canLoginWithBiometrics(), isFalse);
@@ -259,7 +263,7 @@ void main() {
       await auth.register(_registration.copyWith(email: 'second@example.com'));
       await auth.login('second@example.com', 'correct horse');
 
-      await auth.setBiometricLogin(enabled: true);
+      await auth.enableBiometricLogin(reason: _reason);
       await auth.logout();
 
       expect((await db.usersDao.findByEmail('test@example.com'))!.biometricEnabled, isFalse);
@@ -267,8 +271,78 @@ void main() {
       expect((await auth.currentUser())?.email, 'second@example.com');
     });
 
+    // (phone availability, prompt result) -> outcome; it is on only after a verified prompt
+    final enabling = <String, (BiometricOutcome, BiometricOutcome, BiometricOutcome)>{
+      'verified': (BiometricOutcome.success, BiometricOutcome.success, BiometricOutcome.success),
+      'prompt cancelled': (
+        BiometricOutcome.success,
+        BiometricOutcome.cancelled,
+        BiometricOutcome.cancelled,
+      ),
+      'not recognised': (
+        BiometricOutcome.success,
+        BiometricOutcome.failed,
+        BiometricOutcome.failed,
+      ),
+      'locked out': (
+        BiometricOutcome.success,
+        BiometricOutcome.lockedOut,
+        BiometricOutcome.lockedOut,
+      ),
+      'nothing enrolled': (
+        BiometricOutcome.notEnrolled,
+        BiometricOutcome.success,
+        BiometricOutcome.notEnrolled,
+      ),
+      'no hardware': (
+        BiometricOutcome.notAvailable,
+        BiometricOutcome.success,
+        BiometricOutcome.notAvailable,
+      ),
+    };
+    for (final MapEntry(key: name, value: (available, prompt, expected)) in enabling.entries) {
+      test('turning it on: $name -> ${expected.name}', () async {
+        when(() => biometrics.availability()).thenAnswer((_) async => available);
+        when(() => biometrics.authenticate(any())).thenAnswer((_) async => prompt);
+        await auth.login('test@example.com', 'correct horse');
+
+        final outcome = await auth.enableBiometricLogin(reason: _reason);
+
+        expect(outcome, expected);
+        final on = expected == BiometricOutcome.success;
+        expect((await db.usersDao.findByEmail('test@example.com'))!.biometricEnabled, on);
+        expect(biometricUser.userId, on ? isNotNull : isNull);
+        if (available == BiometricOutcome.success) {
+          verify(() => biometrics.authenticate(_reason)).called(1);
+        } else {
+          verifyNever(() => biometrics.authenticate(any())); // no prompt that cannot work
+        }
+      });
+    }
+
+    test('turning it off shows no prompt', () async {
+      await loginAndEnable();
+      await auth.login('test@example.com', 'correct horse');
+      clearInteractions(biometrics);
+
+      await auth.disableBiometricLogin();
+
+      verifyNever(() => biometrics.authenticate(any()));
+    });
+
+    test('logging in says why the prompt did not work', () async {
+      await loginAndEnable();
+      when(() => biometrics.authenticate(any()))
+          .thenAnswer((_) async => BiometricOutcome.lockedOut);
+
+      final result = await auth.loginWithBiometrics(reason: _reason);
+
+      expect((result as BiometricFailed).outcome, BiometricOutcome.lockedOut);
+    });
+
     test('changing the setting needs a logged-in user', () async {
-      await expectLater(auth.setBiometricLogin(enabled: true), throwsStateError);
+      await expectLater(auth.enableBiometricLogin(reason: _reason), throwsStateError);
+      await expectLater(auth.disableBiometricLogin(), throwsStateError);
     });
   });
 

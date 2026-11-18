@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/add_device/add_device_controller.dart';
+import '../../../core/di/services.dart';
 import '../../../domain/models/device_profile.dart';
 import '../../../domain/transport/ble_scanner.dart';
 import '../../strings/add_device_strings.dart';
 import '../../widgets/form_widgets.dart';
+import '../../widgets/permission_message.dart';
 import '../add_device_parts.dart';
 import '../remove_device_dialog.dart';
 import '../scan_pulse.dart';
@@ -23,8 +25,11 @@ class BleScanStep extends ConsumerWidget {
     final phase = state.phase as Scanning;
     final tokens = tokensOf(context);
     final error = state.error;
+    final permission = state.permission;
+    // Bluetooth refused or off: nothing is searching, and the message says why.
+    final failed = error != null || permission != null;
 
-    final stopped = !phase.searching && error == null;
+    final stopped = !phase.searching && !failed;
 
     return StepLayout(
       // After the 20 s scan: what was found stays listed.
@@ -36,7 +41,7 @@ class BleScanStep extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 8, bottom: 4),
           // Pulses while scanning; still once the scan has stopped.
           child: ScanPulse(
-            active: phase.searching && error == null,
+            active: phase.searching && !failed,
             color: Theme.of(context).colorScheme.primary,
             child: StatusCircle(
               icon: Icons.bluetooth,
@@ -71,6 +76,14 @@ class BleScanStep extends ConsumerWidget {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: tokens?.muted),
         ),
+        if (permission != null) ...[
+          const SizedBox(height: 18),
+          PermissionMessage(
+            permission,
+            permissions: ref.read(permissionServiceProvider),
+            onRetry: controller.startScan,
+          ),
+        ],
         if (error != null) ...[
           const SizedBox(height: 18),
           ErrorMessage(context.l10n.addDeviceError(error)),

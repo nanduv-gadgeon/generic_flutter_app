@@ -29,11 +29,7 @@ class UniversalBleAdapter implements BleAdapter {
   };
 
   @override
-  Future<bool> requestPermission() async {
-    // minSdk 34: scan and connect permissions only, never location.
-    await UniversalBle.requestPermissions();
-    return UniversalBle.hasPermissions();
-  }
+  Future<bool> enableBluetooth() => UniversalBle.enableBluetooth();
 
   @override
   Stream<FoundDevice> get scanResults =>

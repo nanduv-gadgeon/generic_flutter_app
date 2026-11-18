@@ -45,17 +45,30 @@ void main() {
 
     await controller().completeLogin(fakeUser);
     expect(container.read(authControllerProvider).value, fakeUser);
-    verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+    verifyNever(() => service.enableBiometricLogin(reason: any(named: 'reason')));
   });
 
-  test('completeLogin can turn on biometrics', () async {
+  test('completeLogin turns on biometrics only when the prompt verifies the user', () async {
     await container.read(authControllerProvider.future);
-    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
+    when(() => service.enableBiometricLogin(reason: 'reason'))
+        .thenAnswer((_) async => BiometricOutcome.success);
 
-    await controller().completeLogin(fakeUser, enableBiometrics: true);
+    final outcome = await controller().completeLogin(fakeUser, biometricReason: 'reason');
 
-    verify(() => service.setBiometricLogin(enabled: true)).called(1);
+    expect(outcome, BiometricOutcome.success);
     expect(container.read(authControllerProvider).value?.biometricEnabled, isTrue);
+  });
+
+  test('completeLogin still logs in when the prompt is cancelled, with it off', () async {
+    await container.read(authControllerProvider.future);
+    when(() => service.enableBiometricLogin(reason: 'reason'))
+        .thenAnswer((_) async => BiometricOutcome.cancelled);
+
+    final outcome = await controller().completeLogin(fakeUser, biometricReason: 'reason');
+
+    expect(outcome, BiometricOutcome.cancelled);
+    expect(container.read(authControllerProvider).value, fakeUser);
+    expect(container.read(authControllerProvider).value?.biometricEnabled, isFalse);
   });
 
   test('a biometric login switches user straight away', () async {
@@ -96,7 +109,7 @@ void main() {
       await controller().register(data);
 
       expect(container.read(authControllerProvider).value, fakeUser);
-      verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+      verifyNever(() => service.enableBiometricLogin(reason: any(named: 'reason')));
     });
 
     test('an email already in use throws and keeps nobody logged in', () async {
@@ -166,14 +179,37 @@ void main() {
       expect(container.read(authControllerProvider).value, fakeUser);
     });
 
-    test('setBiometricLogin saves it and updates the user', () async {
+    test('setBiometricLogin on: saved only after the prompt verifies the user', () async {
       await container.read(authControllerProvider.future);
-      when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
+      when(() => service.enableBiometricLogin(reason: 'reason'))
+          .thenAnswer((_) async => BiometricOutcome.success);
 
-      await controller().setBiometricLogin(enabled: true);
+      final outcome = await controller().setBiometricLogin(enabled: true, reason: 'reason');
 
-      verify(() => service.setBiometricLogin(enabled: true)).called(1);
+      expect(outcome, BiometricOutcome.success);
       expect(container.read(authControllerProvider).value?.biometricEnabled, isTrue);
+    });
+
+    test('setBiometricLogin on: stays off and returns why', () async {
+      await container.read(authControllerProvider.future);
+      when(() => service.enableBiometricLogin(reason: 'reason'))
+          .thenAnswer((_) async => BiometricOutcome.notEnrolled);
+
+      final outcome = await controller().setBiometricLogin(enabled: true, reason: 'reason');
+
+      expect(outcome, BiometricOutcome.notEnrolled);
+      expect(container.read(authControllerProvider).value?.biometricEnabled, isFalse);
+    });
+
+    test('setBiometricLogin off: no prompt', () async {
+      await container.read(authControllerProvider.future);
+      when(() => service.disableBiometricLogin()).thenAnswer((_) async {});
+
+      final outcome = await controller().setBiometricLogin(enabled: false, reason: 'reason');
+
+      expect(outcome, isNull);
+      verify(() => service.disableBiometricLogin()).called(1);
+      verifyNever(() => service.enableBiometricLogin(reason: any(named: 'reason')));
     });
   });
 

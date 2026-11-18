@@ -23,6 +23,22 @@ class LocalBiometricAuth implements BiometricAuth {
   }
 
   @override
+  Future<BiometricOutcome> availability() async {
+    try {
+      // canCheckBiometrics is true when the phone has the hardware, even with nothing enrolled.
+      if (!await _auth.isDeviceSupported() || !await _auth.canCheckBiometrics) {
+        return BiometricOutcome.notAvailable;
+      }
+      if ((await _auth.getAvailableBiometrics()).isEmpty) return BiometricOutcome.notEnrolled;
+      return BiometricOutcome.success;
+    } on LocalAuthException catch (e) {
+      return outcomeOf(e.code);
+    } on PlatformException {
+      return BiometricOutcome.notAvailable;
+    }
+  }
+
+  @override
   Future<bool> canVerifyOwner() async {
     try {
       // False on Android and iOS when no PIN, pattern, passcode or biometric is set up.
@@ -45,12 +61,18 @@ class LocalBiometricAuth implements BiometricAuth {
   }
 
   @override
-  Future<bool> authenticate(String reason) async {
+  Future<BiometricOutcome> authenticate(String reason) async {
     try {
       // The device passcode is allowed as a fallback.
-      return await _auth.authenticate(localizedReason: reason, persistAcrossBackgrounding: true);
-    } on LocalAuthException {
-      return false;
+      final ok = await _auth.authenticate(
+        localizedReason: reason,
+        persistAcrossBackgrounding: true,
+      );
+      return ok ? BiometricOutcome.success : BiometricOutcome.failed;
+    } on LocalAuthException catch (e) {
+      return outcomeOf(e.code);
+    } on PlatformException {
+      return BiometricOutcome.failed;
     }
   }
 
@@ -87,3 +109,21 @@ class LocalBiometricAuth implements BiometricAuth {
     }
   }
 }
+
+/// What a `local_auth` error means for the user.
+BiometricOutcome outcomeOf(LocalAuthExceptionCode code) => switch (code) {
+  LocalAuthExceptionCode.userCanceled ||
+  LocalAuthExceptionCode.systemCanceled ||
+  LocalAuthExceptionCode.timeout ||
+  LocalAuthExceptionCode.userRequestedFallback => BiometricOutcome.cancelled,
+  LocalAuthExceptionCode.noBiometricsEnrolled ||
+  LocalAuthExceptionCode.noCredentialsSet => BiometricOutcome.notEnrolled,
+  LocalAuthExceptionCode.noBiometricHardware ||
+  LocalAuthExceptionCode.biometricHardwareTemporarilyUnavailable ||
+  LocalAuthExceptionCode.uiUnavailable => BiometricOutcome.notAvailable,
+  LocalAuthExceptionCode.temporaryLockout => BiometricOutcome.lockedOut,
+  LocalAuthExceptionCode.biometricLockout => BiometricOutcome.permanentlyLockedOut,
+  LocalAuthExceptionCode.authInProgress ||
+  LocalAuthExceptionCode.deviceError ||
+  LocalAuthExceptionCode.unknownError => BiometricOutcome.failed,
+};

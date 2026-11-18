@@ -27,7 +27,7 @@ void main() {
     biometrics = MockBiometricAuth();
     when(() => biometrics.isAvailable()).thenAnswer((_) async => false);
     when(() => biometrics.canVerifyOwner()).thenAnswer((_) async => true);
-    when(() => biometrics.authenticate(any())).thenAnswer((_) async => true);
+    when(() => biometrics.authenticate(any())).thenAnswer((_) async => BiometricOutcome.success);
     auth = LocalAuthService(
       db: db,
       hasher: hasher,

@@ -7,6 +7,8 @@ import '../../../domain/transport/device_link.dart';
 import '../../../domain/transport/reconnect_backoff.dart';
 import '../link_support.dart';
 import 'ble_adapter.dart';
+import 'ble_characteristics.dart';
+import 'bluetooth_power.dart';
 
 export '../link_support.dart' show Delay;
 
@@ -50,6 +52,7 @@ class BleDeviceLink implements DeviceLink {
   final _packets = StreamController<DevicePacket>.broadcast();
   final _battery = StreamController<int>.broadcast();
   final _valueSubs = <StreamSubscription<Uint8List>>[];
+  final _power = BluetoothPower();
   StreamSubscription<bool>? _connectionSub;
   Timer? _batteryPoll;
 
@@ -79,6 +82,7 @@ class BleDeviceLink implements DeviceLink {
       rethrow;
     }
     _connectionSub ??= _adapter.connection(deviceId).listen(_onConnection);
+    _power.watch(_adapter.availability, onOff: _onBluetoothOff);
   }
 
   @override
@@ -88,24 +92,19 @@ class BleDeviceLink implements DeviceLink {
     if (_states.value != LinkState.connected) throw const LinkException('not connected');
 
     final data = Uint8List.fromList(bytes);
+    Future<void> writeOnce() => _adapter.write(
+      deviceId,
+      _service,
+      fullUuid(write),
+      data,
+      withoutResponse: _settings.writeWithoutResponse,
+    );
     try {
-      await _adapter.write(
-        deviceId,
-        _service,
-        fullUuid(write),
-        data,
-        withoutResponse: _settings.writeWithoutResponse,
-      );
+      await writeOnce();
     } catch (_) {
       await _delay(writeRetryDelay);
       try {
-        await _adapter.write(
-          deviceId,
-          _service,
-          fullUuid(write),
-          data,
-          withoutResponse: _settings.writeWithoutResponse,
-        );
+        await writeOnce();
       } catch (e) {
         throw LinkException('write failed: ${describeError(e)}');
       }
@@ -116,6 +115,7 @@ class BleDeviceLink implements DeviceLink {
   Future<void> disconnect() async {
     _wanted = false;
     _stopBatteryPoll();
+    await _power.stop();
     await _connectionSub?.cancel();
     _connectionSub = null;
     await _cancelValueSubs();
@@ -180,24 +180,10 @@ class BleDeviceLink implements DeviceLink {
   }
 
   Future<void> _subscribe(Map<String, Set<String>> services) async {
-    final characteristics = services[_service];
-    if (characteristics == null) throw const LinkException('device has no data service');
+    checkCharacteristics(services, _settings);
     final notify = fullUuid(_settings.notifyUuid);
-    if (!characteristics.contains(notify)) {
-      throw const LinkException('device has no data characteristic');
-    }
-    final write = _settings.writeUuid;
-    if (write != null && !characteristics.contains(fullUuid(write))) {
-      throw const LinkException('device has no command characteristic');
-    }
     final reply = _settings.replyUuid;
-    if (reply != null && !characteristics.contains(fullUuid(reply))) {
-      throw const LinkException('device has no reply characteristic');
-    }
     final clock = _settings.timeSync;
-    if (clock != null && !characteristics.contains(fullUuid(clock.uuid))) {
-      throw const LinkException('device has no clock characteristic');
-    }
 
     await _cancelValueSubs();
     await _listen(notify, FrameSource.data);
@@ -256,11 +242,37 @@ class BleDeviceLink implements DeviceLink {
     if (!connected && _wanted && _states.value == LinkState.connected) unawaited(_reconnect());
   }
 
+  /// Bluetooth turned off. The OS sends no disconnect for it, so the link drops what it had and
+  /// reconnects once Bluetooth is back (TC-1.2-044); the heartbeat marks it Offline meanwhile.
+  void _onBluetoothOff() {
+    if (!_wanted) return;
+    final wasConnected = _states.value == LinkState.connected;
+    unawaited(_dropRadio());
+    if (wasConnected) unawaited(_reconnect());
+  }
+
+  Future<void> _dropRadio() async {
+    await _cancelValueSubs();
+    try {
+      await _adapter.disconnect(deviceId); // Frees the dead link's GATT client.
+    } catch (_) {
+      // Best effort.
+    }
+  }
+
+  /// Waits [ReconnectBackoff] between tries; while Bluetooth is off it waits for it instead, and
+  /// starts again from the first, short wait once it is back.
   Future<void> _reconnect() async {
     _setState(LinkState.reconnecting);
     for (var attempt = 0; _wanted; attempt++) {
+      if (!_power.isOn) {
+        await _power.whenOn();
+        attempt = 0;
+        if (!_wanted) return;
+      }
       await _delay(_backoff.delayFor(attempt));
       if (!_wanted) return;
+      if (!_power.isOn) continue;
       try {
         await _open();
         return;

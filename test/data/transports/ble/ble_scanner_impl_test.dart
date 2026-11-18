@@ -117,17 +117,28 @@ void main() {
     });
   });
 
-  group('requestPermission', () {
-    test('passes on the answer', () async {
-      when(() => adapter.requestPermission()).thenAnswer((_) async => true);
+  group('turning Bluetooth on', () {
+    test('Android asks the phone and passes on its answer', () async {
+      when(() => adapter.enableBluetooth()).thenAnswer((_) async => true);
+      final android = BleScannerImpl(adapter, isAndroid: true);
 
-      expect(await scanner.requestPermission(), isTrue);
+      expect(android.canEnableBluetooth, isTrue);
+      expect(await android.enableBluetooth(), isTrue);
+      verify(() => adapter.enableBluetooth()).called(1);
     });
 
-    test('is false when the request fails', () async {
-      when(() => adapter.requestPermission()).thenThrow(Exception('unsupported'));
+    test('Android: a failing request means still off', () async {
+      when(() => adapter.enableBluetooth()).thenThrow(Exception('no activity'));
 
-      expect(await scanner.requestPermission(), isFalse);
+      expect(await BleScannerImpl(adapter, isAndroid: true).enableBluetooth(), isFalse);
+    });
+
+    test('iOS cannot: false, without asking', () async {
+      final ios = BleScannerImpl(adapter, isAndroid: false);
+
+      expect(ios.canEnableBluetooth, isFalse);
+      expect(await ios.enableBluetooth(), isFalse);
+      verifyNever(() => adapter.enableBluetooth());
     });
   });
 }

@@ -17,6 +17,8 @@ import 'package:generic_flutter_app/data/upload/cloud_uploader.dart';
 import 'package:generic_flutter_app/domain/models/new_device.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/upload/no_uploader.dart';
+import 'package:generic_flutter_app/data/devices/user_disconnects.dart';
+import 'package:generic_flutter_app/data/permissions/handler_permission_service.dart';
 
 import '../../fixtures/test_config.dart';
 
@@ -67,6 +69,14 @@ void main() {
     test('export offered: isCloud $isCloud, feature $export -> $offered', () async {
       final container = await _containerFor(isCloud: isCloud, export: export);
       expect(container.read(exportAvailableProvider), offered);
+    });
+  }
+
+  for (final isCloud in [false, true]) {
+    test('permissions and Disconnect device are the same in both phases ($isCloud)', () async {
+      final container = await _containerFor(isCloud: isCloud);
+      expect(container.read(permissionServiceProvider), isA<HandlerPermissionService>());
+      expect(container.read(liveReadingsProvider), isA<UserDisconnects>());
     });
   }
 

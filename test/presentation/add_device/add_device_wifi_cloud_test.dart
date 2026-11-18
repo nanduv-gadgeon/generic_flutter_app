@@ -69,7 +69,10 @@ void main() {
 
       expect(find.text('Connect device to Wi‑Fi'), findsOneWidget);
       expect(
-        find.text("Could not reach the device. Check your phone is on the device's Wi‑Fi."),
+        find.text(
+          "Could not reach the device. Check your phone is on the device's Wi‑Fi. On iPhone, also "
+          'allow Local Network for this app in Settings.',
+        ),
         findsOneWidget,
       );
     });

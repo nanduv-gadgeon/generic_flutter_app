@@ -21,6 +21,7 @@ import 'package:generic_flutter_app/presentation/devices/home_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'bluetooth_fakes.dart';
 import 'fake_auth.dart';
 import 'l10n.dart';
 
@@ -56,6 +57,12 @@ Future<MockDeviceService> pumpHome(
   AuthUser user = fakeUser,
   Map<int, Map<String, Sample>> latest = const {},
   ActiveLink? active,
+
+  /// Devices the user disconnected (Disconnect device).
+  Set<int> disconnected = const {},
+
+  /// The phone's Bluetooth is off.
+  bool bluetoothOff = false,
 }) async {
   tester.view
     ..physicalSize = size
@@ -70,6 +77,7 @@ Future<MockDeviceService> pumpHome(
   when(() => deviceService.removeById(any(), any())).thenAnswer((_) async {});
   final live = MockLiveReadings();
   when(live.watchActive).thenAnswer((_) => Stream.value(active));
+  when(live.watchDisconnected).thenAnswer((_) => Stream.value(disconnected));
   final readings = MockReadingRepository();
   when(() => readings.watchLatest(any()))
       .thenAnswer((i) => Stream.value(latest[i.positionalArguments.single] ?? const {}));
@@ -90,6 +98,7 @@ Future<MockDeviceService> pumpHome(
   );
   final container = ProviderContainer(
     overrides: [
+      ...bluetoothOverrides(off: bluetoothOff),
       authServiceProvider.overrideWithValue(auth),
       deviceServiceProvider.overrideWithValue(deviceService),
       liveReadingsProvider.overrideWithValue(live),

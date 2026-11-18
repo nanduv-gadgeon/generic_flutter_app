@@ -25,9 +25,11 @@ abstract interface class BleScanner {
   /// Starts with the current state.
   Stream<BleAvailability> get availability;
 
-  /// Asks the user for Bluetooth permission if not granted yet; returns whether it is granted.
-  /// Call before [scan].
-  Future<bool> requestPermission();
+  /// Whether the app can turn Bluetooth on itself (Android asks the user; iOS cannot).
+  bool get canEnableBluetooth;
+
+  /// Asks the phone to turn Bluetooth on; false when it stays off or the phone cannot.
+  Future<bool> enableBluetooth();
 
   /// Devices matching [profile]'s scan service or name prefix, newest list first.
   ///

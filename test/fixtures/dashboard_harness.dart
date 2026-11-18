@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'bluetooth_fakes.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,7 +87,11 @@ List<Override> dashboardOverrides({
 
   /// My devices as it arrives, in place of [devices] at once, e.g. catching up after Add device.
   Stream<List<UserDevice>>? deviceUpdates,
+
+  /// The phone's Bluetooth is off.
+  bool bluetoothOff = false,
 }) => [
+  ...bluetoothOverrides(off: bluetoothOff),
   liveReadingsProvider.overrideWithValue(live),
   myDevicesProvider.overrideWith((ref) => deviceUpdates ?? Stream.value(devices)),
   deviceProfileRegistryProvider.overrideWith((ref) async => vitaCareRegistry),

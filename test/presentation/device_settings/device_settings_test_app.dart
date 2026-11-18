@@ -19,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/test_config.dart';
 import '../../fixtures/l10n.dart';
+import '../../fixtures/scripted_live_readings.dart';
 
 class MockDeviceService extends Mock implements DeviceService {}
 
@@ -54,6 +55,9 @@ final band = DeviceDetails(
 late MockDeviceService devices;
 late StreamController<DeviceDetails?> deviceStream;
 
+/// The screen's live readings (Disconnect device / Connect); set by [pumpSettings].
+late ScriptedLiveReadings live;
+
 /// Opens Device settings for [device] (null: no such device) over a stand-in home page.
 Future<void> pumpSettings(
   WidgetTester tester, {
@@ -72,6 +76,7 @@ Future<void> pumpSettings(
   final auth = MockAuthService();
   when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
   devices = MockDeviceService();
+  live = ScriptedLiveReadings();
   deviceStream = StreamController<DeviceDetails?>();
   addTearDown(deviceStream.close);
   deviceStream.add(device);
@@ -92,6 +97,7 @@ Future<void> pumpSettings(
       deviceServiceProvider.overrideWithValue(devices),
       clockProvider.overrideWithValue(() => testNow),
       activeLinkProvider.overrideWith((_) => Stream.value(activeLink)),
+      liveReadingsProvider.overrideWithValue(live),
     ],
   );
   addTearDown(container.dispose);

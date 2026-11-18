@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import '../../../domain/models/device_profile.dart';
 import '../../../domain/transport/ble_scanner.dart';
@@ -7,9 +8,23 @@ import 'ble_adapter.dart';
 
 /// [BleScanner] that only looks for devices matching the profile's `ble` (or `wifi.bleSetup`) block.
 class BleScannerImpl implements BleScanner {
-  BleScannerImpl(this._adapter);
+  BleScannerImpl(this._adapter, {bool? isAndroid})
+    : canEnableBluetooth = isAndroid ?? Platform.isAndroid;
 
   final BleAdapter _adapter;
+
+  @override
+  final bool canEnableBluetooth;
+
+  @override
+  Future<bool> enableBluetooth() async {
+    if (!canEnableBluetooth) return false;
+    try {
+      return await _adapter.enableBluetooth();
+    } catch (_) {
+      return false;
+    }
+  }
 
   @override
   Stream<BleAvailability> get availability => _adapter.availability;

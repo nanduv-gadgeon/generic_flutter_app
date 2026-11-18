@@ -95,4 +95,23 @@ void main() {
 
     expect(tester.takeException(), isNull); // no overflow
   });
+
+  // While the phone's Bluetooth is off its devices wait to reconnect (TC-1.2-044); home says why,
+  // but only when a Bluetooth device is waiting.
+  const ble = UserDevice(id: 1, name: 'Test band', profileId: 'test_device_v1');
+  final wifi = ble.copyWith(id: 2, name: 'Test hub', transport: Transport.wifi);
+  final bluetoothCases = <String, (bool, List<UserDevice>, bool)>{
+    'off, with a Bluetooth device': (true, [ble, wifi], true),
+    'on': (false, [ble], false),
+    'off, with Wi‑Fi devices only': (true, [wifi], false),
+    'off, with no devices': (true, [], false),
+  };
+  for (final MapEntry(key: name, value: (off, devices, shown)) in bluetoothCases.entries) {
+    testWidgets('Bluetooth $name: the banner is ${shown ? 'shown' : 'hidden'}', (tester) async {
+      await pumpHome(tester, devices: devices, bluetoothOff: off);
+
+      expect(find.text('Bluetooth is off'), shown ? findsOneWidget : findsNothing);
+      if (shown) expect(find.text('Turn it on to reconnect your devices.'), findsOneWidget);
+    });
+  }
 }

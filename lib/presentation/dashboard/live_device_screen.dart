@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../application/bluetooth_provider.dart';
 import '../../application/dashboard_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/device_settings_provider.dart';
@@ -14,6 +15,7 @@ import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
 import '../device_settings/device_settings_button.dart';
 import '../strings/device_strings.dart';
+import '../widgets/bluetooth_off_banner.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/permission_message.dart';
 import 'dashboard_format.dart';
@@ -98,9 +100,14 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
     final dashboard = profile.dashboardOrDefault;
     ref.listen(liveDeviceProvider(deviceId), (_, next) => _onLive(next, dashboard.onDemand));
     final linkState = linkStateOf(live.status, online: live.online, onDemand: dashboard.onDemand);
+    // While the phone's Bluetooth is off a Bluetooth device cannot reconnect: that banner says
+    // why, instead of the offline one, whose Reconnect could not work.
+    final bluetoothOff =
+        device.transport == Transport.ble && (ref.watch(bluetoothOffProvider).value ?? false);
     // The banner shows whenever the device is Offline (the same moment the home card and the strip
     // say so), and stays while a Reconnect is trying or after it failed.
-    final showBanner = linkState == LinkState.offline || _reconnect != _Reconnect.idle;
+    final showBanner =
+        !bluetoothOff && (linkState == LinkState.offline || _reconnect != _Reconnect.idle);
     final now = ref.watch(dashboardNowProvider).value ?? ref.watch(clockProvider)();
     final summary = ref.watch(eventSummaryProvider(deviceId));
     final stored = ref.watch(latestReadingsProvider(deviceId)).value ?? const {};
@@ -118,8 +125,11 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
     );
     // "Could not connect" is what the banner says already; other problems (low battery, sensor
     // not responding…) still show, without Try again, since the banner has Reconnect.
+    final banner = showBanner || bluetoothOff;
     final failure = switch (live.failure) {
-      LiveFailure(reason: LiveFailureReason.connectFailed, problem: null) when showBanner => null,
+      LiveFailure(reason: LiveFailureReason.connectFailed, problem: null) when banner => null,
+      // The Bluetooth banner says it already, with Turn on.
+      LiveFailure(:final permission?) when bluetoothOff && permission.isBluetoothOff => null,
       final f => f,
     };
     final views = dashboard.views;
@@ -137,8 +147,15 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
             ),
             const SizedBox(height: 14),
             StatusStrip(
-              cells: stripCells(context, _strip(device, profile, live, data, summary, linkState)),
+              cells: stripCells(
+                context,
+                _strip(device, profile, live, data, summary, linkState, bluetoothOff),
+              ),
             ),
+            if (bluetoothOff) ...[
+              const SizedBox(height: 14),
+              BluetoothOffBanner(deviceName: device.name),
+            ],
             if (showBanner) ...[
               const SizedBox(height: 14),
               OfflineBanner(
@@ -157,7 +174,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
               },
             ),
             // The banner already says Offline and when; the status line would repeat it.
-            if (!streaming && !showBanner) ...[
+            if (!streaming && !banner) ...[
               const SizedBox(height: 14),
               LiveStatusLine(
                 status: live.status,
@@ -190,7 +207,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
             ] else if (failure != null) ...[
               const SizedBox(height: 12),
               ErrorMessage(context.l10n.deviceFailure(failure)),
-              if (!showBanner)
+              if (!banner)
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
@@ -220,6 +237,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
     DashboardData data,
     EventSummary summary,
     LinkState linkState,
+    bool bluetoothOff,
   ) {
     final dashboard = profile.dashboardOrDefault;
     final views = dashboard.views;
@@ -236,6 +254,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       streaming: data.live,
       online: live.online,
       link: linkState,
+      bluetoothOff: bluetoothOff,
       battery: data.values[batteryKey] ?? device.batteryPercent?.toDouble(),
       lastHeartbeatAt: live.lastHeartbeatAt ?? device.lastHeartbeatAt,
       summary: summary,

@@ -9,6 +9,10 @@ abstract interface class BleAdapter {
   /// Starts with the current state.
   Stream<BleAvailability> get availability;
 
+  /// Android: asks the user to turn Bluetooth on (system prompt); returns whether it is on.
+  /// iOS has no such call; throws there.
+  Future<bool> enableBluetooth();
+
   /// Every advertisement seen while scanning.
   Stream<FoundDevice> get scanResults;
 

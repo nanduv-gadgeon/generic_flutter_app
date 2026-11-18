@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/auth_controller.dart';
+import '../../application/bluetooth_provider.dart';
 import '../../application/debug_dummy_devices.dart';
 import '../../application/debug_history_seed.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../domain/models/device_profile.dart';
 import '../strings/devices_strings.dart';
+import '../widgets/bluetooth_off_banner.dart';
 import 'home_device_card.dart';
 import 'home_list_parts.dart';
 import 'home_reorder_list.dart';
@@ -75,6 +78,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Reordering needs at least two devices; leave the mode when that is no longer so.
     final canReorder = devices.length >= 2;
     final reordering = _reordering && canReorder;
+    // Only when a Bluetooth device is waiting for it; Wi‑Fi devices do not need it.
+    final bluetoothOff =
+        (ref.watch(bluetoothOffProvider).value ?? false) &&
+        devices.any((d) => d.transport == Transport.ble);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -90,6 +97,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             const SizedBox(height: 18),
             _TotalsRow(summary: summary),
+            if (bluetoothOff) ...[const SizedBox(height: 14), const BluetoothOffBanner()],
             const SizedBox(height: 18),
             MyDevicesHeading(
               reordering: reordering,

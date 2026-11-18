@@ -98,6 +98,9 @@ typedef StripState = ({
 
   /// The same link state as the home card and the offline banner.
   LinkState link,
+
+  /// A Bluetooth device while the phone's Bluetooth is off: it waits for it, not "Reconnecting".
+  bool bluetoothOff,
   double? battery,
   DateTime? lastHeartbeatAt,
   EventSummary summary,
@@ -116,6 +119,7 @@ List<StripCellData> stripCells(BuildContext context, StripState s) {
   final wifi = s.device.transport == Transport.wifi;
   final transport = wifi ? l10n.linkWifi : l10n.linkBluetooth;
   final link = switch (s.link) {
+    _ when s.bluetoothOff => (l10n.linkBluetoothOff, tokens.warn),
     LinkState.offline => (l10n.linkOffline, tokens.danger),
     LinkState.onDemand => (l10n.linkOnDemand, tokens.ok),
     LinkState.connecting || LinkState.reconnecting => (transport, tokens.warn),

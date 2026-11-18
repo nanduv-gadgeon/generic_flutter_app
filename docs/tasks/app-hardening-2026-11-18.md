@@ -4,7 +4,7 @@
 
 Five changes requested together on 2026-11-18:
 
-1. The app runs in portrait only.
+1. The app runs in portrait only (either way up), never landscape.
 2. Release-looking builds have no DEBUG banner.
 3. Turning Face ID login on really verifies the user.
 4. Every refused permission (or Bluetooth switched off) says what is missing and what will not work.
@@ -13,9 +13,9 @@ Five changes requested together on 2026-11-18:
 ## Scope
 
 **1. Portrait**
-- `lockPortrait()` (`lib/core/platform/orientation.dart`) runs in `main` before `runApp`.
-- `Info.plist`: Portrait only on iPhone and iPad (`~ipad`), with `UIRequiresFullScreen` (iPad multitasking would otherwise need every orientation).
-- `AndroidManifest.xml`: `screenOrientation="portrait"`.
+- `lockPortrait()` (`lib/core/platform/orientation.dart`) runs in `main` before `runApp`: portrait up and upside down.
+- `Info.plist`: Portrait and Portrait upside down on iPhone and iPad (`~ipad`), with `UIRequiresFullScreen` (iPad multitasking would otherwise need every orientation).
+- `AndroidManifest.xml`: `screenOrientation="sensorPortrait"` (both portraits, no landscape).
 
 **2. Debug banner**
 - `debugShowCheckedModeBanner: false` on the one `MaterialApp.router`.
@@ -53,7 +53,7 @@ Five changes requested together on 2026-11-18:
 
 ## Checks on a phone (not run)
 
-- **Rotation**: rotate the phone and an iPad; the app stays portrait, during launch too.
+- **Rotation**: rotate the phone and an iPad; the app turns between the two portraits but never to landscape, during launch too. iPhones without a Home button never show upside down (iOS rule).
 - **Face ID**:
   - Cancel the Face ID prompt when turning it on: the switch stays off and says so.
   - Turn it on with nothing enrolled: the "Set up Face ID in your phone's Settings" message.

@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/services/live_readings.dart';
 import '../../l10n/app_localizations.dart';
+import 'permission_strings.dart';
 
 /// Dashboard connection and problem text that needs more than a message from `app_en.arb`.
 extension DeviceStrings on AppLocalizations {
@@ -19,6 +20,7 @@ extension DeviceStrings on AppLocalizations {
     LiveStatus.reconnecting => deviceReconnecting,
     LiveStatus.syncing => deviceSyncing,
     LiveStatus.waiting => deviceWaiting,
+    LiveStatus.disconnected => deviceDisconnected,
   };
 
   /// "Offline · last heartbeat 5 min ago." Text, not only the colour, says it is offline.
@@ -54,6 +56,10 @@ extension DeviceStrings on AppLocalizations {
       LiveFailureReason.connectFailed => deviceFailureConnectFailed,
       LiveFailureReason.startFailed => deviceFailureStartFailed,
       LiveFailureReason.deviceProblem => deviceFailureDeviceProblem,
+      LiveFailureReason.bluetooth => switch (failure.permission) {
+        final p? => permissionProblem(p),
+        null => deviceFailureConnectFailed,
+      },
     },
   };
 }

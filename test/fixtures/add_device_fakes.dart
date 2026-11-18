@@ -15,6 +15,7 @@ import 'package:generic_flutter_app/domain/transport/wifi_provisioner.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'fake_auth.dart';
+import 'fake_permissions.dart';
 import 'test_config.dart';
 
 /// Made-up BLE devices.
@@ -25,7 +26,8 @@ const fakeFound = [
 
 /// A scanner the test drives: [results] feeds the current scan.
 class FakeBleScanner implements BleScanner {
-  bool permission = true;
+  /// What the phone says about Bluetooth.
+  BleAvailability power = BleAvailability.on;
   int scans = 0;
   int setupScans = 0;
   bool stopped = false;
@@ -33,10 +35,7 @@ class FakeBleScanner implements BleScanner {
   StreamController<List<FoundDevice>> results = StreamController();
 
   @override
-  Stream<BleAvailability> get availability => Stream.value(BleAvailability.on);
-
-  @override
-  Future<bool> requestPermission() async => permission;
+  Stream<BleAvailability> get availability => Stream.value(power);
 
   @override
   Stream<List<FoundDevice>> scan(DeviceProfile profile, {Duration? timeout}) {
@@ -167,6 +166,7 @@ class MockWifiProvisioner extends Mock implements WifiProvisioner {}
 /// (`unknown_v1`).
 class AddDeviceFakes {
   final scanner = FakeBleScanner();
+  final permissions = FakePermissionService();
   final devices = FakeDeviceService();
   final provisioner = MockWifiProvisioner();
   final links = <FakeLink>[];
@@ -198,6 +198,7 @@ class AddDeviceFakes {
       authServiceProvider.overrideWithValue(auth),
       deviceServiceProvider.overrideWithValue(devices),
       bleScannerProvider.overrideWithValue(scanner),
+      permissionServiceProvider.overrideWithValue(permissions),
       wifiProvisionerProvider.overrideWithValue(provisioner),
       cloudRegistrationAvailableProvider.overrideWithValue(isCloud),
       deviceLinkFactoryProvider.overrideWithValue((profile, transport, id, {lastAddress}) {

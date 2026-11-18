@@ -58,26 +58,85 @@ void main() {
     });
   }
 
-  test('authenticate returns the plugin result', () async {
-    when(
-      () => plugin.authenticate(
-        localizedReason: any(named: 'localizedReason'),
-        persistAcrossBackgrounding: any(named: 'persistAcrossBackgrounding'),
-      ),
-    ).thenAnswer((_) async => true);
+  void pluginAuthenticates(Future<bool> Function() answer) => when(
+    () => plugin.authenticate(
+      localizedReason: any(named: 'localizedReason'),
+      persistAcrossBackgrounding: any(named: 'persistAcrossBackgrounding'),
+    ),
+  ).thenAnswer((_) => answer());
 
-    expect(await auth.authenticate('reason'), isTrue);
+  // plugin result -> outcome
+  final results = <bool, BiometricOutcome>{
+    true: BiometricOutcome.success,
+    false: BiometricOutcome.failed,
+  };
+  for (final MapEntry(key: ok, value: outcome) in results.entries) {
+    test('authenticate: plugin says $ok -> ${outcome.name}', () async {
+      pluginAuthenticates(() async => ok);
+
+      expect(await auth.authenticate('reason'), outcome);
+    });
+  }
+
+  // local_auth error -> what the user is told (never thrown)
+  final errors = <LocalAuthExceptionCode, BiometricOutcome>{
+    LocalAuthExceptionCode.userCanceled: BiometricOutcome.cancelled,
+    LocalAuthExceptionCode.systemCanceled: BiometricOutcome.cancelled,
+    LocalAuthExceptionCode.timeout: BiometricOutcome.cancelled,
+    LocalAuthExceptionCode.userRequestedFallback: BiometricOutcome.cancelled,
+    LocalAuthExceptionCode.noBiometricsEnrolled: BiometricOutcome.notEnrolled,
+    LocalAuthExceptionCode.noCredentialsSet: BiometricOutcome.notEnrolled,
+    LocalAuthExceptionCode.noBiometricHardware: BiometricOutcome.notAvailable,
+    LocalAuthExceptionCode.biometricHardwareTemporarilyUnavailable: BiometricOutcome.notAvailable,
+    LocalAuthExceptionCode.uiUnavailable: BiometricOutcome.notAvailable,
+    LocalAuthExceptionCode.temporaryLockout: BiometricOutcome.lockedOut,
+    LocalAuthExceptionCode.biometricLockout: BiometricOutcome.permanentlyLockedOut,
+    LocalAuthExceptionCode.authInProgress: BiometricOutcome.failed,
+    LocalAuthExceptionCode.deviceError: BiometricOutcome.failed,
+    LocalAuthExceptionCode.unknownError: BiometricOutcome.failed,
+  };
+  test('every local_auth error is mapped', () {
+    expect(errors.keys.toSet(), LocalAuthExceptionCode.values.toSet());
+  });
+  for (final MapEntry(key: code, value: outcome) in errors.entries) {
+    test('authenticate: ${code.name} -> ${outcome.name}', () async {
+      pluginAuthenticates(() async => throw LocalAuthException(code: code));
+
+      expect(await auth.authenticate('reason'), outcome);
+    });
+  }
+
+  test('authenticate: a PlatformException is a failure, not a crash', () async {
+    pluginAuthenticates(() async => throw PlatformException(code: 'NotAvailable'));
+
+    expect(await auth.authenticate('reason'), BiometricOutcome.failed);
   });
 
-  test('authenticate returns false instead of throwing', () async {
-    when(
-      () => plugin.authenticate(
-        localizedReason: any(named: 'localizedReason'),
-        persistAcrossBackgrounding: any(named: 'persistAcrossBackgrounding'),
-      ),
-    ).thenThrow(const LocalAuthException(code: LocalAuthExceptionCode.userCanceled));
+  // (supported, has hardware, enrolled) -> availability
+  final availabilityCases = <String, (bool, bool, List<BiometricType>, BiometricOutcome)>{
+    'face enrolled': (true, true, [BiometricType.face], BiometricOutcome.success),
+    'hardware, nothing enrolled': (true, true, [], BiometricOutcome.notEnrolled),
+    'no hardware': (true, false, [], BiometricOutcome.notAvailable),
+    'not supported': (false, true, [BiometricType.face], BiometricOutcome.notAvailable),
+  };
+  for (final MapEntry(key: name, value: (supported, hardware, enrolled, outcome))
+      in availabilityCases.entries) {
+    test('availability: $name -> ${outcome.name}', () async {
+      when(() => plugin.isDeviceSupported()).thenAnswer((_) async => supported);
+      when(() => plugin.canCheckBiometrics).thenAnswer((_) async => hardware);
+      when(() => plugin.getAvailableBiometrics()).thenAnswer((_) async => enrolled);
 
-    expect(await auth.authenticate('reason'), isFalse);
+      expect(await auth.availability(), outcome);
+    });
+  }
+
+  test('availability: a local_auth error is mapped, not thrown', () async {
+    when(() => plugin.isDeviceSupported()).thenAnswer((_) async => true);
+    when(() => plugin.canCheckBiometrics).thenAnswer((_) async => true);
+    when(() => plugin.getAvailableBiometrics())
+        .thenThrow(const LocalAuthException(code: LocalAuthExceptionCode.biometricLockout));
+
+    expect(await auth.availability(), BiometricOutcome.permanentlyLockedOut);
   });
 
   group('enrolment channel (TC-LOG-012)', () {

@@ -12,10 +12,10 @@ import 'reading_writer.dart';
 /// The saved device's address and type, or null when it is gone.
 typedef DemoDeviceLookup = Future<({String address, String profileId})?> Function(int deviceId);
 
-/// Debug builds only: [LiveReadings] that plays a [DemoFeed] for dummy devices (addresses in the
+/// Debug builds only: [LiveConnections] that plays a [DemoFeed] for dummy devices (addresses in the
 /// `AA:BB:CC:DD` range) and passes everything else to the real one. Demo readings are stored like
 /// real ones, so trends and today's lists fill up. Release builds never create it.
-class DemoLiveReadings implements LiveReadings {
+class DemoLiveReadings implements LiveConnections {
   DemoLiveReadings(
     this._inner,
     this._deviceFor,
@@ -27,7 +27,7 @@ class DemoLiveReadings implements LiveReadings {
     this._random,
   }) : _now = now ?? DateTime.now;
 
-  final LiveReadings _inner;
+  final LiveConnections _inner;
   final DemoDeviceLookup _deviceFor;
   final DeviceProfile? Function(String id) _profileFor;
   final WriterFor _writerFor;
@@ -95,6 +95,12 @@ class DemoLiveReadings implements LiveReadings {
   @override
   Future<void> runAction(int deviceId, List<ActionStep> steps) async {
     if (!_sessions.containsKey(deviceId)) await _inner.runAction(deviceId, steps);
+  }
+
+  @override
+  Future<void> close(int deviceId) async {
+    final session = _sessions[deviceId];
+    session == null ? await _inner.close(deviceId) : await session.close();
   }
 
   @override

@@ -90,9 +90,9 @@ class LocalAuthService implements AuthService {
   @override
   Future<LoginResult> loginWithBiometrics({required String reason}) async {
     final user = await _biometricLoginUser();
-    if (user == null || !await _biometrics.authenticate(reason)) {
-      return const BiometricFailed();
-    }
+    if (user == null) return const BiometricFailed(BiometricOutcome.notAvailable);
+    final outcome = await _biometrics.authenticate(reason);
+    if (outcome != BiometricOutcome.success) return BiometricFailed(outcome);
     await _db.sessionDao.start(user.id);
     return LoginSuccess(_toAuthUser(user));
   }
@@ -102,27 +102,35 @@ class LocalAuthService implements AuthService {
       await _biometricLoginUser() != null && await _biometrics.isAvailable();
 
   @override
-  Future<bool> setBiometricLogin({required bool enabled}) async {
+  Future<BiometricOutcome> enableBiometricLogin({required String reason}) async {
     final session = await _db.sessionDao.current();
     if (session == null) throw StateError('No user is logged in');
-    final previous = await _biometricUser.read();
+    final available = await _biometrics.availability();
+    if (available != BiometricOutcome.success) return available;
+    // Saved only once the phone has confirmed it is this user.
+    final verified = await _biometrics.authenticate(reason);
+    if (verified != BiometricOutcome.success) return verified;
+    // Without a saved enrolment a new fingerprint could not be noticed, so stay off.
+    if (!await _biometrics.rememberEnrollment()) return BiometricOutcome.notAvailable;
 
-    if (enabled) {
-      // Without a saved enrolment a new fingerprint could not be noticed, so stay off.
-      if (!await _biometrics.rememberEnrollment()) return false;
-      if (previous != null && previous != session.userId) {
-        await _db.usersDao.setBiometric(previous, enabled: false);
-      }
-      await _db.usersDao.setBiometric(session.userId, enabled: true);
-      await _biometricUser.write(session.userId);
-      return true;
+    final previous = await _biometricUser.read();
+    if (previous != null && previous != session.userId) {
+      await _db.usersDao.setBiometric(previous, enabled: false);
     }
+    await _db.usersDao.setBiometric(session.userId, enabled: true);
+    await _biometricUser.write(session.userId);
+    return BiometricOutcome.success;
+  }
+
+  @override
+  Future<void> disableBiometricLogin() async {
+    final session = await _db.sessionDao.current();
+    if (session == null) throw StateError('No user is logged in');
     await _db.usersDao.setBiometric(session.userId, enabled: false);
-    if (previous == session.userId) {
+    if (await _biometricUser.read() == session.userId) {
       await _biometricUser.clear();
       await _biometrics.forgetEnrollment();
     }
-    return false;
   }
 
   /// False, after turning biometric login off for [userId], when the phone's faces / fingerprints
@@ -162,7 +170,9 @@ class LocalAuthService implements AuthService {
     required String reason,
   }) async {
     if (!await _biometrics.canVerifyOwner()) return const NoScreenLock();
-    if (!await _biometrics.authenticate(reason)) return const OwnerNotVerified();
+    if (await _biometrics.authenticate(reason) != BiometricOutcome.success) {
+      return const OwnerNotVerified();
+    }
     // Looked up only after the owner is verified, so emails cannot be probed without unlocking.
     final user = await _db.usersDao.findByEmail(email);
     if (user == null) return const NoAccountForEmail();

@@ -14,6 +14,7 @@ import '../devices/remove_device_sheet.dart';
 import '../widgets/form_widgets.dart';
 import '../widgets/labeled_field.dart';
 import 'device_settings_sections.dart';
+import 'disconnect_button.dart';
 import 'heartbeat_card.dart';
 import '../../l10n/l10n.dart';
 
@@ -273,6 +274,8 @@ class _Content extends StatelessWidget {
           ),
         ],
         gap,
+        DisconnectButton(deviceId: device.id),
+        const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: onRemove,
           icon: const Icon(Icons.delete_outline),

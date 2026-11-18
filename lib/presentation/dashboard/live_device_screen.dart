@@ -8,12 +8,14 @@ import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../application/history_provider.dart';
 import '../../application/live_device_provider.dart';
+import '../../core/di/services.dart';
 import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
 import '../device_settings/device_settings_button.dart';
 import '../strings/device_strings.dart';
 import '../widgets/form_widgets.dart';
+import '../widgets/permission_message.dart';
 import 'dashboard_format.dart';
 import 'dashboard_actions.dart';
 import 'dashboard_header.dart';
@@ -159,7 +161,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
               const SizedBox(height: 14),
               LiveStatusLine(
                 status: live.status,
-                offline: live.online
+                offline: live.online || live.status == LiveStatus.disconnected
                     ? null
                     : context.l10n.deviceOffline(switch (live.lastHeartbeatAt) {
                         final at? => now.difference(at),
@@ -172,7 +174,20 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
                 const SizedBox(height: 14),
                 ContactHint(text: hint),
               ],
-            if (failure != null) ...[
+            if (live.status == LiveStatus.disconnected) ...[
+              const SizedBox(height: 12),
+              ConnectButton(
+                onConnect: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
+              ),
+            ],
+            if (failure?.permission case final permission?) ...[
+              const SizedBox(height: 12),
+              PermissionMessage(
+                permission,
+                permissions: ref.read(permissionServiceProvider),
+                onRetry: () => ref.read(liveDeviceProvider(deviceId).notifier).retry(),
+              ),
+            ] else if (failure != null) ...[
               const SizedBox(height: 12),
               ErrorMessage(context.l10n.deviceFailure(failure)),
               if (!showBanner)

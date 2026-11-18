@@ -9,9 +9,6 @@ abstract interface class BleAdapter {
   /// Starts with the current state.
   Stream<BleAvailability> get availability;
 
-  /// Asks the user for Bluetooth permission if not granted yet; returns whether it is granted.
-  Future<bool> requestPermission();
-
   /// Every advertisement seen while scanning.
   Stream<FoundDevice> get scanResults;
 

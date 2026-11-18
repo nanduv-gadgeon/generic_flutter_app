@@ -5,6 +5,8 @@ import 'package:generic_flutter_app/application/device_profiles_provider.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:generic_flutter_app/domain/transport/wifi_provisioner.dart';
+import 'package:generic_flutter_app/domain/services/permission_service.dart';
+import 'package:generic_flutter_app/domain/transport/ble_scanner.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../fixtures/add_device_fakes.dart';
@@ -144,12 +146,46 @@ void main() {
       expect(fakes.devices.added, isEmpty);
     });
 
-    test('no Bluetooth permission shows an error and does not scan', () async {
-      fakes.scanner.permission = false;
-      await toScan();
+    // what the phone says -> what stops the scan (none: it scans)
+    final blockers = <String, (PermissionState, BleAvailability, PermissionProblem?)>{
+      'allowed and on': (PermissionState.granted, BleAvailability.on, null),
+      'permission refused': (
+        PermissionState.denied,
+        BleAvailability.on,
+        const PermissionProblem.refused(AppPermission.bluetooth),
+      ),
+      'permission refused for good': (
+        PermissionState.permanentlyDenied,
+        BleAvailability.on,
+        const PermissionProblem.refused(AppPermission.bluetooth, blocked: true),
+      ),
+      'Bluetooth off': (
+        PermissionState.granted,
+        BleAvailability.off,
+        const PermissionProblem.bluetoothOff(),
+      ),
+    };
+    for (final MapEntry(key: name, value: (permission, power, problem)) in blockers.entries) {
+      test('scan: $name', () async {
+        fakes.permissions.states[AppPermission.bluetooth] = permission;
+        fakes.scanner.power = power;
+        await toScan();
 
-      expect(state().error, AddDeviceError.bluetoothPermission);
-      expect(fakes.scanner.scans, 0);
+        expect(state().permission, problem);
+        expect(fakes.scanner.scans, problem == null ? 1 : 0);
+        expect(fakes.permissions.requested, [AppPermission.bluetooth]); // asked when needed
+      });
+    }
+
+    test('Try again after allowing Bluetooth scans', () async {
+      fakes.permissions.states[AppPermission.bluetooth] = PermissionState.denied;
+      await toScan();
+      fakes.permissions.states[AppPermission.bluetooth] = PermissionState.granted;
+
+      await controller().startScan();
+
+      expect(state().permission, isNull);
+      expect(fakes.scanner.scans, 1);
     });
 
     test('a scan error is shown and Try again scans again', () async {

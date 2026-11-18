@@ -29,13 +29,6 @@ class UniversalBleAdapter implements BleAdapter {
   };
 
   @override
-  Future<bool> requestPermission() async {
-    // minSdk 34: scan and connect permissions only, never location.
-    await UniversalBle.requestPermissions();
-    return UniversalBle.hasPermissions();
-  }
-
-  @override
   Stream<FoundDevice> get scanResults =>
       UniversalBle.scanStream.map((d) => FoundDevice(id: d.deviceId, name: d.name, rssi: d.rssi));
 

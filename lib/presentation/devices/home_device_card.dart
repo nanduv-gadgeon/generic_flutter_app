@@ -41,13 +41,16 @@ class HomeDeviceCard extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
 
     final quick = _quickReading(context, profile, latest);
-    final state = linkStateFor(link, device.id);
+    final off = ref.watch(disconnectedDevicesProvider).value ?? const <int>{};
+    final state = linkStateFor(link, device.id, disconnected: off.contains(device.id));
     final linkText = _linkText(context, state);
-    // Green when linked, amber while (re)connecting, red when Offline; the words say it too.
+    // Green when linked, amber while (re)connecting, red when Offline, grey when the user
+    // disconnected it; the words say it too.
     final (chipColor, chipBg) = switch (state) {
       LinkState.connected => (tokens?.ok, tokens?.okBg),
       LinkState.connecting || LinkState.reconnecting => (tokens?.warn, tokens?.warnBg),
       LinkState.offline || LinkState.onDemand => (tokens?.danger, tokens?.dangerBg),
+      LinkState.disconnected => (tokens?.muted, tokens?.chipBg),
     };
     final battery = device.batteryPercent;
     final seenAt = device.lastHeartbeatAt;
@@ -199,6 +202,7 @@ class HomeDeviceCard extends ConsumerWidget {
       LinkState.connecting => l10n.devicesLink(transport, l10n.devicesConnecting),
       LinkState.reconnecting => l10n.devicesLink(transport, l10n.devicesReconnecting),
       LinkState.offline || LinkState.onDemand => l10n.devicesOffline,
+      LinkState.disconnected => l10n.deviceDisconnected,
     };
   }
 }

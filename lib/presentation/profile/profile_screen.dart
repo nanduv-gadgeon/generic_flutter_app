@@ -7,8 +7,12 @@ import '../../application/auth_controller.dart';
 import '../../application/profile_providers.dart';
 import '../../core/di/services.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../domain/services/biometric_auth.dart';
+import '../../domain/services/permission_service.dart';
+import '../strings/auth_strings.dart';
 import '../auth/biometric_offer_dialog.dart';
 import '../auth/logout_dialog.dart';
+import '../widgets/permission_message.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/web_page_view.dart';
 import 'edit_profile_screen.dart';
@@ -22,6 +26,48 @@ class ProfileScreen extends ConsumerWidget {
   Future<void> _logOut(BuildContext context, WidgetRef ref) async {
     if (await confirmLogout(context)) {
       await ref.read(authControllerProvider.notifier).logout();
+    }
+  }
+
+  /// Turning notifications on asks the phone first; refused, the switch stays off and says why.
+  Future<void> _setNotifications(
+    BuildContext context,
+    WidgetRef ref,
+    int userId, {
+    required bool on,
+  }) async {
+    final permissions = ref.read(permissionServiceProvider);
+    final settings = ref.read(appSettingsServiceProvider);
+    if (on) {
+      final state = await permissions.request(AppPermission.notifications);
+      if (problemOf(AppPermission.notifications, state) case final problem?) {
+        if (context.mounted) showPermissionProblem(context, problem, permissions: permissions);
+        return;
+      }
+    }
+    await settings.setNotificationsEnabled(userId, enabled: on);
+  }
+
+  /// Turning it on shows the phone's prompt first; it stays off, with a message, unless the user
+  /// is verified.
+  Future<void> _setBiometricLogin(
+    BuildContext context,
+    WidgetRef ref,
+    BiometricKind kind, {
+    required bool on,
+  }) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final method = biometricName(l10n, kind);
+    final outcome = await ref
+        .read(authControllerProvider.notifier)
+        .setBiometricLogin(enabled: on, reason: l10n.authBiometricEnableReason(method));
+    if (outcome != null && outcome != BiometricOutcome.success) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(l10n.authBiometricProblem(method, outcome, enabling: true))),
+        );
     }
   }
 
@@ -63,17 +109,14 @@ class ProfileScreen extends ConsumerWidget {
                   icon: Icons.notifications_none,
                   label: context.l10n.profileNotifications,
                   value: notifications,
-                  onChanged: (on) => ref
-                      .read(appSettingsServiceProvider)
-                      .setNotificationsEnabled(user.id, enabled: on),
+                  onChanged: (on) => _setNotifications(context, ref, user.id, on: on),
                 ),
                 if (biometric != null)
                   ProfileSwitchRow(
                     icon: Icons.fingerprint,
                     label: context.l10n.authLogInWith(biometricName(context.l10n, biometric)),
                     value: user.biometricEnabled,
-                    onChanged: (on) =>
-                        ref.read(authControllerProvider.notifier).setBiometricLogin(enabled: on),
+                    onChanged: (on) => _setBiometricLogin(context, ref, biometric, on: on),
                   ),
                 // Phase 2 only (hidden while isCloud is false). Placeholder for now.
                 // TODO(phase2): requirement 9.4: real schedule, last and next upload, options sheet.

@@ -120,6 +120,7 @@ List<StripCellData> stripCells(BuildContext context, StripState s) {
     LinkState.onDemand => (l10n.linkOnDemand, tokens.ok),
     LinkState.connecting || LinkState.reconnecting => (transport, tokens.warn),
     LinkState.connected => (transport, good),
+    LinkState.disconnected => (l10n.deviceDisconnected, tokens.muted),
   };
   final battery = s.battery;
   final third = switch (s.dashboard.strip) {

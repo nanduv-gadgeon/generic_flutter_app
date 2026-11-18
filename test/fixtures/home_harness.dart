@@ -56,6 +56,9 @@ Future<MockDeviceService> pumpHome(
   AuthUser user = fakeUser,
   Map<int, Map<String, Sample>> latest = const {},
   ActiveLink? active,
+
+  /// Devices the user disconnected (Disconnect device).
+  Set<int> disconnected = const {},
 }) async {
   tester.view
     ..physicalSize = size
@@ -70,6 +73,7 @@ Future<MockDeviceService> pumpHome(
   when(() => deviceService.removeById(any(), any())).thenAnswer((_) async {});
   final live = MockLiveReadings();
   when(live.watchActive).thenAnswer((_) => Stream.value(active));
+  when(live.watchDisconnected).thenAnswer((_) => Stream.value(disconnected));
   final readings = MockReadingRepository();
   when(() => readings.watchLatest(any()))
       .thenAnswer((i) => Stream.value(latest[i.positionalArguments.single] ?? const {}));

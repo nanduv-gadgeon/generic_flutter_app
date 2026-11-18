@@ -18,10 +18,12 @@ import '../../data/devices/active_device.dart';
 import '../../data/devices/demo_live_readings.dart';
 import '../../data/devices/heartbeat_recorder.dart';
 import '../../data/devices/reading_writer.dart';
+import '../../data/devices/user_disconnects.dart';
 import '../../data/events/local_device_event_repository.dart';
 import '../../data/export/local_export_service.dart';
 import '../../data/export/share_plus_sharer.dart';
 import '../../data/heartbeats/local_heartbeat_repository.dart';
+import '../../data/permissions/handler_permission_service.dart';
 import '../../data/history/local_daily_summary_repository.dart';
 import '../../data/readings/local_reading_repository.dart';
 import '../../data/devices/local_device_service.dart';
@@ -42,7 +44,9 @@ import '../../domain/services/device_service.dart';
 import '../../domain/services/export_service.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/services/heartbeat_repository.dart';
+import '../../domain/permissions/bluetooth_ready.dart';
 import '../../domain/services/live_readings.dart';
+import '../../domain/services/permission_service.dart';
 import '../../domain/services/reading_repository.dart';
 import '../../domain/services/password_hasher.dart';
 import '../../domain/services/photo_picker.dart';
@@ -166,12 +170,15 @@ LiveReadings liveReadings(Ref ref) {
     (id, seenAt) => db.devicesDao.updateStatus(id, lastHeartbeatAt: seenAt),
     interval: settings.interval,
   );
-  final LiveReadings active = ActiveDevice(
+  final permissions = ref.watch(permissionServiceProvider);
+  final bluetooth = ref.watch(bleScannerProvider).availability;
+  final LiveConnections active = ActiveDevice(
     db,
     profileFor,
     ref.watch(deviceLinkFactoryProvider),
     writerFor,
     recorderFor,
+    bluetoothReady: ({required ask}) => bluetoothProblem(permissions, bluetooth, ask: ask),
   );
   final live = kDebugMode
       ? DemoLiveReadings(
@@ -185,9 +192,17 @@ LiveReadings liveReadings(Ref ref) {
           recorderFor,
         )
       : active;
-  ref.onDispose(live.stop);
-  return live;
+  final withDisconnect = UserDisconnects(
+    live,
+    (userId) => db.devicesDao.watchForUser(userId).map((rows) => [for (final d in rows) d.id]),
+  );
+  ref.onDispose(withDisconnect.stop);
+  return withDisconnect;
 }
+
+/// Runtime permissions (Bluetooth, notifications, camera); the same in both phases.
+@Riverpod(keepAlive: true)
+PermissionService permissionService(Ref ref) => HandlerPermissionService();
 
 /// `requireValue` on the database is safe for the same reason: the splash opens it first.
 @Riverpod(keepAlive: true)

@@ -22,4 +22,16 @@ class FakeLiveReadings implements LiveReadings {
 
   @override
   Future<void> stop() async => stops++;
+
+  @override
+  Future<void> close(int deviceId) async {}
+
+  @override
+  Future<void> disconnect(int deviceId) async {}
+
+  @override
+  Future<void> connect(int deviceId) async {}
+
+  @override
+  Stream<Set<int>> watchDisconnected() => Stream.value(const {});
 }

@@ -20,11 +20,19 @@ Stream<List<UserDevice>> myDevices(Ref ref) {
 @riverpod
 Stream<ActiveLink?> activeLink(Ref ref) => ref.watch(liveReadingsProvider).watchActive();
 
-/// How the saved device [deviceId] looks on home, given the phone's one active [link]: any other
-/// device is Offline.
-LinkState linkStateFor(ActiveLink? link, int deviceId) => link == null || link.deviceId != deviceId
-    ? LinkState.offline
-    : linkStateOf(link.status, online: link.online);
+/// The devices the user disconnected (Disconnect device); they show "Disconnected", not Offline.
+@riverpod
+Stream<Set<int>> disconnectedDevices(Ref ref) =>
+    ref.watch(liveReadingsProvider).watchDisconnected();
+
+/// How the saved device [deviceId] looks on home, given the phone's one active [link]: a device
+/// the user [disconnected] says so; any other one is Offline.
+LinkState linkStateFor(ActiveLink? link, int deviceId, {bool disconnected = false}) {
+  if (disconnected) return LinkState.disconnected;
+  return link == null || link.deviceId != deviceId
+      ? LinkState.offline
+      : linkStateOf(link.status, online: link.online);
+}
 
 /// The newest stored reading of each key of the saved device [deviceId].
 @riverpod

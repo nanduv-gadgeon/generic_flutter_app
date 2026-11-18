@@ -28,10 +28,16 @@ class AuthController extends _$AuthController {
     return result;
   }
 
-  /// Finishes a password login; the router then leaves the login screen.
-  Future<void> completeLogin(AuthUser user, {bool enableBiometrics = false}) async {
-    final on = enableBiometrics && await _service.setBiometricLogin(enabled: true);
+  /// Finishes a password login; the router then leaves the login screen. With [biometricReason]
+  /// (the user accepted the offer) biometric login is turned on first, only if the phone's prompt
+  /// verifies them. Returns that outcome, or null when it was not asked for.
+  Future<BiometricOutcome?> completeLogin(AuthUser user, {String? biometricReason}) async {
+    final outcome = biometricReason == null
+        ? null
+        : await _service.enableBiometricLogin(reason: biometricReason);
+    final on = outcome == BiometricOutcome.success;
     state = AsyncData(on ? user.copyWith(biometricEnabled: true) : user);
+    return outcome;
   }
 
   /// Creates the account, logs it in and switches screens (to home). No biometric offer here:
@@ -56,11 +62,23 @@ class AuthController extends _$AuthController {
     state = AsyncData(await _service.updateProfile(changes));
   }
 
-  /// The Profile switch for Face ID / fingerprint login.
-  Future<void> setBiometricLogin({required bool enabled}) async {
-    final on = await _service.setBiometricLogin(enabled: enabled);
+  /// The Profile switch for Face ID / fingerprint login. Turning it on shows the phone's prompt
+  /// with [reason] and keeps it on only on [BiometricOutcome.success]; the outcome is returned so
+  /// the screen can say why not. Turning it off needs no prompt and returns null.
+  Future<BiometricOutcome?> setBiometricLogin({
+    required bool enabled,
+    required String reason,
+  }) async {
+    BiometricOutcome? outcome;
+    if (enabled) {
+      outcome = await _service.enableBiometricLogin(reason: reason);
+    } else {
+      await _service.disableBiometricLogin();
+    }
+    final on = outcome == BiometricOutcome.success;
     state = AsyncData(state.value?.copyWith(biometricEnabled: on));
     ref.invalidate(biometricLoginProvider);
+    return outcome;
   }
 
   /// Logs out and switches screens (to login). The router then redirects to the login screen.

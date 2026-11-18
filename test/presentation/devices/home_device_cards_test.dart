@@ -34,14 +34,30 @@ void main() {
       },
     };
 
-    Future<void> pump(WidgetTester tester, {ActiveLink? active, Size? size}) => pumpHome(
+    Future<void> pump(
+      WidgetTester tester, {
+      ActiveLink? active,
+      Size? size,
+      Set<int> disconnected = const {},
+    }) => pumpHome(
       tester,
       devices: devices,
       now: now,
       latest: latest,
       active: active,
       size: size ?? const Size(390, 1400),
+      disconnected: disconnected,
     );
+
+    testWidgets('a device the user disconnected says Disconnected, not Offline', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pump(tester, disconnected: {sensor.id});
+
+      expect(find.text('Disconnected'), findsOneWidget);
+      expect(find.text('Offline'), findsNWidgets(2)); // the other two
+      expect(find.bySemanticsLabel(RegExp('Test sensor, .*Disconnected')), findsOneWidget);
+      semantics.dispose();
+    });
 
     testWidgets('one card per added device, then Add a device', (tester) async {
       await pump(tester);

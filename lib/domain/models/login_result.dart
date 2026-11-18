@@ -1,3 +1,4 @@
+import '../services/biometric_auth.dart';
 import 'auth_user.dart';
 
 /// Outcome of a login attempt.
@@ -25,9 +26,11 @@ final class AccountLocked extends LoginResult {
   final Duration retryAfter;
 }
 
-/// Face ID / fingerprint was cancelled, failed, or is not set up.
+/// Face ID / fingerprint was cancelled, failed, or is not set up; [outcome] says which.
 final class BiometricFailed extends LoginResult {
-  const BiometricFailed();
+  const BiometricFailed([this.outcome = BiometricOutcome.failed]);
+
+  final BiometricOutcome outcome;
 }
 
 /// An account with this email already exists.

@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/new_device.dart';
+import '../../domain/permissions/permission_problem.dart';
 import '../../domain/transport/ble_scanner.dart';
 import '../../domain/transport/wifi_provisioner.dart';
 
@@ -22,6 +23,9 @@ abstract class AddDeviceState with _$AddDeviceState {
 
     /// Shown inline with "Try again"; cleared by the next action.
     AddDeviceError? error,
+
+    /// Bluetooth refused or switched off: the scan did not start. Cleared by the next scan.
+    PermissionProblem? permission,
   }) = _AddDeviceState;
 
   const AddDeviceState._();
@@ -92,7 +96,6 @@ class Done extends AddDevicePhase {
 
 /// Why the last action failed. Screens map each to a message; none carries device data.
 enum AddDeviceError {
-  bluetoothPermission,
   scanFailed,
   connectFailed,
   alreadyAdded,

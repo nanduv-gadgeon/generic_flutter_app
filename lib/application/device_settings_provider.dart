@@ -34,6 +34,13 @@ class DeviceSettingsController extends _$DeviceSettingsController {
   Future<void> setAlert(int deviceId, String readingKey, {required bool enabled}) =>
       _service.setAlertEnabled(deviceId, readingKey, enabled: enabled);
 
+  /// Disconnect device: closes its link and stops its live data, heartbeat and reconnects. It
+  /// stays saved with its history and alert limits. Throws when closing the link fails.
+  Future<void> disconnect(int deviceId) => ref.read(liveReadingsProvider).disconnect(deviceId);
+
+  /// Connect, after [disconnect].
+  Future<void> connect(int deviceId) => ref.read(liveReadingsProvider).connect(deviceId);
+
   /// Removes the device and its alert limits from the phone (and the cloud in Phase 2).
   Future<void> remove(DeviceDetails device) async {
     final user = ref.read(authControllerProvider).value;

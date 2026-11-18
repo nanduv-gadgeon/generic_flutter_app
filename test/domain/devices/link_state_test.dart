@@ -21,6 +21,14 @@ void main() {
     });
   }
 
+  test('a device the user disconnected is Disconnected, never Offline', () {
+    expect(linkStateOf(LiveStatus.disconnected, online: false), LinkState.disconnected);
+    expect(
+      linkStateOf(LiveStatus.disconnected, online: true, onDemand: true),
+      LinkState.disconnected,
+    );
+  });
+
   test('an on-demand device is never Offline', () {
     expect(linkStateOf(null, online: false, onDemand: true), LinkState.onDemand);
     expect(linkStateOf(LiveStatus.waiting, online: true, onDemand: true), LinkState.onDemand);

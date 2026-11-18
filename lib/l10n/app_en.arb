@@ -388,6 +388,60 @@
       }
     }
   },
+  "authBiometricEnableReason": "Confirm it's you to turn on {method} login",
+  "@authBiometricEnableReason": {
+    "description": "Shown by the phone's own prompt when turning biometric login on. Method: Face ID, fingerprint or biometrics.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricNotAvailable": "{method} isn't available on this phone right now.",
+  "@authBiometricNotAvailable": {
+    "description": "Method with a capital first letter.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricNotEnrolled": "Set up {method} in your phone's Settings to use this.",
+  "@authBiometricNotEnrolled": {
+    "description": "Method: Face ID, fingerprint or biometrics.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricLockedOut": "Too many tries. Wait a moment, then try {method} again.",
+  "@authBiometricLockedOut": {
+    "description": "Method: Face ID, fingerprint or biometrics.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricPermanentlyLockedOut": "{method} is locked. Unlock your phone with its passcode, then try again.",
+  "@authBiometricPermanentlyLockedOut": {
+    "description": "Method with a capital first letter.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "authBiometricNotTurnedOn": "{method} login was not turned on.",
+  "@authBiometricNotTurnedOn": {
+    "description": "After the prompt was cancelled or did not recognise the user. Method with a capital first letter.",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
   "authBiometricOfferTitle": "Use {method} to log in next time?",
   "@authBiometricOfferTitle": {
     "placeholders": {
@@ -831,11 +885,22 @@
       }
     }
   },
-  "addDeviceErrorBluetoothPermission": "Bluetooth permission is needed to find devices. Allow it in Settings, then try again.",
+  "permissionBluetoothDenied": "Bluetooth permission is needed to find and connect to your devices. Allow it, then try again.",
+  "permissionBluetoothBlocked": "Bluetooth permission is off for this app, so it can't find or connect to your devices. Turn it on in Settings.",
+  "permissionBluetoothOff": "Bluetooth is off. Turn it on to find and connect to your devices, then try again.",
+  "permissionNotificationsDenied": "Notifications aren't allowed, so you won't get alerts. Allow them to turn this on.",
+  "permissionNotificationsBlocked": "Notifications are off for this app, so you won't get alerts. Turn them on in Settings.",
+  "permissionCameraDenied": "Camera access is needed to take a profile photo. Allow it, then try again.",
+  "permissionCameraBlocked": "Camera access is off for this app, so you can't take a profile photo. Turn it on in Settings.",
+  "permissionOpenSettings": "Open Settings",
+  "permissionTryAgain": "Try again",
+  "deviceDisconnected": "Disconnected",
+  "deviceConnect": "Connect",
+  "deviceConnectLabel": "Connect the device again",
   "addDeviceErrorScanFailed": "Could not search for devices. Check Bluetooth is on.",
   "addDeviceErrorConnectFailed": "Could not connect. Keep the device close and try again.",
   "addDeviceErrorAlreadyAdded": "This device is already in your list.",
-  "addDeviceErrorDeviceNotReachable": "Could not reach the device. Check your phone is on the device's Wi‑Fi.",
+  "addDeviceErrorDeviceNotReachable": "Could not reach the device. Check your phone is on the device's Wi‑Fi. On iPhone, also allow Local Network for this app in Settings.",
   "addDeviceErrorDeviceNoAnswer": "The device did not answer. Check it is in setup mode.",
   "addDeviceErrorSetupFailed": "The device could not join the network. Check the name and password.",
   "addDeviceErrorSaveFailed": "Could not save the device. Please try again.",
@@ -877,6 +942,14 @@
     "description": "The battery limit is not one of a profile's readings."
   },
   "deviceSettingsBatteryUnit": "%",
+  "deviceSettingsDisconnect": "Disconnect device",
+  "deviceSettingsDisconnecting": "Disconnecting device",
+  "deviceSettingsDisconnected": "Device disconnected. Its history and alerts are kept.",
+  "deviceSettingsDisconnectFailed": "Couldn't disconnect the device. Try again.",
+  "deviceSettingsConnect": "Connect device",
+  "deviceSettingsConnecting": "Connecting device",
+  "deviceSettingsConnectStarted": "Connecting to the device.",
+  "deviceSettingsConnectFailed": "Couldn't connect the device. Try again.",
   "deviceSettingsRemoving": "Removing device",
   "deviceSettingsTransportBle": "Bluetooth LE",
   "deviceSettingsTransportWifi": "Wi‑Fi",

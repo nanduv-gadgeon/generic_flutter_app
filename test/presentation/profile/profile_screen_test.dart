@@ -9,12 +9,14 @@ import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/services/app_settings_service.dart';
 import 'package:generic_flutter_app/domain/services/biometric_auth.dart';
+import 'package:generic_flutter_app/domain/services/permission_service.dart';
 import 'package:generic_flutter_app/presentation/profile/profile_rows.dart';
 import 'package:generic_flutter_app/presentation/profile/profile_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 
+import '../../fixtures/fake_permissions.dart';
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/fake_web_view.dart';
 import '../../fixtures/test_config.dart';
@@ -26,18 +28,21 @@ void main() {
   late MockAuthService auth;
   late MockAppSettingsService settings;
   late MockBiometricAuth biometrics;
+  late FakePermissionService permissions;
   late FakeWebViewPlatform webViews;
 
   setUp(() {
     auth = MockAuthService();
     settings = MockAppSettingsService();
     biometrics = MockBiometricAuth();
+    permissions = FakePermissionService();
     WebViewPlatform.instance = webViews = FakeWebViewPlatform();
     when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
     when(() => auth.logout()).thenAnswer((_) async {});
     when(() => auth.canLoginWithBiometrics()).thenAnswer((_) async => false);
-    when(() => auth.setBiometricLogin(enabled: any(named: 'enabled')))
-        .thenAnswer((_) async => true);
+    when(() => auth.enableBiometricLogin(reason: any(named: 'reason')))
+        .thenAnswer((_) async => BiometricOutcome.success);
+    when(() => auth.disableBiometricLogin()).thenAnswer((_) async {});
     when(() => settings.watchNotificationsEnabled(any())).thenAnswer((_) => Stream.value(true));
     when(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')))
         .thenAnswer((_) async {});
@@ -66,6 +71,7 @@ void main() {
         authServiceProvider.overrideWithValue(auth),
         appSettingsServiceProvider.overrideWithValue(settings),
         biometricAuthProvider.overrideWithValue(biometrics),
+        permissionServiceProvider.overrideWithValue(permissions),
         appVersionProvider.overrideWith((ref) async => ('1.0.0', '12')),
       ],
     );
@@ -168,6 +174,54 @@ void main() {
     verify(() => settings.setNotificationsEnabled(fakeUser.id, enabled: false)).called(1);
   });
 
+  // the phone's answer -> (saved on, message, action)
+  final notificationAnswers = {
+    PermissionState.granted: (true, null, null),
+    PermissionState.denied: (
+      false,
+      "Notifications aren't allowed, so you won't get alerts. Allow them to turn this on.",
+      null,
+    ),
+    PermissionState.permanentlyDenied: (
+      false,
+      "Notifications are off for this app, so you won't get alerts. Turn them on in Settings.",
+      'Open Settings',
+    ),
+  };
+  for (final MapEntry(key: answer, value: (saved, message, action))
+      in notificationAnswers.entries) {
+    testWidgets('turning Notifications on: phone says ${answer.name}', (tester) async {
+      when(() => settings.watchNotificationsEnabled(any())).thenAnswer((_) => Stream.value(false));
+      permissions.states[AppPermission.notifications] = answer;
+      await pumpProfile(tester);
+
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+
+      expect(permissions.requested, [AppPermission.notifications]); // asked when turned on
+      if (saved) {
+        verify(() => settings.setNotificationsEnabled(fakeUser.id, enabled: true)).called(1);
+      } else {
+        verifyNever(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')));
+      }
+      expect(find.text(message ?? '_none_'), message == null ? findsNothing : findsOneWidget);
+      if (action != null) {
+        await tester.tap(find.text(action));
+        await tester.pumpAndSettle();
+        expect(permissions.settingsOpened, 1);
+      }
+    });
+  }
+
+  testWidgets('turning Notifications off asks nothing', (tester) async {
+    await pumpProfile(tester);
+
+    await tester.tap(find.text('Notifications'));
+    await tester.pumpAndSettle();
+
+    expect(permissions.requested, isEmpty);
+  });
+
   testWidgets('the Notifications switch is read as one switch with its state', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpProfile(tester);
@@ -187,8 +241,43 @@ void main() {
     await tester.tap(find.text('Log in with Face ID'));
     await tester.pumpAndSettle();
 
-    verify(() => auth.setBiometricLogin(enabled: true)).called(1);
+    verify(() => auth.enableBiometricLogin(reason: "Confirm it's you to turn on Face ID login"))
+        .called(1);
+    expect(find.byType(SnackBar), findsNothing);
   });
+
+  // outcome of the prompt -> message; the switch stays off
+  final problems = {
+    BiometricOutcome.cancelled: 'Face ID login was not turned on.',
+    BiometricOutcome.failed: 'Face ID login was not turned on.',
+    BiometricOutcome.notEnrolled: "Set up Face ID in your phone's Settings to use this.",
+    BiometricOutcome.notAvailable: "Face ID isn't available on this phone right now.",
+    BiometricOutcome.lockedOut: 'Too many tries. Wait a moment, then try Face ID again.',
+    BiometricOutcome.permanentlyLockedOut:
+        'Face ID is locked. Unlock your phone with its passcode, then try again.',
+  };
+  for (final MapEntry(key: outcome, value: message) in problems.entries) {
+    testWidgets('turning the switch on: ${outcome.name} -> stays off, says why', (tester) async {
+      when(() => auth.enableBiometricLogin(reason: any(named: 'reason')))
+          .thenAnswer((_) async => outcome);
+      await pumpProfile(tester);
+
+      await tester.tap(find.text('Log in with Face ID'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(message), findsOneWidget);
+      final toggle = tester.widget<Switch>(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Log in with Face ID'),
+            matching: find.byType(ProfileSwitchRow),
+          ),
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(toggle.value, isFalse);
+    });
+  }
 
   // (feature on, phone has biometrics) -> row shown
   final biometricCases = {(false, true): false, (true, false): false};

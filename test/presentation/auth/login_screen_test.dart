@@ -156,7 +156,8 @@ void main() {
   testWidgets('offers Face ID after the first login and turns it on', (tester) async {
     when(() => service.login(any(), any()))
         .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
-    when(() => service.setBiometricLogin(enabled: true)).thenAnswer((_) async => true);
+    when(() => service.enableBiometricLogin(reason: any(named: 'reason')))
+        .thenAnswer((_) async => BiometricOutcome.success);
     await _pumpLogin(tester);
 
     await _enterAndSubmit(tester);
@@ -166,7 +167,24 @@ void main() {
     await tester.tap(find.text('Turn on'));
     await _settleDialog(tester);
 
-    verify(() => service.setBiometricLogin(enabled: true)).called(1);
+    // The phone's prompt verifies the user before it is saved.
+    verify(() => service.enableBiometricLogin(reason: "Confirm it's you to turn on Face ID login"))
+        .called(1);
+  });
+
+  testWidgets('accepting the offer but cancelling the prompt says it stayed off', (tester) async {
+    when(() => service.login(any(), any()))
+        .thenAnswer((_) async => const LoginSuccess(fakeUser, offerBiometrics: true));
+    when(() => service.enableBiometricLogin(reason: any(named: 'reason')))
+        .thenAnswer((_) async => BiometricOutcome.cancelled);
+    await _pumpLogin(tester);
+
+    await _enterAndSubmit(tester);
+    await _settleDialog(tester);
+    await tester.tap(find.text('Turn on'));
+    await _settleDialog(tester);
+
+    expect(find.text('Face ID login was not turned on.'), findsOneWidget);
   });
 
   testWidgets('"Not now" leaves Face ID off', (tester) async {
@@ -179,7 +197,7 @@ void main() {
     await tester.tap(find.text('Not now'));
     await _settleDialog(tester);
 
-    verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+    verifyNever(() => service.enableBiometricLogin(reason: any(named: 'reason')));
   });
 
   testWidgets('no Face ID offer when the feature is off in the config', (tester) async {
@@ -192,7 +210,7 @@ void main() {
 
     expect(find.text('Use Face ID to log in next time?'), findsNothing);
     verifyNever(() => biometrics.kind());
-    verifyNever(() => service.setBiometricLogin(enabled: any(named: 'enabled')));
+    verifyNever(() => service.enableBiometricLogin(reason: any(named: 'reason')));
     expect(find.byType(CircularProgressIndicator), findsNothing); // login finished
   });
 
@@ -224,6 +242,28 @@ void main() {
 
     expect(find.text('Face ID login did not work. Use your password.'), findsOneWidget);
   });
+
+  // why the Face ID login failed -> message under the form
+  final loginProblems = {
+    BiometricOutcome.cancelled: 'Face ID login did not work. Use your password.',
+    BiometricOutcome.lockedOut: 'Too many tries. Wait a moment, then try Face ID again.',
+    BiometricOutcome.permanentlyLockedOut:
+        'Face ID is locked. Unlock your phone with its passcode, then try again.',
+    BiometricOutcome.notEnrolled: "Set up Face ID in your phone's Settings to use this.",
+  };
+  for (final MapEntry(key: outcome, value: message) in loginProblems.entries) {
+    testWidgets('Face ID login ${outcome.name} -> "$message"', (tester) async {
+      when(() => service.canLoginWithBiometrics()).thenAnswer((_) async => true);
+      when(() => service.loginWithBiometrics(reason: 'Log in to your account'))
+          .thenAnswer((_) async => BiometricFailed(outcome));
+      await _pumpLogin(tester);
+
+      await tester.tap(find.text('Log in with Face ID'));
+      await tester.pumpAndSettle();
+
+      expect(find.text(message), findsOneWidget);
+    });
+  }
 
   testWidgets('hides Create account when registration is off', (tester) async {
     await _pumpLogin(tester, registration: false);

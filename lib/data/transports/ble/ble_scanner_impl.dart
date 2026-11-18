@@ -14,16 +14,6 @@ class BleScannerImpl implements BleScanner {
   @override
   Stream<BleAvailability> get availability => _adapter.availability;
 
-  /// False when the request itself fails (e.g. Bluetooth not supported).
-  @override
-  Future<bool> requestPermission() async {
-    try {
-      return await _adapter.requestPermission();
-    } catch (_) {
-      return false;
-    }
-  }
-
   /// Throws [NotConnectableException] when the profile has no `ble` block.
   @override
   Stream<List<FoundDevice>> scan(

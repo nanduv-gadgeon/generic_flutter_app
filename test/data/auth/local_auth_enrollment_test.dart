@@ -23,7 +23,8 @@ void main() {
     biometrics = MockBiometricAuth();
     biometricUser = FakeBiometricUserStore();
     when(() => biometrics.isAvailable()).thenAnswer((_) async => true);
-    when(() => biometrics.authenticate(any())).thenAnswer((_) async => true);
+    when(() => biometrics.availability()).thenAnswer((_) async => BiometricOutcome.success);
+    when(() => biometrics.authenticate(any())).thenAnswer((_) async => BiometricOutcome.success);
     stubUnchangedEnrollment(biometrics);
     auth = LocalAuthService(
       db: db,
@@ -45,9 +46,9 @@ void main() {
 
   Future<bool> loginAndEnable() async {
     await auth.login(_email, _password);
-    final on = await auth.setBiometricLogin(enabled: true);
+    final on = await auth.enableBiometricLogin(reason: _reason);
     await auth.logout();
-    return on;
+    return on == BiometricOutcome.success;
   }
 
   Future<bool> biometricFlag() async => (await db.usersDao.findByEmail(_email))!.biometricEnabled;
@@ -86,6 +87,7 @@ void main() {
   test('a new fingerprint cannot log in, and the prompt is not even shown', () async {
     await loginAndEnable();
     enrollmentChanges();
+    clearInteractions(biometrics); // turning it on showed the prompt
 
     expect(await auth.loginWithBiometrics(reason: _reason), isA<BiometricFailed>());
 
@@ -110,7 +112,7 @@ void main() {
     await auth.login(_email, _password); // turns it off
     stubUnchangedEnrollment(biometrics);
 
-    expect(await auth.setBiometricLogin(enabled: true), isTrue);
+    expect(await auth.enableBiometricLogin(reason: _reason), BiometricOutcome.success);
     await auth.logout();
 
     expect(await auth.loginWithBiometrics(reason: _reason), isA<LoginSuccess>());
@@ -120,7 +122,8 @@ void main() {
     await loginAndEnable();
     await auth.login(_email, _password);
 
-    expect(await auth.setBiometricLogin(enabled: false), isFalse);
+    await auth.disableBiometricLogin();
+    expect(await biometricFlag(), isFalse);
 
     verify(() => biometrics.forgetEnrollment()).called(1);
   });

@@ -7,12 +7,14 @@ import '../../core/di/services.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/models/dial_code.dart';
 import '../../domain/services/auth_service.dart';
+import '../../domain/services/permission_service.dart';
 import '../../domain/services/photo_picker.dart';
 import '../../domain/validation/auth_rules.dart';
 import '../auth/auth_form.dart';
 import '../auth/auth_validators.dart';
 import '../auth/mobile_number_field.dart';
 import '../widgets/labeled_field.dart';
+import '../widgets/permission_message.dart';
 import '../widgets/user_avatar.dart';
 import 'photo_source_sheet.dart';
 import '../../l10n/l10n.dart';
@@ -73,10 +75,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       case PhotoAction.remove:
         setState(() => _photo = const RemovePhoto());
       case PhotoAction.camera || PhotoAction.gallery:
-        final source = action == PhotoAction.camera ? PhotoSource.camera : PhotoSource.gallery;
+        final camera = action == PhotoAction.camera;
+        // The camera needs the user's permission first; the photo library picker does not.
+        if (camera && !await _cameraAllowed()) return;
+        final source = camera ? PhotoSource.camera : PhotoSource.gallery;
         final path = await ref.read(photoPickerProvider).pick(source);
         if (path != null && mounted) setState(() => _photo = NewPhoto(path));
     }
+  }
+
+  /// Asks for the camera; refused, says why (with Open Settings when only Settings can change it).
+  Future<bool> _cameraAllowed() async {
+    final permissions = ref.read(permissionServiceProvider);
+    final state = await permissions.request(AppPermission.camera);
+    final problem = problemOf(AppPermission.camera, state);
+    if (problem != null && mounted) {
+      showPermissionProblem(context, problem, permissions: permissions, onRetry: _changePhoto);
+    }
+    return problem == null;
   }
 
   Future<void> _save() async {

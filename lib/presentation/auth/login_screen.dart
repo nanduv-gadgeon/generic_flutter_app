@@ -53,14 +53,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         });
         return;
       }
-      var enable = false;
+      String? method;
       // Offer only when the customer has the feature (TC-CFG-007).
       final featureOn = ref.read(appConfigProvider).requireValue.features.faceIdLogin;
       if (featureOn && result.offerBiometrics && mounted) {
         final kind = await ref.read(biometricAuthProvider).kind();
-        if (mounted) enable = await showBiometricOfferDialog(context, kind);
+        if (mounted && await showBiometricOfferDialog(context, kind)) {
+          method = biometricName(l10n, kind);
+        }
       }
-      await auth.completeLogin(result.user, enableBiometrics: enable);
+      // Kept before the login screen goes away, to say why biometric login stayed off.
+      final messenger = mounted ? ScaffoldMessenger.maybeOf(context) : null;
+      final outcome = await auth.completeLogin(
+        result.user,
+        biometricReason: method == null ? null : l10n.authBiometricEnableReason(method),
+      );
+      if (method != null && outcome != null && outcome != BiometricOutcome.success) {
+        messenger?.showSnackBar(
+          SnackBar(content: Text(l10n.authBiometricProblem(method, outcome, enabling: true))),
+        );
+      }
     });
   }
 
@@ -71,7 +83,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final result = await ref
           .read(authControllerProvider.notifier)
           .loginWithBiometrics(reason: l10n.authBiometricLoginReason);
-      if (result is! LoginSuccess) {
+      if (result case BiometricFailed(:final outcome)) {
+        _showError(l10n.authBiometricProblem(biometricName(l10n, kind), outcome, enabling: false));
+      } else if (result is! LoginSuccess) {
         _showError(l10n.authBiometricFailed(biometricName(l10n, kind)));
       }
     });

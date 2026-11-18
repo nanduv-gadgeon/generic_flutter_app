@@ -17,11 +17,15 @@ enum LinkState {
 
   /// Connects only to send a reading, so never shown as Offline (e.g. a thermometer).
   onDemand,
+
+  /// The user disconnected it (Disconnect device). Never Offline: it was their choice.
+  disconnected,
 }
 
 /// The [LinkState] for a device whose link reports [status] (null: not linked at all) and whose
 /// heartbeat says [online]. [onDemand] comes from its profile's dashboard settings.
 LinkState linkStateOf(LiveStatus? status, {required bool online, bool onDemand = false}) {
+  if (status == LiveStatus.disconnected) return LinkState.disconnected;
   if (onDemand) return LinkState.onDemand;
   if (status == null || !online) return LinkState.offline;
   return switch (status) {
@@ -29,5 +33,6 @@ LinkState linkStateOf(LiveStatus? status, {required bool online, bool onDemand =
     LiveStatus.reconnecting => LinkState.reconnecting,
     LiveStatus.connecting => LinkState.connecting,
     LiveStatus.syncing || LiveStatus.starting || LiveStatus.streaming => LinkState.connected,
+    LiveStatus.disconnected => LinkState.disconnected,
   };
 }

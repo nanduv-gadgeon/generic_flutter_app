@@ -39,7 +39,6 @@ extension AddDeviceStrings on AppLocalizations {
   }
 
   String addDeviceError(AddDeviceError error) => switch (error) {
-    AddDeviceError.bluetoothPermission => addDeviceErrorBluetoothPermission,
     AddDeviceError.scanFailed => addDeviceErrorScanFailed,
     AddDeviceError.connectFailed => addDeviceErrorConnectFailed,
     AddDeviceError.alreadyAdded => addDeviceErrorAlreadyAdded,

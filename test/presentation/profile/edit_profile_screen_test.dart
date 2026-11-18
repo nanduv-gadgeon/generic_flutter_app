@@ -10,8 +10,10 @@ import 'package:generic_flutter_app/domain/services/photo_picker.dart';
 import 'package:generic_flutter_app/presentation/profile/edit_profile_screen.dart';
 import 'package:generic_flutter_app/presentation/widgets/labeled_field.dart';
 import 'package:go_router/go_router.dart';
+import 'package:generic_flutter_app/domain/services/permission_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../fixtures/fake_permissions.dart';
 import '../../fixtures/fake_auth.dart';
 import '../../fixtures/l10n.dart';
 
@@ -20,12 +22,17 @@ class MockPhotoPicker extends Mock implements PhotoPicker {}
 void main() {
   late MockAuthService auth;
   late MockPhotoPicker picker;
+  late FakePermissionService permissions;
 
-  setUpAll(() => registerFallbackValue(const ProfileChanges(name: '', mobile: '')));
+  setUpAll(() {
+    registerFallbackValue(const ProfileChanges(name: '', mobile: ''));
+    registerFallbackValue(PhotoSource.camera);
+  });
 
   setUp(() {
     auth = MockAuthService();
     picker = MockPhotoPicker();
+    permissions = FakePermissionService();
     when(() => auth.updateProfile(any())).thenAnswer((_) async => fakeUser);
   });
 
@@ -41,6 +48,7 @@ void main() {
       overrides: [
         authServiceProvider.overrideWithValue(auth),
         photoPickerProvider.overrideWithValue(picker),
+        permissionServiceProvider.overrideWithValue(permissions),
       ],
     );
     addTearDown(container.dispose);
@@ -216,6 +224,41 @@ void main() {
         expect(saved().photo, expected);
       });
     }
+
+    // camera answer -> message and action; the camera is not opened
+    final cameraRefusals = {
+      PermissionState.denied: (
+        'Camera access is needed to take a profile photo. Allow it, then try again.',
+        'Try again',
+      ),
+      PermissionState.permanentlyDenied: (
+        "Camera access is off for this app, so you can't take a profile photo. Turn it on in "
+            'Settings.',
+        'Open Settings',
+      ),
+    };
+    for (final MapEntry(key: answer, value: (message, action)) in cameraRefusals.entries) {
+      testWidgets('Take photo with the camera ${answer.name} says why', (tester) async {
+        permissions.states[AppPermission.camera] = answer;
+        await pumpEdit(tester);
+
+        await choose(tester, 'Take photo');
+
+        expect(permissions.requested, [AppPermission.camera]);
+        verifyNever(() => picker.pick(any()));
+        expect(find.text(message), findsOneWidget);
+        expect(find.text(action), findsOneWidget);
+      });
+    }
+
+    testWidgets('choosing from the library asks for nothing', (tester) async {
+      when(() => picker.pick(PhotoSource.gallery)).thenAnswer((_) async => null);
+      await pumpEdit(tester);
+
+      await choose(tester, 'Choose from library');
+
+      expect(permissions.requested, isEmpty);
+    });
 
     testWidgets('Remove is offered only when there is a photo, and removes it', (tester) async {
       await pumpEdit(tester);

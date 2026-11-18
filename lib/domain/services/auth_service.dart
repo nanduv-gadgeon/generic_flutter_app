@@ -2,11 +2,13 @@ import '../models/auth_user.dart';
 import '../models/login_result.dart';
 import '../models/profile_changes.dart';
 import '../models/reset_result.dart';
+import 'biometric_auth.dart';
 
 export '../models/auth_user.dart';
 export '../models/login_result.dart';
 export '../models/profile_changes.dart';
 export '../models/reset_result.dart';
+export 'biometric_auth.dart' show BiometricOutcome;
 
 /// Accounts and the login session. Phase 1: on the phone; Phase 2: cloud API.
 abstract interface class AuthService {
@@ -21,9 +23,14 @@ abstract interface class AuthService {
   /// True when some user has turned on biometric login and the phone can do it now.
   Future<bool> canLoginWithBiometrics();
 
-  /// Turns biometric login on or off for the logged-in user. Returns whether it is on afterwards:
-  /// false when turning on fails because the phone cannot track enrolment changes.
-  Future<bool> setBiometricLogin({required bool enabled});
+  /// Turns biometric login on for the logged-in user, but only after the phone's own prompt
+  /// (showing [reason]) verifies them. It is on afterwards only for [BiometricOutcome.success];
+  /// any other outcome says why it stayed off ([BiometricOutcome.notAvailable] also when the phone
+  /// cannot track enrolment changes).
+  Future<BiometricOutcome> enableBiometricLogin({required String reason});
+
+  /// Turns biometric login off for the logged-in user. No prompt.
+  Future<void> disableBiometricLogin();
 
   /// Creates an account. Throws [EmailAlreadyUsedException]. Does not log in.
   Future<AuthUser> register(RegistrationData data);

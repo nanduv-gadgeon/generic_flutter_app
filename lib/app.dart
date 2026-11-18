@@ -26,6 +26,7 @@ class GenericApp extends ConsumerWidget {
     }
 
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       // Built under the app's Localizations, so the fallback name is in the phone's language.
       onGenerateTitle: (context) => config?.brand.appName ?? context.l10n.commonFallbackAppName,
       theme: buildTheme(theme, Brightness.light),

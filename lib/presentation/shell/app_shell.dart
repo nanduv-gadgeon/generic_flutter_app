@@ -49,6 +49,8 @@ class AppShell extends ConsumerWidget {
             onDestinationSelected: (i) {
               // History opened from the bar has no page to go back to.
               ref.read(historyControllerProvider.notifier).clearBack();
+              // A message belongs to the tab that showed it (e.g. Profile's notifications).
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
               shell.goBranch(
                 tabs[i].branch,
                 // Tapping the current tab again goes back to its first screen.

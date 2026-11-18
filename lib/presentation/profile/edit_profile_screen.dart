@@ -39,6 +39,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   PhotoChange _photo = const KeepPhoto();
   bool _busy = false;
   String? _error;
+  ShownPermissionProblem? _permissionProblem;
 
   @override
   void initState() {
@@ -54,6 +55,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   void dispose() {
+    // The camera message belongs to this screen; it must not follow the user back to Profile.
+    _permissionProblem?.close();
     for (final c in [_name, _mobile]) {
       c.dispose();
     }
@@ -90,7 +93,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final state = await permissions.request(AppPermission.camera);
     final problem = problemOf(AppPermission.camera, state);
     if (problem != null && mounted) {
-      showPermissionProblem(context, problem, permissions: permissions, onRetry: _changePhoto);
+      _permissionProblem = showPermissionProblem(
+        context,
+        problem,
+        permissions: permissions,
+        onRetry: _changePhoto,
+      );
     }
     return problem == null;
   }

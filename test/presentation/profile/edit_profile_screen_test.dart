@@ -9,6 +9,7 @@ import 'package:generic_flutter_app/domain/services/auth_service.dart';
 import 'package:generic_flutter_app/domain/services/photo_picker.dart';
 import 'package:generic_flutter_app/presentation/profile/edit_profile_screen.dart';
 import 'package:generic_flutter_app/presentation/widgets/labeled_field.dart';
+import 'package:generic_flutter_app/presentation/widgets/permission_message.dart';
 import 'package:go_router/go_router.dart';
 import 'package:generic_flutter_app/domain/services/permission_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -250,6 +251,37 @@ void main() {
         expect(find.text(action), findsOneWidget);
       });
     }
+
+    testWidgets('the camera message goes away on Back; it does not follow to Profile', (
+      tester,
+    ) async {
+      permissions.states[AppPermission.camera] = PermissionState.permanentlyDenied;
+      await pumpEdit(tester);
+      await choose(tester, 'Take photo');
+      expect(find.text('Open Settings'), findsOneWidget);
+
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(find.text('profile page'), findsOneWidget);
+      expect(find.text('Open Settings'), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('the camera message closes by itself, or with its close button', (tester) async {
+      permissions.states[AppPermission.camera] = PermissionState.permanentlyDenied;
+      await pumpEdit(tester);
+
+      await choose(tester, 'Take photo');
+      await tester.pump(permissionProblemDuration);
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing, reason: 'closed by itself');
+
+      await choose(tester, 'Take photo');
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing, reason: 'closed by the user');
+    });
 
     testWidgets('choosing from the library asks for nothing', (tester) async {
       when(() => picker.pick(PhotoSource.gallery)).thenAnswer((_) async => null);

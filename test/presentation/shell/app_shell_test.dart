@@ -122,4 +122,23 @@ void main() {
     expect(tester.getSemantics(find.text('Devices')), isSemantics(isSelected: true));
     semantics.dispose();
   });
+
+  testWidgets('a message shown on one tab goes away when another tab is picked', (tester) async {
+    await _pumpShell(tester);
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    ScaffoldMessenger.of(tester.element(find.text('page /profile'))).showSnackBar(
+      SnackBar(
+        content: const Text('a message'),
+        action: SnackBarAction(label: 'Open Settings', onPressed: () {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('a message'), findsOneWidget);
+
+    await tester.tap(find.text('Devices'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('a message'), findsNothing);
+  });
 }

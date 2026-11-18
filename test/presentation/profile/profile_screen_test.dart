@@ -12,6 +12,7 @@ import 'package:generic_flutter_app/domain/services/biometric_auth.dart';
 import 'package:generic_flutter_app/domain/services/permission_service.dart';
 import 'package:generic_flutter_app/presentation/profile/profile_rows.dart';
 import 'package:generic_flutter_app/presentation/profile/profile_screen.dart';
+import 'package:generic_flutter_app/presentation/widgets/permission_message.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
@@ -212,6 +213,20 @@ void main() {
       }
     });
   }
+
+  testWidgets('the Notifications message with Open Settings closes by itself', (tester) async {
+    when(() => settings.watchNotificationsEnabled(any())).thenAnswer((_) => Stream.value(false));
+    permissions.states[AppPermission.notifications] = PermissionState.permanentlyDenied;
+    await pumpProfile(tester);
+
+    await tester.tap(find.text('Notifications'));
+    await tester.pumpAndSettle();
+    expect(find.text('Open Settings'), findsOneWidget);
+
+    await tester.pump(permissionProblemDuration);
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsNothing);
+  });
 
   testWidgets('turning Notifications off asks nothing', (tester) async {
     await pumpProfile(tester);

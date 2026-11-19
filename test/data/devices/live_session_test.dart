@@ -132,10 +132,22 @@ void main() {
     );
   });
 
-  test('stop stops the device, then disconnects', () async {
+  test('stop disconnects without sending Stop (the sensor would ignore the next Start)', () async {
     await session.start();
     link.sent.clear();
     await session.stop();
+
+    expect(link.sent, isEmpty);
+    expect(link.disconnected, isTrue);
+  });
+
+  test('a profile with stop commands sends them before disconnecting', () async {
+    final base = ppgMotionProfile();
+    final profile = base.copyWith(streaming: base.streaming!.copyWith(stop: ['stop']));
+    final withStop = LiveSession(profile, link, codecFor(profile), out, now: () => now);
+    await withStop.start();
+    link.sent.clear();
+    await withStop.stop();
 
     expect(link.sent, [stopCommand]);
     expect(link.disconnected, isTrue);
@@ -155,6 +167,7 @@ void main() {
     link.sent.clear();
     link.drop();
     link.reconnected();
+    await Future<void>.delayed(LiveSession.startSettle);
     await pumpEventQueue();
 
     expect(statuses().skip(3), [

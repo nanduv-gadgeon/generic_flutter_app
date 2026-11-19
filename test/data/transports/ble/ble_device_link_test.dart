@@ -38,6 +38,7 @@ void main() {
   setUpAll(() => registerFallbackValue(Uint8List(0)));
 
   setUp(() {
+    BleDeviceLink.forgetClosedLinks(); // no reconnect cool-down from an earlier test
     adapter = MockBleAdapter();
     connection = StreamController.broadcast();
     notifyValues = StreamController.broadcast();

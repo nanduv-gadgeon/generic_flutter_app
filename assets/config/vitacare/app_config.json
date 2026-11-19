@@ -381,7 +381,7 @@
       ],
       "streaming": {
         "start": ["stop", "set_channels", "start"],
-        "stop": ["stop"],
+        "stop": [],
         "replyTimeoutMs": 2500,
         "retries": 1,
         "problems": [

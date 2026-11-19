@@ -28,6 +28,7 @@ void main() {
   setUpAll(() => registerFallbackValue(Uint8List(0)));
 
   setUp(() {
+    BleDeviceLink.forgetClosedLinks(); // no reconnect cool-down from an earlier test
     adapter = MockBleAdapter();
     delays = [];
     when(() => adapter.connect(_id)).thenAnswer((_) async {});

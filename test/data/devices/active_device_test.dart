@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/devices/active_device.dart';
 import 'package:generic_flutter_app/data/devices/heartbeat_recorder.dart';
+import 'package:generic_flutter_app/data/devices/live_session.dart';
 import 'package:generic_flutter_app/data/devices/reading_writer.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/heartbeat_repository.dart';
@@ -89,10 +90,16 @@ void main() {
   ScriptedLink sensor() => links[_sensorAddress]!;
   ScriptedLink patch() => links[_patchAddress]!;
 
+  /// Past the session's pause before Start (and before closing), then the queue.
+  Future<void> settled() async {
+    await Future<void>.delayed(LiveSession.startSettle * 2);
+    await pumpEventQueue();
+  }
+
   test('watching connects the saved device and starts it', () async {
     final updates = <LiveUpdate>[];
     final sub = active.watch(sensorId).listen(updates.add);
-    await pumpEventQueue();
+    await settled();
 
     expect(opened, [_sensorAddress]);
     expect(sensor().sent, [stopCommand, channelsCommand, startCommand]);
@@ -115,7 +122,7 @@ void main() {
     'leaving the screen keeps the device connected, and a new screen sees the last state',
     () async {
       final first = active.watch(sensorId).listen((_) {});
-      await pumpEventQueue();
+      await settled();
       sensor().sendBattery(77);
       await first.cancel();
       await pumpEventQueue();
@@ -134,15 +141,15 @@ void main() {
     },
   );
 
-  test('watching another device stops and disconnects the first, then connects it', () async {
+  test('watching another device disconnects the first, then connects it', () async {
     final sub = active.watch(sensorId).listen((_) {});
-    await pumpEventQueue();
+    await settled();
     sensor().sent.clear();
 
     final other = active.watch(patchId).listen((_) {});
-    await pumpEventQueue();
+    await settled();
 
-    expect(sensor().sent, [stopCommand]);
+    expect(sensor().sent, isEmpty); // no Stop: the PPG profile disconnects without it
     expect(sensor().disconnected, isTrue);
     expect(opened, [_sensorAddress, _patchAddress]);
     expect(active.activeId, patchId);
@@ -213,7 +220,7 @@ void main() {
     );
     final sub = active.watch(sensorId).listen(updates.add);
     await gate.future;
-    await pumpEventQueue();
+    await settled();
 
     expect(waits, const [
       Duration(seconds: 5),
@@ -274,9 +281,9 @@ void main() {
     final watching = active.watchActive().listen(links.add);
     await pumpEventQueue();
     final a = active.watch(sensorId).listen((_) {});
-    await pumpEventQueue();
+    await settled();
     final b = active.watch(patchId).listen((_) {});
-    await pumpEventQueue();
+    await settled();
     await active.stop();
 
     expect(links.first, isNull);

@@ -54,6 +54,7 @@ import '../../domain/services/uploader.dart';
 import '../config/dashboard_checks.dart';
 import '../config/device_profile_registry.dart';
 import '../jobs/reading_cleanup_job.dart';
+import 'alerts.dart';
 import 'database.dart';
 import 'transports.dart';
 
@@ -129,8 +130,8 @@ HeartbeatRepository heartbeatRepository(Ref ref) =>
 DeviceEventRepository deviceEventRepository(Ref ref) =>
     LocalDeviceEventRepository(ref.watch(appDatabaseProvider).requireValue);
 
-/// Sums up each finished day's readings, then deletes readings, device events and summaries
-/// older than the config's `history.daysOnPhone`, and heartbeats older than 24 hours, now and
+/// Sums up each finished day's readings, then deletes readings, device events, summaries and
+/// alerts older than the config's `history.daysOnPhone`, and heartbeats older than 24 hours, now and
 /// once a day.
 @Riverpod(keepAlive: true)
 ReadingCleanupJob readingCleanupJob(Ref ref) {
@@ -141,6 +142,7 @@ ReadingCleanupJob readingCleanupJob(Ref ref) {
     heartbeats: ref.watch(heartbeatRepositoryProvider),
     events: ref.watch(deviceEventRepositoryProvider),
     summaries: ref.watch(dailySummaryRepositoryProvider),
+    alerts: ref.watch(alertRepositoryProvider),
   )..start();
   ref.onDispose(job.stop);
   return job;

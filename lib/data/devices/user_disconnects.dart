@@ -80,6 +80,9 @@ class UserDisconnects implements LiveReadings {
   }
 
   @override
+  Stream<(int, LiveUpdate)> watchAll() => _inner.watchAll();
+
+  @override
   Stream<ActiveLink?> watchActive() => _inner.watchActive();
 
   @override

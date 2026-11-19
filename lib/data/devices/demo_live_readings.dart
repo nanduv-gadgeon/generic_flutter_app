@@ -38,6 +38,7 @@ class DemoLiveReadings implements LiveConnections {
 
   final _sessions = <int, _DemoSession>{};
   final _demoChanged = StreamController<void>.broadcast();
+  final _demoUpdates = StreamController<(int, LiveUpdate)>.broadcast(sync: true);
   ActiveLink? _demoLink;
 
   @override
@@ -59,6 +60,20 @@ class DemoLiveReadings implements LiveConnections {
         cancelled = true;
         await sub?.cancel();
       },
+    );
+    return out.stream;
+  }
+
+  /// The real devices' updates and the dummy devices' ones.
+  @override
+  Stream<(int, LiveUpdate)> watchAll() {
+    final subs = <StreamSubscription<(int, LiveUpdate)>>[];
+    late final StreamController<(int, LiveUpdate)> out;
+    out = StreamController(
+      onListen: () => subs
+        ..add(_inner.watchAll().listen(out.add))
+        ..add(_demoUpdates.stream.listen(out.add)),
+      onCancel: () => Future.wait([for (final s in subs) s.cancel()]),
     );
     return out.stream;
   }
@@ -123,6 +138,7 @@ class DemoLiveReadings implements LiveConnections {
         _recorderFor(deviceId, profile.heartbeatOrDefault),
         tick: tick,
         now: _now,
+        onUpdate: (u) => _demoUpdates.add((deviceId, u)),
         onLink: (link) {
           if (link == null && _demoLink?.deviceId != deviceId) return;
           _demoLink = link;
@@ -142,6 +158,7 @@ class _DemoSession {
     this._recorder, {
     required this.tick,
     required this._now,
+    required this._onUpdate,
     required this._onLink,
   }) {
     _out = StreamController.broadcast(
@@ -158,6 +175,7 @@ class _DemoSession {
   final HeartbeatRecorder _recorder;
   final Duration tick;
   final DateTime Function() _now;
+  final void Function(LiveUpdate) _onUpdate;
   final void Function(ActiveLink?) _onLink;
 
   late final StreamController<LiveUpdate> _out;
@@ -217,6 +235,7 @@ class _DemoSession {
     if (_closed) return;
     if (update case LiveValue(:final sample)) _writer.add(sample);
     _out.add(update);
+    _onUpdate(update);
   }
 
   Future<void> close() async {

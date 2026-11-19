@@ -4,6 +4,7 @@ import 'package:generic_flutter_app/core/jobs/reading_cleanup_job.dart';
 import 'package:generic_flutter_app/data/history/local_daily_summary_repository.dart';
 import 'package:generic_flutter_app/data/readings/local_reading_repository.dart';
 import 'package:generic_flutter_app/domain/history/local_day.dart';
+import 'package:generic_flutter_app/domain/services/alert_repository.dart';
 import 'package:generic_flutter_app/domain/services/daily_summary_repository.dart';
 import 'package:generic_flutter_app/domain/services/device_event_repository.dart';
 import 'package:generic_flutter_app/domain/services/heartbeat_repository.dart';
@@ -19,6 +20,8 @@ class MockHeartbeatRepository extends Mock implements HeartbeatRepository {}
 class MockDeviceEventRepository extends Mock implements DeviceEventRepository {}
 
 class MockDailySummaryRepository extends Mock implements DailySummaryRepository {}
+
+class MockAlertRepository extends Mock implements AlertRepository {}
 
 void main() {
   final now = DateTime.utc(2026, 11, 10, 9);
@@ -124,6 +127,28 @@ void main() {
 
       verify(() => events.deleteOlderThan(DateTime.utc(2026, 11, 3, 9))).called(2);
       job.stop();
+    });
+  });
+
+  test('also deletes alerts older than the days kept; a failure stops nothing else', () {
+    fakeAsync((async) {
+      final readings = MockReadingRepository();
+      when(() => readings.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      final alerts = MockAlertRepository();
+      when(() => alerts.deleteOlderThan(any())).thenThrow(StateError('locked'));
+      final heartbeats = MockHeartbeatRepository();
+      when(() => heartbeats.deleteOlderThan(any())).thenAnswer((_) async => 0);
+      ReadingCleanupJob(
+        readings,
+        7,
+        alerts: alerts,
+        heartbeats: heartbeats,
+        now: () => now,
+      ).runOnce();
+      async.flushMicrotasks();
+
+      verify(() => alerts.deleteOlderThan(DateTime.utc(2026, 11, 3, 9))).called(1);
+      verify(() => heartbeats.deleteOlderThan(any())).called(1);
     });
   });
 

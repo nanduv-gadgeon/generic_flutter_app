@@ -4,7 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/di/database.dart';
+import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
+import 'package:generic_flutter_app/data/alerts/local_alert_engine.dart';
+import 'package:generic_flutter_app/data/alerts/local_alert_repository.dart';
+import 'package:generic_flutter_app/domain/services/alert_engine.dart';
+import 'package:generic_flutter_app/domain/services/alert_notifier.dart';
 import 'package:generic_flutter_app/data/auth/cloud_auth_service.dart';
 import 'package:generic_flutter_app/data/auth/local_auth_service.dart';
 import 'package:generic_flutter_app/data/cloud/cloud_backend_health.dart';
@@ -22,9 +27,15 @@ import 'package:generic_flutter_app/data/permissions/handler_permission_service.
 
 import '../../fixtures/test_config.dart';
 
-Future<ProviderContainer> _containerFor({required bool isCloud, bool export = true}) async {
+Future<ProviderContainer> _containerFor({
+  required bool isCloud,
+  bool export = true,
+  bool alerts = true,
+}) async {
   final json = validConfigJson(isCloud: isCloud);
-  (json['features'] as Map<String, dynamic>)['export'] = export;
+  (json['features'] as Map<String, dynamic>)
+    ..['export'] = export
+    ..['alerts'] = alerts;
   final container = ProviderContainer(
     overrides: [
       appConfigProvider.overrideWith((ref) async => AppConfig.fromJson(json)),
@@ -77,6 +88,20 @@ void main() {
       final container = await _containerFor(isCloud: isCloud);
       expect(container.read(permissionServiceProvider), isA<HandlerPermissionService>());
       expect(container.read(liveReadingsProvider), isA<UserDisconnects>());
+    });
+  }
+
+  // (isCloud, features.alerts) -> the engine that runs; alerts are local in both phases
+  final alertCases = {(false, true): true, (true, true): true, (false, false): false};
+  for (final MapEntry(key: (isCloud, on), value: raises) in alertCases.entries) {
+    test('alerts: isCloud $isCloud, feature $on -> raised: $raises', () async {
+      final container = await _containerFor(isCloud: isCloud, alerts: on);
+      expect(
+        container.read(alertEngineProvider),
+        raises ? isA<LocalAlertEngine>() : isA<NoAlertEngine>(),
+      );
+      expect(container.read(alertRepositoryProvider), isA<LocalAlertRepository>());
+      expect(container.read(alertNotificationsProvider), isA<NoAlertNotifier>());
     });
   }
 

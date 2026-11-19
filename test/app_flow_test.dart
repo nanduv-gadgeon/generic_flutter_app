@@ -6,6 +6,7 @@ import 'package:generic_flutter_app/app.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/di/database.dart';
+import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/domain/services/app_settings_service.dart';
@@ -16,6 +17,7 @@ import 'package:generic_flutter_app/presentation/widgets/labeled_field.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'fixtures/fake_alerts.dart';
 import 'fixtures/fake_auth.dart';
 import 'fixtures/fake_live_readings.dart';
 import 'fixtures/test_config.dart';
@@ -86,6 +88,8 @@ void main() {
           // These tests are about navigation; the device list has its own tests.
           deviceServiceProvider.overrideWithValue(_NoDevices()),
           liveReadingsProvider.overrideWithValue(FakeLiveReadings()),
+          alertRepositoryProvider.overrideWithValue(FakeAlertRepository()),
+          alertEngineProvider.overrideWithValue(FakeAlertEngine()),
           appSettingsServiceProvider.overrideWithValue(_DefaultSettings()),
           appVersionProvider.overrideWith((ref) async => ('1.0.0', '1')),
         ],

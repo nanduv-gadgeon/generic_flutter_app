@@ -122,6 +122,23 @@ void main() {
     });
   });
 
+  test('Offline reaches watchAll, for the alert engine', () {
+    withSensor((async, active, sensor, updates, links, ids) {
+      final all = <(int, LiveUpdate)>[];
+      active.watchAll().listen(all.add);
+
+      async.elapse(const Duration(seconds: 21));
+
+      expect(
+        [
+          for (final (id, u) in all)
+            if (u is LiveHeartbeat) (id, u.online),
+        ],
+        [(ids.sensor, false)],
+      );
+    });
+  });
+
   final beats = <String, void Function(ScriptedLink)>{
     'a battery level': (s) => s.sendBattery(70),
     'a data packet': (s) => s.data(ppgFrame((_) => 1000, (_) => 1000)),

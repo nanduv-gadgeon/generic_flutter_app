@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../core/di/alerts.dart';
 import '../core/di/services.dart';
 import '../domain/devices/link_state.dart';
 import '../domain/services/device_service.dart';
@@ -43,6 +44,14 @@ Stream<Map<String, Sample>> latestReadings(Ref ref, int deviceId) =>
 @riverpod
 DateTime Function() clock(Ref ref) => DateTime.now;
 
+/// How many of the logged-in user's alerts are not read yet; 0 when nobody is logged in.
+@riverpod
+Stream<int> unreadAlertCount(Ref ref) {
+  final user = ref.watch(authControllerProvider).value;
+  if (user == null) return Stream.value(0);
+  return ref.watch(alertRepositoryProvider).watchUnreadCount(user.id);
+}
+
 /// The three totals at the top of the home screen.
 typedef HomeSummary = ({int devices, int connected, int alerts});
 
@@ -56,8 +65,7 @@ HomeSummary homeSummary(Ref ref) {
       final link? when linkStateFor(link, link.deviceId) == LinkState.connected => 1,
       _ => 0,
     },
-    // 0 until the alerts module stores alerts.
-    alerts: 0,
+    alerts: ref.watch(unreadAlertCountProvider).value ?? 0,
   );
 }
 

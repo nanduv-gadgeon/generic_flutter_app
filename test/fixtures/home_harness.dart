@@ -1,4 +1,5 @@
 // Shared set-up for the My devices tests.
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -11,6 +12,7 @@ import 'package:generic_flutter_app/application/device_profiles_provider.dart';
 import 'package:generic_flutter_app/application/devices_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/config/device_profile_registry.dart';
+import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/services/auth_service.dart';
@@ -22,6 +24,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'bluetooth_fakes.dart';
+import 'fake_alerts.dart';
 import 'fake_auth.dart';
 import 'l10n.dart';
 
@@ -77,6 +80,7 @@ Future<MockDeviceService> pumpHome(
   when(() => deviceService.removeById(any(), any())).thenAnswer((_) async {});
   final live = MockLiveReadings();
   when(live.watchActive).thenAnswer((_) => Stream.value(active));
+  when(live.watchAll).thenAnswer((_) => const Stream.empty());
   when(live.watchDisconnected).thenAnswer((_) => Stream.value(disconnected));
   final readings = MockReadingRepository();
   when(() => readings.watchLatest(any()))
@@ -103,6 +107,7 @@ Future<MockDeviceService> pumpHome(
       deviceServiceProvider.overrideWithValue(deviceService),
       liveReadingsProvider.overrideWithValue(live),
       readingRepositoryProvider.overrideWithValue(readings),
+      alertRepositoryProvider.overrideWithValue(FakeAlertRepository()),
       appConfigProvider.overrideWith((ref) async => _config),
       deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
       clockProvider.overrideWithValue(() => now ?? DateTime(2026, 1, 1, 9)),

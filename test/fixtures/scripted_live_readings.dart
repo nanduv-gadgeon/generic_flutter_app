@@ -19,6 +19,12 @@ class ScriptedLiveReadings implements LiveReadings {
     return controller.stream;
   }
 
+  /// What [watchAll] sends: the test adds (device id, update) pairs.
+  final all = StreamController<(int, LiveUpdate)>.broadcast(sync: true);
+
+  @override
+  Stream<(int, LiveUpdate)> watchAll() => all.stream;
+
   @override
   Stream<ActiveLink?> watchActive() => Stream.value(null);
 

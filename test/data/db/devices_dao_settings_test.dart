@@ -90,4 +90,33 @@ void main() {
       [('battery', true, null, 15.0), ('heart_rate', false, 110.0, null)],
     );
   });
+
+  test('watchAlertLimitsForUser: each of the user\'s devices with its limits, live', () async {
+    final band = await addBandWithAlerts();
+    final bare = await db.devicesDao.addDevice(fakeDevice(userId, address: 'AA:BB:CC:00:00:02'));
+    final other = await db.usersDao.insertUser(fakeUser(email: 'other@example.com'));
+    await db.devicesDao.addDevice(fakeDevice(other, address: 'AA:BB:CC:00:00:03'));
+    final seen = <Map<int, List<(String, bool)>>>[];
+    final sub = db.devicesDao
+        .watchAlertLimitsForUser(userId)
+        .map(
+          (byDevice) => {
+            for (final MapEntry(:key, :value) in byDevice.entries)
+              key: [for (final a in value) (a.readingKey, a.enabled)]
+                ..sort((a, b) => a.$1.compareTo(b.$1)),
+          },
+        )
+        .listen(seen.add);
+    await pumpEventQueue();
+
+    await db.devicesDao.setAlertEnabled(band, 'heart_rate', enabled: false);
+    await pumpEventQueue();
+    await sub.cancel();
+
+    expect(seen.first, {
+      band: [('battery', true), ('heart_rate', true)],
+      bare: <(String, bool)>[],
+    });
+    expect(seen.last[band], [('battery', true), ('heart_rate', false)]);
+  });
 }

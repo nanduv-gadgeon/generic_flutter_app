@@ -34,6 +34,11 @@ class _FakeConnections implements LiveConnections {
   @override
   Future<void> runAction(int deviceId, List<ActionStep> steps) async {}
 
+  final all = StreamController<(int, LiveUpdate)>.broadcast(sync: true);
+
+  @override
+  Stream<(int, LiveUpdate)> watchAll() => all.stream;
+
   @override
   Stream<ActiveLink?> watchActive() => Stream.value(null);
 
@@ -168,5 +173,17 @@ void main() {
 
     expect(await live.watchDisconnected().first, isEmpty);
     expect(links.stops, 1);
+  });
+
+  test("watchAll passes every device's updates through", () async {
+    final got = <(int, LiveUpdate)>[];
+    final sub = live.watchAll().listen(got.add);
+
+    links.all.add((7, const LiveHeartbeat(online: false)));
+    await pumpEventQueue();
+
+    expect(got.single.$1, 7);
+    expect((got.single.$2 as LiveHeartbeat).online, isFalse);
+    await sub.cancel();
   });
 }

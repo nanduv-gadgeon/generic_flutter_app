@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'app_database.steps.dart';
+import 'daos/alerts_dao.dart';
 import 'daos/daily_summaries_dao.dart';
 import 'daos/device_events_dao.dart';
 import 'daos/devices_dao.dart';
@@ -30,6 +31,7 @@ part 'app_database.g.dart';
     Heartbeats,
     DeviceEvents,
     DailySummaries,
+    RaisedAlerts,
   ],
   daos: [
     UsersDao,
@@ -40,6 +42,7 @@ part 'app_database.g.dart';
     HeartbeatsDao,
     DeviceEventsDao,
     DailySummariesDao,
+    AlertsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -47,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -88,6 +91,11 @@ class AppDatabase extends _$AppDatabase {
       from6To7: (m, schema) async {
         await m.createTable(schema.dailySummaries);
         await m.createIndex(schema.dailySummariesDeviceKeyDay);
+      },
+      // v8 (task 1.5.3): the alerts the phone raised.
+      from7To8: (m, schema) async {
+        await m.createTable(schema.raisedAlerts);
+        await m.createIndex(schema.raisedAlertsDeviceTime);
       },
     ),
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),

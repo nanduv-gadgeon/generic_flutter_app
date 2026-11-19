@@ -87,7 +87,7 @@ class AppSettings extends Table {
 class DeviceAlerts extends Table {
   IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
 
-  /// A reading key of the device's profile, e.g. `heart_rate`.
+  /// A reading key of the device's profile, e.g. `hr`, or `battery`.
   TextColumn get readingKey => text()();
   RealColumn get above => real().nullable()();
   RealColumn get below => real().nullable()();
@@ -176,4 +176,30 @@ class DailySummaries extends Table {
 
   /// The local hours with readings: bit h for the hour starting at h:00.
   IntColumn get hours => integer()();
+}
+
+/// Alerts the phone raised (added in schema v8, task 1.5.3): a device's reading crossing one of
+/// its limits, its battery running low, or it going Offline. Kept as long as readings, and
+/// deleted with the device. The words are made where an alert is shown.
+///
+/// Values are health data: never log them.
+@DataClassName('RaisedAlertRow')
+@TableIndex(name: 'raised_alerts_device_time', columns: {#deviceId, #atMs})
+class RaisedAlerts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get deviceId => integer().references(Devices, #id, onDelete: KeyAction.cascade)();
+
+  /// An `AlertKind` name: `above`, `below`, `batteryLow` or `offline`.
+  TextColumn get kind => text()();
+
+  /// The reading key, e.g. `hr` or `battery`; null when offline.
+  TextColumn get readingKey => text().nullable()();
+
+  /// The value that crossed the limit, and the limit; null when offline.
+  RealColumn get value => real().nullable()();
+  RealColumn get limitValue => real().nullable()();
+
+  /// When it was raised: UTC milliseconds since 1970.
+  IntColumn get atMs => integer()();
+  BoolColumn get isRead => boolean().withDefault(const Constant(false))();
 }

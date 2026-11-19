@@ -9,6 +9,9 @@ class FakeLiveReadings implements LiveReadings {
   Stream<LiveUpdate> watch(int deviceId) => const Stream.empty();
 
   @override
+  Stream<(int, LiveUpdate)> watchAll() => const Stream.empty();
+
+  @override
   Stream<ActiveLink?> watchActive() => Stream.value(null);
 
   @override

@@ -51,6 +51,22 @@ class DevicesDao extends DatabaseAccessor<AppDatabase> with _$DevicesDaoMixin {
     });
   }
 
+  /// The alert limits of each of [userId]'s devices, by device id (a device without limits maps
+  /// to an empty list); emits again when a device or a limit changes.
+  Stream<Map<int, List<DeviceAlert>>> watchAlertLimitsForUser(int userId) {
+    final query = select(devices).join([
+      leftOuterJoin(deviceAlerts, deviceAlerts.deviceId.equalsExp(devices.id)),
+    ])..where(devices.userId.equals(userId));
+    return query.watch().map((rows) {
+      final byDevice = <int, List<DeviceAlert>>{};
+      for (final row in rows) {
+        final list = byDevice.putIfAbsent(row.readTable(devices).id, () => []);
+        if (row.readTableOrNull(deviceAlerts) case final alert?) list.add(alert);
+      }
+      return byDevice;
+    });
+  }
+
   /// Turns one alert limit of the device on or off; the limit itself is not changed.
   Future<void> setAlertEnabled(int deviceId, String readingKey, {required bool enabled}) =>
       (update(deviceAlerts)

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/auth_controller.dart';
 import 'package:generic_flutter_app/application/devices_provider.dart';
+import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
+import 'package:generic_flutter_app/domain/services/alert_repository.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -12,22 +14,28 @@ import '../fixtures/fake_auth.dart';
 
 class MockDeviceService extends Mock implements DeviceService {}
 
+class MockAlertRepository extends Mock implements AlertRepository {}
+
 const _band = UserDevice(id: 1, name: 'Test band', profileId: 'test_device_v1');
 const _sensor = UserDevice(id: 2, name: 'Test sensor', profileId: 'test_device_v1');
 
 void main() {
   late MockAuthService auth;
   late MockDeviceService devices;
+  late MockAlertRepository alerts;
   late ProviderContainer container;
 
   setUp(() {
     auth = MockAuthService();
     devices = MockDeviceService();
+    alerts = MockAlertRepository();
+    when(() => alerts.watchUnreadCount(any())).thenAnswer((_) => Stream.value(0));
     when(() => auth.logout()).thenAnswer((_) async {});
     container = ProviderContainer(
       overrides: [
         authServiceProvider.overrideWithValue(auth),
         deviceServiceProvider.overrideWithValue(devices),
+        alertRepositoryProvider.overrideWithValue(alerts),
       ],
     );
     addTearDown(container.dispose);
@@ -72,6 +80,19 @@ void main() {
       expect(container.read(homeSummaryProvider), expected);
     });
   }
+
+  test('the summary counts the user\'s unread alerts', () async {
+    when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);
+    when(() => devices.watchDevices(fakeUser.id)).thenAnswer((_) => Stream.value([_band]));
+    when(() => alerts.watchUnreadCount(fakeUser.id)).thenAnswer((_) => Stream.value(3));
+    await container.read(authControllerProvider.future);
+    await devicesNow();
+    final sub = container.listen(unreadAlertCountProvider, (_, _) {});
+    addTearDown(sub.close);
+    await container.read(unreadAlertCountProvider.future);
+
+    expect(container.read(homeSummaryProvider).alerts, 3);
+  });
 
   test('logging out clears the list', () async {
     when(() => auth.currentUser()).thenAnswer((_) async => fakeUser);

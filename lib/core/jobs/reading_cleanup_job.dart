@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../domain/history/local_day.dart';
+import '../../domain/services/alert_repository.dart';
 import '../../domain/services/daily_summary_repository.dart';
 import '../../domain/services/device_event_repository.dart';
 import '../../domain/services/heartbeat_repository.dart';
 import '../../domain/services/reading_repository.dart';
 
-/// Keeps [daysOnPhone] days of readings and device events (the config's `history.daysOnPhone`)
+/// Keeps [daysOnPhone] days of readings, device events and alerts (the config's `history.daysOnPhone`)
 /// and [heartbeatsKept] of heartbeats: deletes older ones when [start] is called, then once a day
 /// while the app runs. First it sums up each finished day still kept ([summaryFrom] to
 /// yesterday), so History has them, and deletes the summaries of older days.
@@ -20,6 +21,7 @@ class ReadingCleanupJob {
     this._heartbeats,
     this._events,
     this._summaries,
+    this._alerts,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now;
 
@@ -27,6 +29,7 @@ class ReadingCleanupJob {
   final HeartbeatRepository? _heartbeats;
   final DeviceEventRepository? _events;
   final DailySummaryRepository? _summaries;
+  final AlertRepository? _alerts;
   final int daysOnPhone;
   final DateTime Function() _now;
   Timer? _timer;
@@ -76,6 +79,14 @@ class ReadingCleanupJob {
         if (kDebugMode) debugPrint('Device events: deleted $deleted older than $daysOnPhone days');
       } catch (e) {
         if (kDebugMode) debugPrint('Device events: clean-up failed: ${e.runtimeType}');
+      }
+    }
+    if (_alerts case final alerts?) {
+      try {
+        final deleted = await alerts.deleteOlderThan(cutoff);
+        if (kDebugMode) debugPrint('Alerts: deleted $deleted older than $daysOnPhone days');
+      } catch (e) {
+        if (kDebugMode) debugPrint('Alerts: clean-up failed: ${e.runtimeType}');
       }
     }
     if (_heartbeats case final heartbeats?) {

@@ -96,6 +96,9 @@ class ActiveDevice implements LiveConnections {
   }
 
   @override
+  Stream<(int, LiveUpdate)> watchAll() => _updates.stream;
+
+  @override
   Stream<LiveUpdate> watch(int deviceId) {
     StreamSubscription<(int, LiveUpdate)>? sub;
     late final StreamController<LiveUpdate> out;
@@ -170,7 +173,7 @@ class ActiveDevice implements LiveConnections {
     final heartbeat = profile.heartbeatOrDefault;
     active.recorder = _recorderFor(deviceId, heartbeat);
     active.monitor = HeartbeatMonitor(heartbeat, (online, lastAt) {
-      // TODO(1.5.3): raise the "Device offline" alert when [online] turns false.
+      // Offline reaches the alert engine through [watchAll].
       active.emit(LiveHeartbeat(online: online, lastAt: lastAt));
     }, now: _now)..start();
     _active = active; // Its first statuses already count as the active link.

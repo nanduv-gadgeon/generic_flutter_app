@@ -26,6 +26,10 @@ abstract interface class LiveConnections {
   /// refuses a command or does not answer.
   Future<void> runAction(int deviceId, List<ActionStep> steps);
 
+  /// Every update of every connected device, with its id, from now on, whether or not a screen
+  /// watches it. Only observes: connects nothing. Values are health data: never log them.
+  Stream<(int, LiveUpdate)> watchAll();
+
   /// The device that is connected or connecting, and its status; null when there is none.
   /// Starts with the current one.
   Stream<ActiveLink?> watchActive();

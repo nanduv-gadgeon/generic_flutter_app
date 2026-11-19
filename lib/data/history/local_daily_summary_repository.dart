@@ -2,6 +2,7 @@ import '../../domain/history/local_day.dart';
 import '../../domain/history/summarise_day.dart';
 import '../../domain/services/daily_summary_repository.dart';
 import '../db/app_database.dart';
+import '../db/daos/readings_dao.dart';
 
 /// [DailySummaryRepository] over the local database; the same in both phases. The database adds
 /// the readings up per hour; [summariseDays] makes days of them.
@@ -54,6 +55,14 @@ class LocalDailySummaryRepository implements DailySummaryRepository {
       _hours(day, nextDay(day), deviceId: deviceId);
 
   @override
+  Stream<List<HourStats>> watchHours(int deviceId, DateTime day) {
+    final fromMs = day.toUtc().millisecondsSinceEpoch;
+    return _db.readingsDao
+        .watchHourStats(fromMs, nextDay(day).toUtc().millisecondsSinceEpoch, deviceId: deviceId)
+        .map((rows) => _stats(fromMs, rows));
+  }
+
+  @override
   Future<int> deleteBefore(DateTime day) => _db.dailySummariesDao.deleteBefore(dayNumber(day));
 
   Future<List<HourStats>> _hours(DateTime from, DateTime to, {int? deviceId}) async {
@@ -63,19 +72,21 @@ class LocalDailySummaryRepository implements DailySummaryRepository {
       to.toUtc().millisecondsSinceEpoch,
       deviceId: deviceId,
     );
-    return [
-      for (final r in rows)
-        HourStats(
-          deviceId: r.deviceId,
-          key: r.key,
-          start: DateTime.fromMillisecondsSinceEpoch(fromMs + r.bucket * 3600000, isUtc: true),
-          min: r.min,
-          max: r.max,
-          sum: r.sum,
-          count: r.count,
-        ),
-    ];
+    return _stats(fromMs, rows);
   }
+
+  static List<HourStats> _stats(int fromMs, List<HourRow> rows) => [
+    for (final r in rows)
+      HourStats(
+        deviceId: r.deviceId,
+        key: r.key,
+        start: DateTime.fromMillisecondsSinceEpoch(fromMs + r.bucket * 3600000, isUtc: true),
+        min: r.min,
+        max: r.max,
+        sum: r.sum,
+        count: r.count,
+      ),
+  ];
 
   static DailySummariesCompanion _row(DaySummary s) => DailySummariesCompanion.insert(
     deviceId: s.deviceId,

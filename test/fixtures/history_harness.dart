@@ -125,6 +125,16 @@ class FakeDailySummaryRepository implements DailySummaryRepository {
     ];
   }
 
+  /// (device, day) of every [watchHours].
+  final watchedHours = <(int, DateTime)>[];
+
+  @override
+  Stream<List<HourStats>> watchHours(int deviceId, DateTime day) {
+    watchedHours.add((deviceId, day));
+    if (pending) return const Stream.empty();
+    return Stream.fromFuture(hours(deviceId, day));
+  }
+
   /// One hour of made-up figures: every reading in it has the reading's average, except that the
   /// hour holds the day's lowest and highest too.
   HourStats _hour(int deviceId, String key, DateTime day, int hour, Iterable<DateTime> times) {

@@ -5,13 +5,18 @@ import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../l10n/l10n.dart';
+import 'disconnect_device_sheet.dart';
 
 /// Disconnect device, or Connect once it is disconnected. Unlike Remove device, the device stays
-/// saved with its history and alert limits. A spinner while it works, then a short message.
+/// saved with its history and alert limits. Disconnect asks first; Connect does not. A spinner
+/// while it works, then a short message.
 class DisconnectButton extends ConsumerStatefulWidget {
-  const DisconnectButton({super.key, required this.deviceId});
+  const DisconnectButton({super.key, required this.deviceId, required this.name});
 
   final int deviceId;
+
+  /// The device's name, for "Disconnect {name}?".
+  final String name;
 
   @override
   ConsumerState<DisconnectButton> createState() => _DisconnectButtonState();
@@ -22,6 +27,10 @@ class _DisconnectButtonState extends ConsumerState<DisconnectButton> {
   bool? _pending;
 
   Future<void> _run({required bool disconnect}) async {
+    if (disconnect) {
+      final confirmed = await confirmDisconnectDevice(context, name: widget.name);
+      if (!confirmed || !mounted) return;
+    }
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(deviceSettingsControllerProvider.notifier);

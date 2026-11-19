@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/history/local_daily_summary_repository.dart';
@@ -182,6 +184,23 @@ void main() {
 
     test('a day without readings has no hours', () async {
       expect(await summaries.hours(band, DateTime(2026, 11, 10)), isEmpty);
+    });
+
+    test('watching: worked out again as readings are stored (today keeps filling in)', () async {
+      final seen = StreamIterator(summaries.watchHours(band, today));
+      Future<List<(String, int, int)>> next() async {
+        expect(await seen.moveNext(), isTrue);
+        return [for (final h in seen.current) (h.key, h.start.toLocal().hour, h.count)];
+      }
+
+      expect(await next(), isEmpty);
+
+      await readings.addAll(band, [Sample('hr', 70, on(13, 9, 5))]);
+      expect(await next(), [('hr', 9, 1)]);
+
+      await readings.addAll(band, [Sample('hr', 72, on(13, 9, 6)), Sample('hr', 74, on(13, 10))]);
+      expect(await next(), [('hr', 9, 2), ('hr', 10, 1)]);
+      await seen.cancel();
     });
   });
 }

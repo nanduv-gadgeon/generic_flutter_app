@@ -53,6 +53,13 @@ class ReadingsDao extends DatabaseAccessor<AppDatabase> with _$ReadingsDaoMixin 
   /// device, added up per device, key and hour: `bucket` counts whole hours from [fromMs]. One
   /// pass over the table, so a whole week costs one query.
   Future<List<HourRow>> hourStats(int fromMs, int toMs, {int? deviceId}) =>
+      _hourStats(fromMs, toMs, deviceId: deviceId).get();
+
+  /// [hourStats], worked out again each time readings are stored.
+  Stream<List<HourRow>> watchHourStats(int fromMs, int toMs, {int? deviceId}) =>
+      _hourStats(fromMs, toMs, deviceId: deviceId).watch();
+
+  Selectable<HourRow> _hourStats(int fromMs, int toMs, {int? deviceId}) =>
       customSelect(
         'SELECT device_id, "key", (at_ms - ?1) / 3600000 AS bucket, MIN(value) AS lo, '
         'MAX(value) AS hi, SUM(value) AS total, COUNT(*) AS n FROM readings '
@@ -64,19 +71,16 @@ class ReadingsDao extends DatabaseAccessor<AppDatabase> with _$ReadingsDaoMixin 
           if (deviceId != null) Variable.withInt(deviceId),
         ],
         readsFrom: {readings},
-      ).get().then(
-        (rows) => [
-          for (final r in rows)
-            (
-              deviceId: r.read<int>('device_id'),
-              key: r.read<String>('key'),
-              bucket: r.read<int>('bucket'),
-              min: r.read<double>('lo'),
-              max: r.read<double>('hi'),
-              sum: r.read<double>('total'),
-              count: r.read<int>('n'),
-            ),
-        ],
+      ).map(
+        (r) => (
+          deviceId: r.read<int>('device_id'),
+          key: r.read<String>('key'),
+          bucket: r.read<int>('bucket'),
+          min: r.read<double>('lo'),
+          max: r.read<double>('hi'),
+          sum: r.read<double>('total'),
+          count: r.read<int>('n'),
+        ),
       );
 
   /// Every reading of [deviceId] measured from [fromMs] to [toMs] (not included), oldest first:

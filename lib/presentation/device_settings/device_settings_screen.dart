@@ -275,7 +275,7 @@ class _Content extends StatelessWidget {
           ),
         ],
         gap,
-        DisconnectButton(deviceId: device.id),
+        DisconnectButton(deviceId: device.id, name: device.name),
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: onRemove,

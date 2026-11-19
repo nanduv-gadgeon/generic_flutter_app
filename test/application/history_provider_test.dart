@@ -213,6 +213,24 @@ void main() {
       expect((await detail(c, today)).gaps, [(0, 8)]);
     });
 
+    // Readings are stored every 2 s while a device streams; today's chart follows them (at most
+    // every 5 s) instead of waiting for the minute's refresh. Earlier days do not change.
+    test("today's chart follows stored readings; an earlier day's does not watch", () async {
+      final (c, fake) = await withData({
+        'heart_rate': slotsAt(DateTime(2026, 10, 26), [9]),
+      });
+      final yesterday = DateTime(2026, 10, 25);
+
+      for (final day in [DateTime(2026, 10, 26), yesterday]) {
+        c.listen(historyDayHoursProvider(3, day), (_, _) {}); // as the chart keeps it
+        await c.read(historyDayHoursProvider(3, day).future);
+      }
+
+      expect(fake.watchedHours, contains((3, DateTime(2026, 10, 26))));
+      expect(fake.watchedHours.where((w) => w.$2 == yesterday), isEmpty);
+      expect(historyLiveEvery, const Duration(seconds: 5));
+    });
+
     test('a day with nothing stored: No data, no figures', () async {
       final (c, _) = await withData(const {});
 

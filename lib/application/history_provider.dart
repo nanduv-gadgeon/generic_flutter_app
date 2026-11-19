@@ -6,6 +6,7 @@ import '../domain/history/day_detail.dart';
 import '../domain/history/history_days.dart';
 import '../domain/history/local_day.dart';
 import '../domain/history/summarise_day.dart';
+import '../domain/history/throttle.dart';
 import '../domain/services/daily_summary_repository.dart';
 import '../domain/services/device_service.dart';
 import 'app_config_provider.dart';
@@ -226,10 +227,19 @@ Future<List<DayStatus>> historyDayStatuses(Ref ref, int deviceId) async {
   ];
 }
 
+/// How often today's charts may update while a device streams: readings are stored every 2 s, and
+/// working out the whole day each time would be wasted work.
+const historyLiveEvery = Duration(seconds: 5);
+
 /// The device's readings of the day starting [dayStart], added up per key and hour, for the
-/// charts through the day; worked out again every minute (today keeps filling in).
+/// charts through the day. Today's update as readings are stored (at most every
+/// [historyLiveEvery]); an earlier day's are worked out again every minute (late logs).
 @riverpod
-Future<List<HourStats>> historyDayHours(Ref ref, int deviceId, DateTime dayStart) {
+Stream<List<HourStats>> historyDayHours(Ref ref, int deviceId, DateTime dayStart) {
+  final summaries = ref.watch(dailySummaryRepositoryProvider);
+  if (dayStart == ref.watch(historyTodayProvider)) {
+    return throttleLatest(summaries.watchHours(deviceId, dayStart), historyLiveEvery);
+  }
   ref.watch(historyNowProvider);
-  return ref.watch(dailySummaryRepositoryProvider).hours(deviceId, dayStart);
+  return Stream.fromFuture(summaries.hours(deviceId, dayStart));
 }

@@ -19,6 +19,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Finder confirm() => find.widgetWithText(FilledButton, 'Disconnect');
+
+  /// Taps Disconnect device and confirms in the sheet.
+  Future<void> disconnect(WidgetTester tester) async {
+    await tap(tester, 'Disconnect device');
+    await tester.tap(confirm());
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows Disconnect device next to Remove device', (tester) async {
     await pumpSettings(tester, device: band);
 
@@ -29,7 +38,7 @@ void main() {
   testWidgets('disconnects, keeps the device, says so and offers Connect', (tester) async {
     await pumpSettings(tester, device: band);
 
-    await tap(tester, 'Disconnect device');
+    await disconnect(tester);
 
     expect(live.off, {band.id});
     verifyNever(() => devices.removeDevice(any(), any())); // still saved
@@ -40,12 +49,52 @@ void main() {
 
   testWidgets('Connect connects it again', (tester) async {
     await pumpSettings(tester, device: band);
-    await tap(tester, 'Disconnect device');
+    await disconnect(tester);
 
     await tap(tester, 'Connect device');
 
     expect(live.off, isEmpty);
+    expect(find.text('Disconnect ${band.name}?'), findsNothing); // Connect does not ask
     expect(find.text('Connecting to the device.'), findsOneWidget);
+    expect(button('Disconnect device'), findsOneWidget);
+  });
+
+  testWidgets('asks first, naming the device', (tester) async {
+    await pumpSettings(tester, device: band);
+
+    await tap(tester, 'Disconnect device');
+
+    expect(find.text('Disconnect ${band.name}?'), findsOneWidget);
+    expect(
+      find.text(
+        'It stops sending readings until you connect it again. Its history and alerts are kept.',
+      ),
+      findsOneWidget,
+    );
+    expect(live.off, isEmpty);
+  });
+
+  testWidgets('Cancel keeps it connected', (tester) async {
+    await pumpSettings(tester, device: band);
+    await tap(tester, 'Disconnect device');
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(live.off, isEmpty);
+    expect(find.text('Disconnect ${band.name}?'), findsNothing);
+    expect(find.text('Device disconnected. Its history and alerts are kept.'), findsNothing);
+    expect(button('Disconnect device'), findsOneWidget);
+  });
+
+  testWidgets('closing the sheet without choosing keeps it connected', (tester) async {
+    await pumpSettings(tester, device: band);
+    await tap(tester, 'Disconnect device');
+
+    await tester.tapAt(const Offset(10, 10)); // outside the sheet
+    await tester.pumpAndSettle();
+
+    expect(live.off, isEmpty);
     expect(button('Disconnect device'), findsOneWidget);
   });
 
@@ -55,8 +104,8 @@ void main() {
     final gate = Completer<void>();
     live.disconnectGate = gate;
 
-    await tester.ensureVisible(button('Disconnect device'));
-    await tester.tap(button('Disconnect device'));
+    await tap(tester, 'Disconnect device');
+    await tester.tap(confirm());
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -71,7 +120,7 @@ void main() {
     await pumpSettings(tester, device: band);
     live.disconnectError = StateError('link stuck');
 
-    await tap(tester, 'Disconnect device');
+    await disconnect(tester);
 
     expect(find.text("Couldn't disconnect the device. Try again."), findsOneWidget);
   });

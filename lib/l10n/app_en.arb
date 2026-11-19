@@ -950,6 +950,13 @@
   "deviceSettingsDisconnecting": "Disconnecting device",
   "deviceSettingsDisconnected": "Device disconnected. Its history and alerts are kept.",
   "deviceSettingsDisconnectFailed": "Couldn't disconnect the device. Try again.",
+  "deviceSettingsDisconnectTitle": "Disconnect {name}?",
+  "@deviceSettingsDisconnectTitle": {
+    "description": "Asks before Disconnect device; name is the device's name.",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deviceSettingsDisconnectBody": "It stops sending readings until you connect it again. Its history and alerts are kept.",
+  "deviceSettingsDisconnectConfirm": "Disconnect",
   "deviceSettingsConnect": "Connect device",
   "deviceSettingsConnecting": "Connecting device",
   "deviceSettingsConnectStarted": "Connecting to the device.",

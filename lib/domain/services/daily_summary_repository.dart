@@ -27,6 +27,10 @@ abstract interface class DailySummaryRepository {
   /// History's chart through the day), worked out now and not stored.
   Future<List<HourStats>> hours(int deviceId, DateTime day);
 
+  /// [hours], worked out again each time the device's readings are stored (today's chart keeps
+  /// up while a device streams).
+  Stream<List<HourStats>> watchHours(int deviceId, DateTime day);
+
   /// Deletes the summaries of days before the local midnight [day]; returns how many.
   Future<int> deleteBefore(DateTime day);
 }

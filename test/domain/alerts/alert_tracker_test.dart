@@ -16,8 +16,14 @@ void main() {
     ('hr', [105, 111, 115, 108, 112]): 2,
     ('hr', [111, 120, 130]): 1,
     ('hr', [100, 105]): 0,
-    ('battery', [14, 13, 16, 14]): 1, // 16 is not 5 above the limit
-    ('battery', [14, 21, 14]): 2,
+    // battery (limit 15): each new whole-percent low while below the limit
+    ('battery', [14, 13, 12]): 3,
+    ('battery', [14, 14, 14]): 1,
+    ('battery', [14, 13, 14, 13]): 2, // back up and down again: 13 was already said
+    ('battery', [14.4, 13.6, 13.4]): 2, // 14, 14, 13 in whole percent
+    ('battery', [14, 13, 16, 14, 12]): 3, // 16 is not 5 above the limit, so 12 is a new low
+    ('battery', [14, 21, 14]): 2, // 21 re-arms: 14 counts again
+    ('battery', [16, 15]): 0, // not below 15
     ('spo2', [80, 70]): 0, // no limit for it
   };
   for (final MapEntry(key: (key, values), value: count) in sequences.entries) {
@@ -61,6 +67,22 @@ void main() {
     final tracker = AlertTracker();
     expect(feed(tracker, 'hr', [120], device: 1), hasLength(1));
     expect(feed(tracker, 'hr', [120], device: 2), hasLength(1));
+  });
+
+  test('each battery alert says its own level', () {
+    final alerts = feed(AlertTracker(), 'battery', [14, 13, 12]);
+    expect(alerts.map((a) => (a.kind, a.value, a.limit)), [
+      (AlertKind.batteryLow, 14, 15),
+      (AlertKind.batteryLow, 13, 15),
+      (AlertKind.batteryLow, 12, 15),
+    ]);
+  });
+
+  test('forgetting a device also forgets its battery low', () {
+    final tracker = AlertTracker();
+    feed(tracker, 'battery', [12]);
+    tracker.forget(1);
+    expect(feed(tracker, 'battery', [14]), hasLength(1), reason: '14 is a new crossing');
   });
 
   test('forget and clear drop what is open', () {

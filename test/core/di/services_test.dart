@@ -8,6 +8,7 @@ import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
 import 'package:generic_flutter_app/data/alerts/local_alert_engine.dart';
 import 'package:generic_flutter_app/data/alerts/local_alert_repository.dart';
+import 'package:generic_flutter_app/data/alerts/local_notifications_notifier.dart';
 import 'package:generic_flutter_app/domain/services/alert_engine.dart';
 import 'package:generic_flutter_app/domain/services/alert_notifier.dart';
 import 'package:generic_flutter_app/data/auth/cloud_auth_service.dart';
@@ -101,7 +102,10 @@ void main() {
         raises ? isA<LocalAlertEngine>() : isA<NoAlertEngine>(),
       );
       expect(container.read(alertRepositoryProvider), isA<LocalAlertRepository>());
-      expect(container.read(alertNotificationsProvider), isA<NoAlertNotifier>());
+      expect(
+        container.read(alertNotificationsProvider),
+        on ? isA<LocalNotificationsNotifier>() : isA<NoAlertNotifier>(),
+      );
     });
   }
 

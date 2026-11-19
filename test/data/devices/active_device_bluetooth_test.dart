@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/db/app_database.dart';
 import 'package:generic_flutter_app/data/devices/active_device.dart';
 import 'package:generic_flutter_app/data/devices/heartbeat_recorder.dart';
+import 'package:generic_flutter_app/data/devices/live_session.dart';
 import 'package:generic_flutter_app/data/devices/reading_writer.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/permissions/permission_problem.dart';
@@ -86,6 +87,8 @@ void main() {
       answers = [problem, problem];
       final updates = <LiveUpdate>[];
       final sub = active.watch(deviceId).listen(updates.add);
+      await pumpEventQueue();
+      await Future<void>.delayed(LiveSession.startSettle * 2); // the pause before Start
       await pumpEventQueue();
 
       final failure = updates.whereType<LiveFailure>().first;

@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 
 import '../../../domain/decoder/time_encoding.dart';
 import '../../../domain/models/device_profile.dart';
@@ -38,6 +39,25 @@ class BleDeviceLink implements DeviceLink {
 
   /// Wait between those tries.
   static const connectRetryDelay = Duration(seconds: 2);
+
+  /// Least time between closing the link to a device and connecting to it again: a device whose
+  /// firmware has not finished with the old session can accept everything on the new one and
+  /// still send no data (the PPG sensor did, reconnected ~90 ms after closing).
+  static const reconnectCooldown = Duration(milliseconds: 1500);
+
+  /// Before reconnecting to a device closed earlier, the link scans until it sees the device
+  /// advertising (as the vendor app does, which always connects from a scan), at most this long.
+  /// Not shown to the user.
+  static const reconnectScanTimeout = Duration(seconds: 5);
+
+  /// When each device's link was last closed, on [_clock]; shared by every link, since each
+  /// connection makes a new one.
+  static final _closedAt = <String, Duration>{};
+  static final _clock = Stopwatch()..start();
+
+  /// Tests only: forgets every close, so no connect waits.
+  @visibleForTesting
+  static void forgetClosedLinks() => _closedAt.clear();
 
   final BleAdapter _adapter;
   final String deviceId;
@@ -124,13 +144,62 @@ class BleDeviceLink implements DeviceLink {
     } catch (_) {
       // Already gone; nothing to do.
     }
+    _closedAt[deviceId] = _clock.elapsed;
     _setState(LinkState.disconnected);
+  }
+
+  /// For a device whose link was closed earlier: waits out the rest of [reconnectCooldown], then
+  /// looks for it advertising before connecting.
+  Future<void> _waitCooldown() async {
+    final closed = _closedAt[deviceId];
+    if (closed == null) return;
+    final wait = reconnectCooldown - (_clock.elapsed - closed);
+    if (wait > Duration.zero) {
+      if (kDebugMode) debugPrint('BLE link: waiting ${wait.inMilliseconds} ms before reconnecting');
+      await _delay(wait);
+    }
+    if (_wanted) await _scanForDevice();
+  }
+
+  /// Scans for this device's service until the device is seen, for up to [reconnectScanTimeout].
+  /// Connects anyway when it is not seen or the scan fails.
+  Future<void> _scanForDevice() async {
+    final took = Stopwatch()..start();
+    try {
+      // Listening before the scan starts, so an early result is not missed.
+      final seen = _adapter.scanResults
+          .firstWhere((d) => d.id == deviceId)
+          .timeout(reconnectScanTimeout)
+          .then((_) => true, onError: (Object _) => false);
+      await _adapter.startScan(
+        services: [fullUuid(_settings.scanUuid)],
+        namePrefixes: [?_settings.scanNamePrefix],
+      );
+      final found = await seen;
+      if (kDebugMode) {
+        debugPrint(
+          found
+              ? 'BLE link: seen advertising after ${took.elapsedMilliseconds} ms'
+              : 'BLE link: not seen in ${reconnectScanTimeout.inSeconds} s, connecting anyway',
+        );
+      }
+    } catch (_) {
+      // No scan: connect as before.
+    } finally {
+      try {
+        await _adapter.stopScan();
+      } catch (_) {
+        // Best effort.
+      }
+    }
   }
 
   /// Connects and sets everything up; throws [LinkException] and leaves the device disconnected.
   /// The radio connect is tried up to [attempts] times (the reconnect loop has its own waits).
   Future<void> _open({int attempts = 1}) async {
     try {
+      await _waitCooldown();
+      if (!_wanted) throw const LinkException('disconnected while connecting');
       await _connectRadio(attempts);
       // Pairs before anything else: a device that asks to pair as soon as it connects drops the
       // first requests made while the user is still typing its key.

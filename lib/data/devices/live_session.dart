@@ -31,6 +31,17 @@ class LiveSession {
       },
       _readingKeys = {for (final r in _profile.readings) r.key};
 
+  /// Pause after the stop commands before the link drops, so the device leaves streaming cleanly.
+  static const stopSettle = Duration(milliseconds: 150);
+
+  /// Pause after connecting (notifications on) before the start commands, so the link's MTU,
+  /// PHY and connection interval settle on the device.
+  static const startSettle = Duration(milliseconds: 150);
+
+  /// No data this long after Start means the device is stuck: the link is reopened once, then the
+  /// start fails. Safety net for the reconnect cool-down in the BLE link.
+  static const noDataTimeout = Duration(seconds: 4);
+
   final DeviceProfile _profile;
   final DeviceLink _link;
   final DeviceCodec _codec;
@@ -68,6 +79,13 @@ class LiveSession {
   int _samples = 0;
   int _invalid = 0;
   Timer? _reportTimer;
+
+  /// Runs from Start until the first data frame; at most one at a time.
+  Timer? _noDataTimer;
+  final _sinceStart = Stopwatch();
+
+  /// The link was reopened once for no data; set back when data comes.
+  bool _reopened = false;
 
   Future<void> start() async {
     if (kDebugMode) {
@@ -125,21 +143,28 @@ class LiveSession {
     if (_stopped) return;
     _stopped = true;
     _reportTimer?.cancel();
+    _cancelNoDataWatch();
     _sync?.cancel();
-    if (_streaming) {
-      for (final id in _profile.streaming?.stop ?? const <String>[]) {
-        try {
-          await _commands.run(id);
-        } catch (_) {
-          break; // Disconnecting stops the data too; nothing more to do.
-        }
-      }
-    }
+    if (_streaming) await _stopStreaming();
     for (final sub in _subs) {
       await sub.cancel();
     }
     await _link.disconnect();
     await _replies.close();
+  }
+
+  /// Sends the profile's stop commands, then waits [stopSettle] before the link is closed.
+  Future<void> _stopStreaming() async {
+    final stop = _profile.streaming?.stop ?? const <String>[];
+    if (stop.isEmpty) return;
+    try {
+      for (final id in stop) {
+        await _commands.run(id);
+      }
+    } catch (_) {
+      return; // Disconnecting stops the data too; nothing more to do.
+    }
+    await Future<void>.delayed(stopSettle);
   }
 
   DateTime get _at => _now().toUtc();
@@ -172,9 +197,14 @@ class LiveSession {
 
   Future<void> _startStreaming() async {
     if (_stopped) return;
+    final start = _profile.streaming?.start ?? const <String>[];
+    if (start.isNotEmpty) {
+      await Future<void>.delayed(startSettle);
+      if (_stopped) return;
+    }
     _emit(const LiveStatusChanged(LiveStatus.starting));
     try {
-      for (final id in _profile.streaming?.start ?? const <String>[]) {
+      for (final id in start) {
         await _commands.run(id);
       }
     } on CommandFailedException catch (e) {
@@ -187,12 +217,60 @@ class LiveSession {
     _streaming = true;
     _sync?.startPolling();
     _emit(const LiveStatusChanged(LiveStatus.streaming));
+    if (start.isNotEmpty) _watchForData();
+  }
+
+  void _watchForData() {
+    _cancelNoDataWatch();
+    _sinceStart
+      ..reset()
+      ..start();
+    _noDataTimer = Timer(noDataTimeout, () => unawaited(_onNoData()));
+  }
+
+  void _cancelNoDataWatch() {
+    _noDataTimer?.cancel();
+    _noDataTimer = null;
+  }
+
+  /// Started but silent: reopen the link once (stop, close, the BLE cool-down, connect, start
+  /// again); silent again means the start failed. Never loops.
+  Future<void> _onNoData() async {
+    _noDataTimer = null;
+    if (_stopped || !_streaming) return;
+    _streaming = false;
+    _sync?.cancel();
+    if (_reopened) return _fail(LiveFailureReason.startFailed);
+    _reopened = true;
+    if (kDebugMode) debugPrint('Live device: no data after start, reopening the link');
+    _emit(const LiveStatusChanged(LiveStatus.connecting));
+    await _stopStreaming();
+    if (_stopped) return;
+    await _link.disconnect();
+    if (_stopped) return;
+    try {
+      await _link.connect();
+    } on LinkException {
+      return _fail(LiveFailureReason.connectFailed);
+    }
+    if (_stopped) return _link.disconnect();
+    await _afterConnect();
+  }
+
+  void _onData() {
+    if (_noDataTimer == null) return;
+    _cancelNoDataWatch();
+    _reopened = false;
+    if (kDebugMode) {
+      debugPrint('Live device: first data ${_sinceStart.elapsedMilliseconds} ms after start');
+    }
   }
 
   void _onState(LinkState state) {
     final previous = _lastState;
     _lastState = state;
     if (state == LinkState.reconnecting) {
+      _cancelNoDataWatch();
       _streaming = false;
       _sync?.cancel();
       _emit(const LiveStatusChanged(LiveStatus.reconnecting));
@@ -203,6 +281,7 @@ class LiveSession {
 
   void _onPacket(DevicePacket packet) {
     if (packet.source == FrameSource.data) {
+      _onData();
       if (kDebugMode) _frames++;
       _sync?.onFrame();
     }

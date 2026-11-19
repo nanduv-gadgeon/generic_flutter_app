@@ -3,6 +3,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/data/devices/active_device.dart';
 import 'package:generic_flutter_app/data/devices/heartbeat_recorder.dart';
+import 'package:generic_flutter_app/data/devices/live_session.dart';
 import 'package:generic_flutter_app/data/devices/reading_writer.dart';
 import 'package:generic_flutter_app/domain/models/device_profile.dart';
 import 'package:generic_flutter_app/domain/services/heartbeat_repository.dart';
@@ -95,6 +96,10 @@ void main() {
       active.watchActive().listen(activeLinks.add);
       active.watch(sensorId).listen(updates.add);
       async.flushMicrotasks();
+      async.elapse(LiveSession.startSettle); // the pause before Start
+      // A first data frame, so the session's no-data watch does not reopen the silent sensor.
+      sensor.data(ppgFrame((_) => 1000, (_) => 1000));
+      async.flushMicrotasks();
 
       body(async, active, sensor, updates, activeLinks, (sensor: sensorId, patch: patchId));
       active.stop();
@@ -115,7 +120,8 @@ void main() {
       async.elapse(const Duration(seconds: 19));
       expect(online(updates), [true]); // The replay's state only.
 
-      async.elapse(const Duration(seconds: 2));
+      // The first data frame (0.15 s) was the last beat, so the 30 s check finds 20 s of silence.
+      async.elapse(const Duration(seconds: 11));
       expect(online(updates), [true, false]);
       expect(links.last?.online, isFalse);
       expect(sensor.disconnected, isFalse); // No automatic reconnect.

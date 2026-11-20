@@ -67,6 +67,19 @@ void main() {
     expect(stored().map((a) => a.kind), [AlertKind.batteryLow, AlertKind.offline]);
   });
 
+  test('each 1% battery drop below the limit is stored and notified, stacking', () async {
+    var nextId = 1;
+    when(() => alerts.add(any())).thenAnswer((_) async => nextId++);
+
+    for (final level in <double>[14, 13, 13, 12]) {
+      await send(LiveValue(Sample('battery', level, at)));
+    }
+
+    expect(stored().map((a) => a.value), [14, 13, 12]);
+    final shown = verify(() => notifier.show(captureAny())).captured.cast<RaisedAlert>();
+    expect(shown.map((a) => a.id), [1, 2, 3], reason: 'one notification each');
+  });
+
   test('a limit turned off raises nothing', () async {
     limits.add({
       band: const [AlertLimit(key: 'hr', above: 110, enabled: false)],

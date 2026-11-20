@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/app.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
+import 'package:generic_flutter_app/application/notification_prompt.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/di/database.dart';
 import 'package:generic_flutter_app/core/di/alerts.dart';
@@ -90,6 +91,8 @@ void main() {
           liveReadingsProvider.overrideWithValue(FakeLiveReadings()),
           alertRepositoryProvider.overrideWithValue(FakeAlertRepository()),
           alertEngineProvider.overrideWithValue(FakeAlertEngine()),
+          alertNotificationsProvider.overrideWithValue(FakeAlertNotifier()),
+          notificationPromptProvider.overrideWith(FakeNotificationPrompt.new),
           appSettingsServiceProvider.overrideWithValue(_DefaultSettings()),
           appVersionProvider.overrideWith((ref) async => ('1.0.0', '1')),
         ],

@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:generic_flutter_app/application/notification_prompt.dart';
 import 'package:generic_flutter_app/domain/services/alert_engine.dart';
+import 'package:generic_flutter_app/domain/services/alert_notifier.dart';
 import 'package:generic_flutter_app/domain/services/alert_repository.dart';
 
 /// No stored alerts, or [unread] unread ones; nothing is kept.
@@ -33,4 +37,26 @@ class FakeAlertEngine implements AlertEngine {
 
   @override
   Future<void> stop() async => stops++;
+}
+
+/// Shows nothing; the test taps a notification with [tap].
+class FakeAlertNotifier implements AlertNotifier {
+  final shown = <RaisedAlert>[];
+  final _taps = StreamController<void>.broadcast(sync: true);
+
+  void tap() => _taps.add(null);
+
+  @override
+  Future<void> show(RaisedAlert alert) async => shown.add(alert);
+
+  @override
+  Stream<void> get opened => _taps.stream;
+}
+
+/// Asks nothing; counts how often it was asked to.
+class FakeNotificationPrompt extends NotificationPrompt {
+  int calls = 0;
+
+  @override
+  Future<void> maybeAsk() async => calls++;
 }

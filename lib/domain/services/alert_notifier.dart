@@ -1,15 +1,23 @@
 import '../alerts/alert.dart';
 
-/// Shows a raised alert to the user as a phone notification.
+export '../alerts/alert.dart';
+
+/// Shows raised alerts to the user as phone notifications.
 abstract interface class AlertNotifier {
+  /// Shows [alert], when the user has Notifications on and the phone allows it.
   Future<void> show(RaisedAlert alert);
+
+  /// The user tapped an alert notification, also one that opened the app.
+  Stream<void> get opened;
 }
 
-/// Shows nothing.
-// TODO(1.5.4): local notifications.
+/// Shows nothing: alerts are turned off in the config (`features.alerts`).
 class NoAlertNotifier implements AlertNotifier {
   const NoAlertNotifier();
 
   @override
   Future<void> show(RaisedAlert alert) async {}
+
+  @override
+  Stream<void> get opened => const Stream.empty();
 }

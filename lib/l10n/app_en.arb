@@ -1382,5 +1382,21 @@
   "actionRunningSpoken": "Sending {label} to the device",
   "@actionRunningSpoken": { "placeholders": { "label": { "type": "String" } } },
   "actionOfflineSpoken": "{label}, available when the device is connected",
-  "@actionOfflineSpoken": { "placeholders": { "label": { "type": "String" } } }
+  "@actionOfflineSpoken": { "placeholders": { "label": { "type": "String" } } },
+  "alertAboveTitle": "{reading} above {limit}",
+  "@alertAboveTitle": { "description": "Notification title, e.g. \"Heart rate above 110 bpm\".", "placeholders": { "reading": { "type": "String" }, "limit": { "type": "String" } } },
+  "alertBelowTitle": "{reading} below {limit}",
+  "@alertBelowTitle": { "description": "Notification title, e.g. \"SpO₂ below 92 %\".", "placeholders": { "reading": { "type": "String" }, "limit": { "type": "String" } } },
+  "alertBatteryLowTitle": "Battery low ({percent}%)",
+  "@alertBatteryLowTitle": { "description": "Notification title, e.g. \"Battery low (12%)\".", "placeholders": { "percent": { "type": "int" } } },
+  "alertOfflineTitle": "{count, plural, =1{Missed 1 heartbeat – device offline} other{Missed {count} heartbeats – device offline}}",
+  "@alertOfflineTitle": { "description": "Notification title when a device misses its heartbeats.", "placeholders": { "count": { "type": "int" } } },
+  "alertNotificationBody": "{device} · now {value}",
+  "@alertNotificationBody": { "description": "Notification text: the device and the value that crossed the limit, e.g. \"Test band · now 115 bpm\".", "placeholders": { "device": { "type": "String" }, "value": { "type": "String" } } },
+  "alertChannelReadings": "Reading alerts",
+  "@alertChannelReadings": { "description": "Android notification channel name, shown in the phone's settings." },
+  "alertChannelReadingsDescription": "A reading went above or below its limit.",
+  "alertChannelDevice": "Device alerts",
+  "@alertChannelDevice": { "description": "Android notification channel name, shown in the phone's settings." },
+  "alertChannelDeviceDescription": "A device's battery is low or it went offline."
 }

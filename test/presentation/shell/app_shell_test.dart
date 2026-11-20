@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
 import 'package:generic_flutter_app/application/history_provider.dart';
+import 'package:generic_flutter_app/application/notification_prompt.dart';
+import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/presentation/shell/app_shell.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../fixtures/fake_alerts.dart';
 import '../../fixtures/test_config.dart';
 import '../../fixtures/l10n.dart';
 
@@ -15,7 +18,13 @@ GoRoute _page(String path) => GoRoute(
   builder: (_, _) => Center(child: Text('page $path')),
 );
 
-Future<void> _pumpShell(WidgetTester tester, {bool history = true, bool alerts = true}) async {
+Future<void> _pumpShell(
+  WidgetTester tester, {
+  bool history = true,
+  bool alerts = true,
+  FakeAlertNotifier? notifier,
+  FakeNotificationPrompt? prompt,
+}) async {
   final json = validConfigJson();
   (json['features'] as Map<String, dynamic>)
     ..['history'] = history
@@ -35,7 +44,11 @@ Future<void> _pumpShell(WidgetTester tester, {bool history = true, bool alerts =
     ],
   );
   final container = ProviderContainer(
-    overrides: [appConfigProvider.overrideWith((ref) async => config)],
+    overrides: [
+      appConfigProvider.overrideWith((ref) async => config),
+      alertNotificationsProvider.overrideWithValue(notifier ?? FakeAlertNotifier()),
+      notificationPromptProvider.overrideWith(() => prompt ?? FakeNotificationPrompt()),
+    ],
   );
   addTearDown(container.dispose);
   await container.read(appConfigProvider.future);
@@ -140,5 +153,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('a message'), findsNothing);
+  });
+
+  testWidgets('asks for the notification permission once, after the first frame', (tester) async {
+    final prompt = FakeNotificationPrompt();
+    await _pumpShell(tester, prompt: prompt);
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+
+    expect(prompt.calls, 1);
+  });
+
+  testWidgets('tapping an alert notification opens Alerts', (tester) async {
+    final notifier = FakeAlertNotifier();
+    await _pumpShell(tester, notifier: notifier);
+    expect(find.text('page /home'), findsOneWidget);
+
+    notifier.tap();
+    await tester.pumpAndSettle();
+
+    expect(find.text('page /alerts'), findsOneWidget);
   });
 }

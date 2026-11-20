@@ -133,7 +133,7 @@ void main() {
       final all = <(int, LiveUpdate)>[];
       active.watchAll().listen(all.add);
 
-      async.elapse(const Duration(seconds: 21));
+      async.elapse(const Duration(seconds: 30)); // The offline window, as in the test above.
 
       expect(
         [

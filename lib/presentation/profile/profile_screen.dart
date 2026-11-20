@@ -30,9 +30,11 @@ class ProfileScreen extends ConsumerWidget {
     }
   }
 
-  /// The switch shows whether the phone allows this app's notifications. Turning it on asks the
-  /// phone; refused, it stays off and says why. Only the phone's Settings can turn them off, so
-  /// turning it off offers to open them; the switch follows once the user is back.
+  /// Turning it on asks the phone every time; refused, it stays off and says to allow them in
+  /// Settings, with Open Settings: Android stops showing its prompt after two refusals and then
+  /// often still answers "denied", so any refusal is shown as one only Settings can change.
+  /// Turning it off asks "are you sure?" first; the app then shows no notifications (the phone's
+  /// permission is left as it is: apps cannot take it back).
   Future<void> _setNotifications(
     BuildContext context,
     WidgetRef ref,
@@ -42,11 +44,14 @@ class ProfileScreen extends ConsumerWidget {
     final permissions = ref.read(permissionServiceProvider);
     final settings = ref.read(appSettingsServiceProvider);
     if (!on) {
-      await offerNotificationSettings(context, permissions);
+      if (await confirmNotificationsOff(context)) {
+        await settings.setNotificationsEnabled(userId, enabled: false);
+      }
       return;
     }
     final state = await permissions.request(AppPermission.notifications);
-    if (problemOf(AppPermission.notifications, state) case final problem?) {
+    if (state != PermissionState.granted) {
+      const problem = PermissionProblem.refused(AppPermission.notifications, blocked: true);
       if (context.mounted) showPermissionProblem(context, problem, permissions: permissions);
       return;
     }

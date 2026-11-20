@@ -125,13 +125,13 @@ void main() {
     }
   });
 
-  group('sync: the setting follows the phone', () {
+  group("sync: off in the phone's Settings turns the setting off", () {
     // (setting on, phone state) -> setting saved, or null for no write
     final cases = <(bool, PermissionState), bool?>{
       (true, denied): false, // turned off in the phone's Settings
       (true, blocked): false,
       (true, granted): null,
-      (false, granted): true, // turned on in the phone's Settings
+      (false, granted): null, // off in Profile stays off
       (false, denied): null,
     };
     for (final MapEntry(key: (setting, state), value: saved) in cases.entries) {

@@ -11,8 +11,9 @@ part 'notification_prompt.g.dart';
 /// Notifications setting is on by default, but the phone has not been asked yet. Refused (or
 /// blocked earlier), the setting turns off so Profile shows the truth; its switch can ask again.
 ///
-/// [sync] keeps the setting matching the phone afterwards: on only while the phone allows this
-/// app's notifications, so turning them off (or on) in the phone's Settings shows in Profile.
+/// [sync] keeps the setting true afterwards: notifications turned off for this app in the phone's
+/// Settings turn the setting off, so Profile shows it. It never turns the setting on: off in
+/// Profile stays off.
 @Riverpod(keepAlive: true)
 class NotificationPrompt extends _$NotificationPrompt {
   /// The users already handled while the app runs.
@@ -37,17 +38,17 @@ class NotificationPrompt extends _$NotificationPrompt {
     }
   }
 
-  /// Makes the logged-in user's Notifications setting match the phone. Run after [maybeAsk], so
-  /// a phone not asked yet does not turn the setting off first, and whenever the app comes back
-  /// to the front.
+  /// Turns the logged-in user's Notifications setting off when the phone no longer allows this
+  /// app's notifications. Run after [maybeAsk], so a phone not asked yet does not turn the
+  /// setting off first, and whenever the app comes back to the front.
   Future<void> sync() async {
     final userId = ref.read(authControllerProvider).value?.id;
     if (userId == null) return;
     final settings = ref.read(appSettingsServiceProvider);
+    if (!await settings.watchNotificationsEnabled(userId).first) return;
     final state = await ref.read(permissionServiceProvider).check(AppPermission.notifications);
-    final allowed = state == PermissionState.granted;
-    if (await settings.watchNotificationsEnabled(userId).first != allowed) {
-      await settings.setNotificationsEnabled(userId, enabled: allowed);
+    if (state != PermissionState.granted) {
+      await settings.setNotificationsEnabled(userId, enabled: false);
     }
   }
 }

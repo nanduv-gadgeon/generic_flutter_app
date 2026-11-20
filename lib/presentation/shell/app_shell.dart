@@ -20,8 +20,8 @@ typedef _Tab = ({int branch, IconData icon, String label});
 ///
 /// Once shown, it asks for the notification permission if the phone has not been asked yet
 /// (after the login screen's Face ID offer), and a tapped alert notification opens Alerts. Then,
-/// and each time the app comes back to the front, the Notifications setting is made to match
-/// the phone's ([NotificationPrompt.sync]).
+/// and each time the app comes back to the front, the Notifications setting turns off if the
+/// phone no longer allows them ([NotificationPrompt.sync]).
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
 

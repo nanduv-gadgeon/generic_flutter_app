@@ -194,6 +194,33 @@ class BleDeviceLink implements DeviceLink {
     }
   }
 
+  /// Waits until a paired link is encrypted: reads the battery level, which the device answers
+  /// only once the link is encrypted, and in any case waits [_minEncryptWait] from connecting.
+  /// The PPG sensor answers an MTU request made before encryption but keeps its 20-byte limit,
+  /// so its ~90-byte data frames are never sent; the MTU is requested only after this.
+  static const _minEncryptWait = Duration(milliseconds: 1200);
+
+  Future<void> _waitForEncryption(Map<String, Set<String>> services, Duration connectedAt) async {
+    final battery = fullUuid(batteryServiceUuid);
+    final level = fullUuid(batteryLevelUuid);
+    if (services[battery]?.contains(level) ?? false) {
+      try {
+        await _adapter.read(deviceId, battery, level).timeout(const Duration(seconds: 5));
+      } catch (_) {
+        // Fall back on the minimum wait below.
+      }
+    }
+    final read = _clock.elapsed - connectedAt;
+    final left = _minEncryptWait - read;
+    if (left > Duration.zero) await _delay(left);
+    if (kDebugMode) {
+      debugPrint(
+        'BLE link: battery read ${read.inMilliseconds} ms after connect; subscribing at '
+        '${(_clock.elapsed - connectedAt).inMilliseconds} ms',
+      );
+    }
+  }
+
   /// Connects and sets everything up; throws [LinkException] and leaves the device disconnected.
   /// The radio connect is tried up to [attempts] times (the reconnect loop has its own waits).
   Future<void> _open({int attempts = 1}) async {
@@ -201,10 +228,14 @@ class BleDeviceLink implements DeviceLink {
       await _waitCooldown();
       if (!_wanted) throw const LinkException('disconnected while connecting');
       await _connectRadio(attempts);
+      final connectedAt = _clock.elapsed;
       // Pairs before anything else: a device that asks to pair as soon as it connects drops the
       // first requests made while the user is still typing its key.
       if (_settings.bond) await _adapter.pair(deviceId);
       final services = await _adapter.discover(deviceId);
+      // The PPG sensor answers an MTU request made before the link is encrypted but keeps its
+      // 20-byte limit, so its data frames (about 90 bytes) are never sent. Ask only afterwards.
+      if (_settings.bond) await _waitForEncryption(services, connectedAt);
       await _requestMtu();
       await _subscribe(services);
     } catch (e) {

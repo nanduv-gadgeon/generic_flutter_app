@@ -19,7 +19,9 @@ typedef _Tab = ({int branch, IconData icon, String label});
 /// and Alerts are left out when the config turns those features off.
 ///
 /// Once shown, it asks for the notification permission if the phone has not been asked yet
-/// (after the login screen's Face ID offer), and a tapped alert notification opens Alerts.
+/// (after the login screen's Face ID offer), and a tapped alert notification opens Alerts. Then,
+/// and each time the app comes back to the front, the Notifications setting turns off if the
+/// phone no longer allows them ([NotificationPrompt.sync]).
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.shell});
 
@@ -36,6 +38,7 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   StreamSubscription<void>? _opened;
+  late final AppLifecycleListener _lifecycle;
 
   StatefulNavigationShell get shell => widget.shell;
 
@@ -48,13 +51,18 @@ class _AppShellState extends ConsumerState<AppShell> {
           .opened
           .listen((_) => shell.goBranch(AppShell.alertsBranch));
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(ref.read(notificationPromptProvider.notifier).maybeAsk());
+    final prompt = ref.read(notificationPromptProvider.notifier);
+    _lifecycle = AppLifecycleListener(onResume: () => unawaited(prompt.sync()));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await prompt.maybeAsk();
+      await prompt.sync();
     });
   }
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     unawaited(_opened?.cancel());
     super.dispose();
   }

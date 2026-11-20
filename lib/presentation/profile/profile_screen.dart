@@ -16,6 +16,7 @@ import '../widgets/permission_message.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/web_page_view.dart';
 import 'edit_profile_screen.dart';
+import 'notifications_off_dialog.dart';
 import 'profile_rows.dart';
 import '../../l10n/l10n.dart';
 
@@ -29,7 +30,11 @@ class ProfileScreen extends ConsumerWidget {
     }
   }
 
-  /// Turning notifications on asks the phone first; refused, the switch stays off and says why.
+  /// Turning it on asks the phone every time; refused, it stays off and says to allow them in
+  /// Settings, with Open Settings: Android stops showing its prompt after two refusals and then
+  /// often still answers "denied", so any refusal is shown as one only Settings can change.
+  /// Turning it off asks "are you sure?" first; the app then shows no notifications (the phone's
+  /// permission is left as it is: apps cannot take it back).
   Future<void> _setNotifications(
     BuildContext context,
     WidgetRef ref,
@@ -38,14 +43,19 @@ class ProfileScreen extends ConsumerWidget {
   }) async {
     final permissions = ref.read(permissionServiceProvider);
     final settings = ref.read(appSettingsServiceProvider);
-    if (on) {
-      final state = await permissions.request(AppPermission.notifications);
-      if (problemOf(AppPermission.notifications, state) case final problem?) {
-        if (context.mounted) showPermissionProblem(context, problem, permissions: permissions);
-        return;
+    if (!on) {
+      if (await confirmNotificationsOff(context)) {
+        await settings.setNotificationsEnabled(userId, enabled: false);
       }
+      return;
     }
-    await settings.setNotificationsEnabled(userId, enabled: on);
+    final state = await permissions.request(AppPermission.notifications);
+    if (state != PermissionState.granted) {
+      const problem = PermissionProblem.refused(AppPermission.notifications, blocked: true);
+      if (context.mounted) showPermissionProblem(context, problem, permissions: permissions);
+      return;
+    }
+    await settings.setNotificationsEnabled(userId, enabled: true);
   }
 
   /// Turning it on shows the phone's prompt first; it stays off, with a message, unless the user

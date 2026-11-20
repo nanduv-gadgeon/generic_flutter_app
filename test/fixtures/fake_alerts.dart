@@ -59,10 +59,14 @@ class FakeAlertNotifier implements AlertNotifier {
   Stream<void> get opened => _taps.stream;
 }
 
-/// Asks nothing; counts how often it was asked to.
+/// Asks nothing; counts how often it was asked to, and to sync.
 class FakeNotificationPrompt extends NotificationPrompt {
   int calls = 0;
+  int syncs = 0;
 
   @override
   Future<void> maybeAsk() async => calls++;
+
+  @override
+  Future<void> sync() async => syncs++;
 }

@@ -7,6 +7,9 @@ class FakePermissionService implements PermissionService {
   final checked = <AppPermission>[];
   int settingsOpened = 0;
 
+  /// What [openSettings] returns: false when the phone could not open them.
+  bool settingsOpen = true;
+
   PermissionState _state(AppPermission p) => states[p] ?? PermissionState.granted;
 
   @override
@@ -24,6 +27,6 @@ class FakePermissionService implements PermissionService {
   @override
   Future<bool> openSettings() async {
     settingsOpened++;
-    return true;
+    return settingsOpen;
   }
 }

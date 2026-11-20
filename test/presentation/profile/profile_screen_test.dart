@@ -166,22 +166,50 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('the Notifications switch saves the setting', (tester) async {
+  // Turning Notifications off asks first: (button) -> saved off
+  for (final (button, savedOff) in [('Turn off', true), ('Cancel', false)]) {
+    testWidgets('turning Notifications off: $button', (tester) async {
+      await pumpProfile(tester);
+
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+      expect(find.text(en.profileNotificationsOffTitle), findsOneWidget);
+      expect(find.text(en.profileNotificationsOffBody), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(button)));
+      await tester.pumpAndSettle();
+
+      if (savedOff) {
+        verify(() => settings.setNotificationsEnabled(fakeUser.id, enabled: false)).called(1);
+      } else {
+        verifyNever(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')));
+      }
+      // Off asks the phone nothing and opens nothing.
+      expect(permissions.requested, isEmpty);
+      expect(permissions.settingsOpened, 0);
+    });
+  }
+
+  testWidgets('turning Notifications on asks the phone every time', (tester) async {
+    when(() => settings.watchNotificationsEnabled(any())).thenAnswer((_) => Stream.value(false));
+    permissions.states[AppPermission.notifications] = PermissionState.denied;
     await pumpProfile(tester);
 
-    await tester.tap(find.text('Notifications'));
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+    }
 
-    verify(() => settings.setNotificationsEnabled(fakeUser.id, enabled: false)).called(1);
+    expect(permissions.requested, List.filled(3, AppPermission.notifications));
   });
 
   // the phone's answer -> (saved on, message, action)
   final notificationAnswers = {
     PermissionState.granted: (true, null, null),
+    // Android often answers "denied" once it no longer shows its prompt: Settings is the way.
     PermissionState.denied: (
       false,
-      "Notifications aren't allowed, so you won't get alerts. Allow them to turn this on.",
-      null,
+      "Notifications are off for this app, so you won't get alerts. Turn them on in Settings.",
+      'Open Settings',
     ),
     PermissionState.permanentlyDenied: (
       false,
@@ -226,15 +254,6 @@ void main() {
     await tester.pump(permissionProblemDuration);
     await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsNothing);
-  });
-
-  testWidgets('turning Notifications off asks nothing', (tester) async {
-    await pumpProfile(tester);
-
-    await tester.tap(find.text('Notifications'));
-    await tester.pumpAndSettle();
-
-    expect(permissions.requested, isEmpty);
   });
 
   testWidgets('the Notifications switch is read as one switch with its state', (tester) async {

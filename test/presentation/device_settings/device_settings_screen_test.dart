@@ -112,6 +112,14 @@ void main() {
     expect(switches, [true, false]);
   });
 
+  testWidgets('no Alerts section when the config turns alerts off', (tester) async {
+    await pumpSettings(tester, device: band, alerts: false);
+
+    expect(find.text('ALERTS'), findsNothing);
+    expect(find.byType(Switch), findsNothing);
+    expect(find.text('CONNECTION'), findsOneWidget);
+  });
+
   testWidgets('turning an alert off saves it', (tester) async {
     await pumpSettings(tester, device: band);
 

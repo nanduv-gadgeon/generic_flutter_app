@@ -90,6 +90,20 @@ void main() {
     verifyNever(() => alerts.add(any()));
   });
 
+  test('a limit turned back on in Device settings raises again at once', () async {
+    limits.add({
+      band: const [AlertLimit(key: 'hr', above: 110, enabled: false)],
+    });
+    await send(LiveValue(Sample('hr', 150, at)));
+    limits.add({
+      band: const [AlertLimit(key: 'hr', above: 110)],
+    });
+
+    await send(LiveValue(Sample('hr', 151, at)));
+
+    expect(stored().map((a) => (a.kind, a.value)), [(AlertKind.above, 151)]);
+  });
+
   test('a device that is not the user\'s (or was removed) raises nothing', () async {
     await send(LiveValue(Sample('hr', 150, at)), device: 99);
 

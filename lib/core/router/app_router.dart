@@ -6,6 +6,7 @@ import '../../application/app_config_provider.dart';
 import '../../application/auth_controller.dart';
 import '../config/config_sections.dart';
 import '../../presentation/add_device/add_device_screen.dart';
+import '../../presentation/alerts/alerts_screen.dart';
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/register_screen.dart';
@@ -18,8 +19,6 @@ import '../../presentation/profile/edit_profile_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
-import '../../presentation/widgets/placeholder_screen.dart';
-import '../../l10n/l10n.dart';
 
 part 'app_router.g.dart';
 
@@ -95,8 +94,7 @@ GoRouter goRouter(Ref ref) {
               GoRoute(
                 path: Routes.alerts,
                 redirect: (_, _) => _featureOff(ref, (f) => f.alerts) ? Routes.home : null,
-                builder: (context, _) =>
-                    PlaceholderScreen(title: context.l10n.shellAlertsPlaceholder),
+                builder: (_, _) => const AlertsScreen(),
               ),
             ],
           ),

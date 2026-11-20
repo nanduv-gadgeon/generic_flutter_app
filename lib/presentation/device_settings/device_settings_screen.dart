@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../application/app_config_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/device_settings_provider.dart';
 import '../../application/devices_provider.dart';
@@ -36,6 +37,8 @@ class DeviceSettingsScreen extends ConsumerStatefulWidget {
 class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
   final _name = TextEditingController();
   final _nameFocus = FocusNode();
+
+  DeviceSettingsController get _controller => ref.read(deviceSettingsControllerProvider.notifier);
 
   /// The name as last saved; the field starts with it.
   String? _savedName;
@@ -82,9 +85,7 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final changed = successSnackBar(context, context.l10n.deviceSettingsNameChanged);
     final invalid = context.l10n.addDeviceEnterDeviceName;
-    final ok = await ref
-        .read(deviceSettingsControllerProvider.notifier)
-        .rename(widget.deviceId, name);
+    final ok = await _controller.rename(widget.deviceId, name);
     if (ok) {
       _savedName = name;
       messenger
@@ -117,7 +118,7 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
     setState(() => _removing = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(deviceSettingsControllerProvider.notifier).remove(device);
+      await _controller.remove(device);
     } catch (_) {
       if (!mounted) return;
       setState(() => _removing = false);
@@ -154,9 +155,9 @@ class _DeviceSettingsScreenState extends ConsumerState<DeviceSettingsScreen> {
         profile: _profileOf(device),
         now: ref.watch(clockProvider)(),
         nameField: _nameField(),
-        onAlertChanged: (key, on) => ref
-            .read(deviceSettingsControllerProvider.notifier)
-            .setAlert(device.id, key, enabled: on),
+        onAlertChanged: ref.watch(appConfigProvider).requireValue.features.alerts
+            ? (key, on) => _controller.setAlert(device.id, key, enabled: on)
+            : null,
         onRemove: () => _remove(device),
       );
     }
@@ -236,7 +237,9 @@ class _Content extends StatelessWidget {
   final DeviceProfile? profile;
   final DateTime now;
   final Widget nameField;
-  final void Function(String readingKey, bool enabled) onAlertChanged;
+
+  /// Null when the config turns alerts off: the Alerts section is hidden.
+  final void Function(String readingKey, bool enabled)? onAlertChanged;
   final VoidCallback onRemove;
 
   @override
@@ -264,14 +267,14 @@ class _Content extends StatelessWidget {
           settings: profile?.heartbeatOrDefault ?? const HeartbeatSettings(),
           now: now,
         ),
-        if (device.alerts.isNotEmpty) ...[
+        if ((onAlertChanged, device.alerts) case (final onChanged?, [_, ...])) ...[
           gap,
           SectionHeading(context.l10n.deviceSettingsAlerts),
           const SizedBox(height: 8),
           AlertsCard(
             alerts: device.alerts,
             readings: profile?.readings ?? const [],
-            onChanged: onAlertChanged,
+            onChanged: onChanged,
           ),
         ],
         gap,

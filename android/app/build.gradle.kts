@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.gadgeon.generic_flutter_app"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android needs 37; targetSdk stays on the Flutter default.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

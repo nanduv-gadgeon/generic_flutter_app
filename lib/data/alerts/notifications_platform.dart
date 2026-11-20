@@ -18,8 +18,9 @@ abstract interface class NotificationsPlatform {
   Future<void> show(int id, AlertNotificationText text);
 }
 
-/// [NotificationsPlatform] with `flutter_local_notifications`: two Android channels, the white
-/// bell icon, and on iOS shown while the app is open too. Full text on the lock screen
+/// [NotificationsPlatform] with `flutter_local_notifications`: two Android channels, both high
+/// importance so every alert pops up (decision 2026-11-20), the white bell icon, and on iOS shown
+/// while the app is open too. Full text on the lock screen
 /// (decision 2026-11-19). Permissions are asked by `PermissionService`, not here.
 class FlutterNotificationsPlatform implements NotificationsPlatform {
   FlutterNotificationsPlatform([FlutterLocalNotificationsPlugin? plugin])
@@ -56,7 +57,7 @@ class FlutterNotificationsPlatform implements NotificationsPlatform {
           channel.name,
           text.name,
           description: text.description,
-          importance: _importance(channel),
+          importance: importance,
         ),
       );
     }
@@ -80,10 +81,8 @@ class FlutterNotificationsPlatform implements NotificationsPlatform {
           channel?.name ?? text.channel.name,
           channelDescription: channel?.description,
           icon: icon,
-          importance: _importance(text.channel),
-          priority: text.channel == AlertChannel.readings
-              ? Priority.high
-              : Priority.defaultPriority,
+          importance: importance,
+          priority: Priority.high,
           visibility: NotificationVisibility.public,
         ),
         iOS: const DarwinNotificationDetails(presentBanner: true, presentList: true),
@@ -91,6 +90,7 @@ class FlutterNotificationsPlatform implements NotificationsPlatform {
     );
   }
 
-  static Importance _importance(AlertChannel channel) =>
-      channel == AlertChannel.readings ? Importance.high : Importance.defaultImportance;
+  /// Every alert pops up as a heads-up notification. Android keeps a channel's importance once
+  /// it exists, so a phone with the old channels needs the app's data cleared.
+  static const importance = Importance.high;
 }

@@ -130,7 +130,7 @@
         { "key": "errors", "label": "Errors", "unit": "", "icon": "alert", "normal": [0, 0], "scale": [0, 5], "source": "eventsErrorsToday" }
       ],
       "quickReadings": ["current"],
-      "alerts": [{ "key": "battery", "below": 95 }],
+      "alerts": [{ "key": "battery", "below": 15 }],
       "ble": {
         "serviceUuid": "1257dd10-6f99-498f-b4a6-04dc1e3591f6",
         "writeUuid": "1257dd11-6f99-498f-b4a6-04dc1e3591f6",

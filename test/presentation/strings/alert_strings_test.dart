@@ -1,12 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:generic_flutter_app/domain/alerts/alert.dart';
+import 'package:generic_flutter_app/domain/alerts/alert_category.dart';
 import 'package:generic_flutter_app/domain/alerts/alert_notification.dart';
 import 'package:generic_flutter_app/domain/models/reading.dart';
 import 'package:generic_flutter_app/presentation/strings/alert_strings.dart';
 
 import '../../fixtures/l10n.dart';
 
-/// The words of alert notifications, as in the mockup's alerts (made-up values).
+/// The words of alert notifications and Alerts cards, as in the mockup's alerts (made-up values).
 void main() {
   final at = DateTime.utc(2026, 10, 20, 9);
   const hr = Reading(key: 'hr', label: 'Heart rate', unit: 'bpm', icon: ReadingIcon.pulse);
@@ -84,6 +86,78 @@ void main() {
         name: 'Device alerts',
         description: "A device's battery is low or it went offline.",
       ),
+    });
+  });
+
+  test('a card and its notification have the same title', () {
+    for (final (a, reading) in cases.keys) {
+      expect(
+        en.alertTitle(a, reading: reading),
+        en.alertNotification(a, deviceName: 'Test band', reading: reading).title,
+      );
+    }
+  });
+
+  // kind -> source chip
+  final sources = {
+    AlertKind.above: 'Threshold',
+    AlertKind.below: 'Threshold',
+    AlertKind.batteryLow: 'Device health',
+    AlertKind.offline: 'Device health',
+  };
+  for (final MapEntry(key: kind, value: text) in sources.entries) {
+    test('${kind.name} -> chip "$text"', () => expect(en.alertSource(kind), text));
+  }
+
+  // filter -> chip label, in the order shown
+  final filters = <AlertCategory?, String>{
+    null: 'All',
+    AlertCategory.reading: 'Readings',
+    AlertCategory.event: 'Device events',
+    AlertCategory.episode: 'Episodes',
+    AlertCategory.channel: 'Channels',
+    AlertCategory.health: 'Device health',
+  };
+  for (final MapEntry(key: category, value: label) in filters.entries) {
+    test('filter ${category?.name ?? 'all'} -> "$label"', () {
+      expect(en.alertFilter(category), label);
+    });
+  }
+
+  group('alertTime', () {
+    setUpAll(() => initializeDateFormatting('en'));
+
+    // Saturday 24 Oct 2026, 12:00 on the phone's clock.
+    final now = DateTime(2026, 10, 24, 12);
+
+    // raised at -> shown as
+    final times = <DateTime, String>{
+      now: 'Just now',
+      now.add(const Duration(minutes: 5)): 'Just now',
+      now.subtract(const Duration(seconds: 59)): 'Just now',
+      now.subtract(const Duration(minutes: 1)): '1 min ago',
+      now.subtract(const Duration(minutes: 10)): '10 min ago',
+      now.subtract(const Duration(minutes: 59, seconds: 59)): '59 min ago',
+      now.subtract(const Duration(hours: 1)): 'Today, 11:00',
+      DateTime(2026, 10, 24, 7, 10): 'Today, 07:10',
+      DateTime(2026, 10, 24): 'Today, 00:00',
+      DateTime(2026, 10, 23, 23, 59): 'Yesterday, 23:59',
+      DateTime(2026, 10, 23, 18, 40): 'Yesterday, 18:40',
+      DateTime(2026, 10, 23): 'Yesterday, 00:00',
+      DateTime(2026, 10, 22, 13, 5): 'Thu 22 Oct, 13:05',
+      DateTime(2026, 10, 18, 9): 'Sun 18 Oct, 09:00',
+    };
+    for (final MapEntry(key: at, value: text) in times.entries) {
+      test('$at -> "$text"', () => expect(en.alertTime(at, now), text));
+    }
+
+    test('a stored UTC time is shown on the phone\'s clock', () {
+      final at = now.toUtc().subtract(const Duration(hours: 2));
+      expect(en.alertTime(at, now), 'Today, 10:00');
+    });
+
+    test('yesterday across a new year', () {
+      expect(en.alertTime(DateTime(2026, 12, 31, 20), DateTime(2027, 1, 1, 9)), 'Yesterday, 20:00');
     });
   });
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/devices_provider.dart';
-import '../../core/theme/app_tokens.dart';
 import '../../domain/services/device_service.dart';
+import '../widgets/delete_panel.dart';
 import 'remove_device_sheet.dart';
 import '../../l10n/l10n.dart';
 
@@ -51,45 +51,12 @@ class SwipeToDelete extends ConsumerWidget {
     return Dismissible(
       key: ValueKey('swipe-${device.id}'),
       direction: DismissDirection.endToStart,
-      background: const _DeletePanel(),
+      background: DeletePanel(label: context.l10n.removeDeviceDelete),
       confirmDismiss: (_) => _confirmAndRemove(context, ref),
       onDismissed: (_) => onRemoved(device.id),
       child: builder(() async {
         if (await _confirmAndRemove(context, ref)) onRemoved(device.id);
       }),
-    );
-  }
-}
-
-/// The red panel under the card: a bin and the word Delete, so colour is not the only signal.
-class _DeletePanel extends StatelessWidget {
-  const _DeletePanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppTokens>();
-    final onDanger = theme.colorScheme.onError;
-    return ExcludeSemantics(
-      child: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        decoration: BoxDecoration(
-          color: tokens?.danger ?? theme.colorScheme.error,
-          borderRadius: BorderRadius.circular(tokens?.radius ?? 16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.delete_outline, color: onDanger, size: 26),
-            const SizedBox(height: 4),
-            Text(
-              context.l10n.removeDeviceDelete,
-              style: TextStyle(color: onDanger, fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

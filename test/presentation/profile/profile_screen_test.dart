@@ -166,14 +166,34 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('the Notifications switch saves the setting', (tester) async {
-    await pumpProfile(tester);
+  // Only the phone's Settings can turn notifications off: the switch offers to open them.
+  // (button, Settings open) -> (opened, failure shown)
+  for (final (button, opens, (opened, failed)) in [
+    ('Open Settings', true, (1, false)),
+    ('Open Settings', false, (1, true)),
+    ('Cancel', true, (0, false)),
+  ]) {
+    testWidgets('turning Notifications off: $button (Settings open: $opens)', (tester) async {
+      permissions.settingsOpen = opens;
+      await pumpProfile(tester);
 
-    await tester.tap(find.text('Notifications'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+      expect(find.text(en.profileNotificationsOffTitle), findsOneWidget);
+      expect(find.text(en.profileNotificationsOffBody), findsOneWidget);
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text(button)));
+      await tester.pumpAndSettle();
 
-    verify(() => settings.setNotificationsEnabled(fakeUser.id, enabled: false)).called(1);
-  });
+      expect(permissions.settingsOpened, opened);
+      expect(
+        find.text(en.profileNotificationsSettingsFailed),
+        failed ? findsOneWidget : findsNothing,
+      );
+      // The switch follows the phone once the user is back; nothing is saved or asked here.
+      verifyNever(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')));
+      expect(permissions.requested, isEmpty);
+    });
+  }
 
   // the phone's answer -> (saved on, message, action)
   final notificationAnswers = {
@@ -226,15 +246,6 @@ void main() {
     await tester.pump(permissionProblemDuration);
     await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsNothing);
-  });
-
-  testWidgets('turning Notifications off asks nothing', (tester) async {
-    await pumpProfile(tester);
-
-    await tester.tap(find.text('Notifications'));
-    await tester.pumpAndSettle();
-
-    expect(permissions.requested, isEmpty);
   });
 
   testWidgets('the Notifications switch is read as one switch with its state', (tester) async {

@@ -124,4 +124,40 @@ void main() {
       expect(permissions.requests, 0, reason: 'logged in $loggedIn, alerts $alerts');
     }
   });
+
+  group('sync: the setting follows the phone', () {
+    // (setting on, phone state) -> setting saved, or null for no write
+    final cases = <(bool, PermissionState), bool?>{
+      (true, denied): false, // turned off in the phone's Settings
+      (true, blocked): false,
+      (true, granted): null,
+      (false, granted): true, // turned on in the phone's Settings
+      (false, denied): null,
+    };
+    for (final MapEntry(key: (setting, state), value: saved) in cases.entries) {
+      test('setting $setting, phone ${state.name} -> saved $saved; never asks', () async {
+        final permissions = _Permissions(state, granted);
+        final container = await containerWith(permissions, setting: setting);
+
+        await container.read(notificationPromptProvider.notifier).sync();
+
+        expect(permissions.requests, 0);
+        if (saved == null) {
+          verifyNever(
+            () => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')),
+          );
+        } else {
+          verify(() => settings.setNotificationsEnabled(fakeUser.id, enabled: saved)).called(1);
+        }
+      });
+    }
+
+    test('nobody logged in: nothing is saved', () async {
+      final container = await containerWith(_Permissions(denied, denied), loggedIn: false);
+
+      await container.read(notificationPromptProvider.notifier).sync();
+
+      verifyNever(() => settings.setNotificationsEnabled(any(), enabled: any(named: 'enabled')));
+    });
+  });
 }

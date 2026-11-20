@@ -168,6 +168,30 @@ void main() {
     expect(prompt.calls, 1);
   });
 
+  testWidgets('syncs the Notifications setting after asking and when the app is back', (
+    tester,
+  ) async {
+    final prompt = FakeNotificationPrompt();
+    await _pumpShell(tester, prompt: prompt);
+    expect(prompt.syncs, 1);
+
+    // Off to the phone's Settings and back.
+    for (final state in [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+    }
+    await tester.pump();
+
+    expect(prompt.syncs, 2);
+    expect(prompt.calls, 1, reason: 'asked once only');
+  });
+
   testWidgets('tapping an alert notification opens Alerts', (tester) async {
     final notifier = FakeAlertNotifier();
     await _pumpShell(tester, notifier: notifier);

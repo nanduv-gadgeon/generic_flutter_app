@@ -16,6 +16,7 @@ import '../widgets/permission_message.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/web_page_view.dart';
 import 'edit_profile_screen.dart';
+import 'notifications_off_dialog.dart';
 import 'profile_rows.dart';
 import '../../l10n/l10n.dart';
 
@@ -29,7 +30,9 @@ class ProfileScreen extends ConsumerWidget {
     }
   }
 
-  /// Turning notifications on asks the phone first; refused, the switch stays off and says why.
+  /// The switch shows whether the phone allows this app's notifications. Turning it on asks the
+  /// phone; refused, it stays off and says why. Only the phone's Settings can turn them off, so
+  /// turning it off offers to open them; the switch follows once the user is back.
   Future<void> _setNotifications(
     BuildContext context,
     WidgetRef ref,
@@ -38,14 +41,16 @@ class ProfileScreen extends ConsumerWidget {
   }) async {
     final permissions = ref.read(permissionServiceProvider);
     final settings = ref.read(appSettingsServiceProvider);
-    if (on) {
-      final state = await permissions.request(AppPermission.notifications);
-      if (problemOf(AppPermission.notifications, state) case final problem?) {
-        if (context.mounted) showPermissionProblem(context, problem, permissions: permissions);
-        return;
-      }
+    if (!on) {
+      await offerNotificationSettings(context, permissions);
+      return;
     }
-    await settings.setNotificationsEnabled(userId, enabled: on);
+    final state = await permissions.request(AppPermission.notifications);
+    if (problemOf(AppPermission.notifications, state) case final problem?) {
+      if (context.mounted) showPermissionProblem(context, problem, permissions: permissions);
+      return;
+    }
+    await settings.setNotificationsEnabled(userId, enabled: true);
   }
 
   /// Turning it on shows the phone's prompt first; it stays off, with a message, unless the user

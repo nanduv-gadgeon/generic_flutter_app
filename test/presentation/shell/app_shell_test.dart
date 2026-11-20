@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/app_config_provider.dart';
+import 'package:generic_flutter_app/application/devices_provider.dart';
 import 'package:generic_flutter_app/application/history_provider.dart';
 import 'package:generic_flutter_app/application/notification_prompt.dart';
 import 'package:generic_flutter_app/core/di/alerts.dart';
@@ -24,6 +25,7 @@ Future<void> _pumpShell(
   bool alerts = true,
   FakeAlertNotifier? notifier,
   FakeNotificationPrompt? prompt,
+  int unread = 0,
 }) async {
   final json = validConfigJson();
   (json['features'] as Map<String, dynamic>)
@@ -48,6 +50,7 @@ Future<void> _pumpShell(
       appConfigProvider.overrideWith((ref) async => config),
       alertNotificationsProvider.overrideWithValue(notifier ?? FakeAlertNotifier()),
       notificationPromptProvider.overrideWith(() => prompt ?? FakeNotificationPrompt()),
+      unreadAlertCountProvider.overrideWith((ref) => Stream.value(unread)),
     ],
   );
   addTearDown(container.dispose);
@@ -174,5 +177,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('page /alerts'), findsOneWidget);
+  });
+
+  // unread alerts -> badge text (null: no badge)
+  final badgeCases = <int, String?>{0: null, 1: '1', 8: '8', 99: '99', 100: '99+', 120: '99+'};
+  for (final MapEntry(key: unread, value: text) in badgeCases.entries) {
+    testWidgets('$unread unread alerts -> badge ${text ?? 'hidden'}', (tester) async {
+      await _pumpShell(tester, unread: unread);
+
+      expect(find.byType(Badge), text == null ? findsNothing : findsOneWidget);
+      if (text != null) {
+        expect(find.descendant(of: find.byType(Badge), matching: find.text(text)), findsOneWidget);
+      }
+    });
+  }
+
+  testWidgets('the badge is spoken with the Alerts tab', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpShell(tester, unread: 8);
+
+    expect(find.bySemanticsLabel(RegExp('8 unread')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^8$')), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('no badge when the config turns alerts off', (tester) async {
+    await _pumpShell(tester, alerts: false, unread: 8);
+
+    expect(find.byType(Badge), findsNothing);
   });
 }

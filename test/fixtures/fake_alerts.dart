@@ -24,6 +24,12 @@ class FakeAlertRepository implements AlertRepository {
   Future<void> markAllRead(int userId) async {}
 
   @override
+  Future<void> delete(int userId, int alertId) async {}
+
+  @override
+  Future<void> deleteAll(int userId) async {}
+
+  @override
   Future<int> deleteOlderThan(DateTime before) async => 0;
 }
 

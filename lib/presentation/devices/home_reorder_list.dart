@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,9 @@ import '../../l10n/l10n.dart';
 /// Home in reorder mode (mockup `09_home_reorder.png`): one compact row per device with a ≡ handle.
 /// Dragging a handle, or Up / Down arrow keys on a focused handle, moves the device; every move is
 /// passed to [onReorder] (device ids, first to last) straight away.
+///
+/// A sliver in the page's own scroll view, so dragging a row to the top or bottom edge scrolls
+/// the page; a row moved with the arrow keys is scrolled into view.
 class HomeReorderList extends ConsumerStatefulWidget {
   const HomeReorderList({super.key, required this.devices, required this.onReorder});
 
@@ -37,6 +42,21 @@ class _HomeReorderListState extends ConsumerState<HomeReorderList> {
 
   static List<int> _ids(List<UserDevice> devices) => [for (final d in devices) d.id];
 
+  /// Each row's latest context, by device id: a moved row is built anew (its item key holds the
+  /// index), so it is looked up again after the move.
+  final _rows = <int, BuildContext>{};
+
+  /// Each handle's focus, by device id, so focus stays on a row moved with the arrow keys.
+  final _focus = <int, FocusNode>{};
+
+  @override
+  void dispose() {
+    for (final node in _focus.values) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
   void _move(int from, int to) {
     final moved = moveItem(_order, from, to);
     if (listEquals(_ids(moved), _ids(_order))) return;
@@ -44,16 +64,39 @@ class _HomeReorderListState extends ConsumerState<HomeReorderList> {
     widget.onReorder(_ids(moved));
   }
 
+  /// An arrow-key move: [by] rows up (-1) or down (+1), then the row is scrolled into view.
+  void _step(int id, int from, int by) {
+    _move(from, from + by);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focus[id]?.requestFocus();
+      final row = _rows[id];
+      if (row == null || !row.mounted) return;
+      Scrollable.ensureVisible(
+        row,
+        duration: const Duration(milliseconds: 150),
+        alignmentPolicy: by < 0
+            ? ScrollPositionAlignmentPolicy.keepVisibleAtStart
+            : ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final registry = ref.watch(deviceProfileRegistryProvider).value;
-    return ReorderableListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      buildDefaultDragHandles: false,
+    return SliverReorderableList(
       itemCount: _order.length,
       // newIndex is already where the item ends up.
       onReorderItem: _move,
+      // As ReorderableListView: the dragged row lifts to elevation 6.
+      proxyDecorator: (child, _, animation) => AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) => Material(
+          elevation: lerpDouble(0, 6, Curves.easeInOut.transform(animation.value))!,
+          child: child,
+        ),
+        child: child,
+      ),
       itemBuilder: (context, index) {
         final device = _order[index];
         final profile = registry != null && registry.contains(device.profileId)
@@ -62,12 +105,18 @@ class _HomeReorderListState extends ConsumerState<HomeReorderList> {
         return Padding(
           key: ValueKey(device.id),
           padding: const EdgeInsets.only(bottom: 12),
-          child: _ReorderRow(
-            device: device,
-            type: profile?.label ?? '',
-            icon: profile == null ? Icons.devices_other : iconFor(profile.icon),
-            index: index,
-            onMove: (by) => _move(index, index + by),
+          child: Builder(
+            builder: (row) {
+              _rows[device.id] = row;
+              return _ReorderRow(
+                device: device,
+                type: profile?.label ?? '',
+                icon: profile == null ? Icons.devices_other : iconFor(profile.icon),
+                index: index,
+                focusNode: _focus.putIfAbsent(device.id, FocusNode.new),
+                onMove: (by) => _step(device.id, index, by),
+              );
+            },
           ),
         );
       },
@@ -81,6 +130,7 @@ class _ReorderRow extends StatelessWidget {
     required this.type,
     required this.icon,
     required this.index,
+    required this.focusNode,
     required this.onMove,
   });
 
@@ -88,6 +138,7 @@ class _ReorderRow extends StatelessWidget {
   final String type;
   final IconData icon;
   final int index;
+  final FocusNode focusNode;
 
   /// Moves the device up (-1) or down (+1).
   final void Function(int by) onMove;
@@ -134,7 +185,7 @@ class _ReorderRow extends StatelessWidget {
               ),
             ),
           ),
-          _Handle(name: device.name, index: index, onMove: onMove),
+          _Handle(name: device.name, index: index, focusNode: focusNode, onMove: onMove),
         ],
       ),
     );
@@ -143,10 +194,16 @@ class _ReorderRow extends StatelessWidget {
 
 /// The ≡ handle: dragging it moves the row; with keyboard focus, Up and Down arrows move it too.
 class _Handle extends StatelessWidget {
-  const _Handle({required this.name, required this.index, required this.onMove});
+  const _Handle({
+    required this.name,
+    required this.index,
+    required this.focusNode,
+    required this.onMove,
+  });
 
   final String name;
   final int index;
+  final FocusNode focusNode;
   final void Function(int by) onMove;
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
@@ -166,6 +223,7 @@ class _Handle extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = Theme.of(context).extension<AppTokens>()?.muted;
     return Focus(
+      focusNode: focusNode,
       onKeyEvent: _onKey,
       child: Builder(
         builder: (context) {

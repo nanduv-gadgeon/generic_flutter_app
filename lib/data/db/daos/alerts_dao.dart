@@ -34,16 +34,23 @@ class AlertsDao extends DatabaseAccessor<AppDatabase> with _$AlertsDaoMixin {
 
   /// Marks all of [userId]'s alerts read.
   Future<void> markAllRead(int userId) =>
-      (update(raisedAlerts)..where(
-            (a) =>
-                a.isRead.equals(false) &
-                a.deviceId.isInQuery(
-                  selectOnly(devices)
-                    ..addColumns([devices.id])
-                    ..where(devices.userId.equals(userId)),
-                ),
-          ))
+      (update(raisedAlerts)
+            ..where((a) => a.isRead.equals(false) & a.deviceId.isInQuery(_deviceIdsOf(userId))))
           .write(const RaisedAlertsCompanion(isRead: Value(true)));
+
+  /// Deletes [userId]'s alert [alertId]; nothing if it is not theirs.
+  Future<void> deleteOne(int userId, int alertId) => (delete(
+    raisedAlerts,
+  )..where((a) => a.id.equals(alertId) & a.deviceId.isInQuery(_deviceIdsOf(userId)))).go();
+
+  /// Deletes all of [userId]'s alerts.
+  Future<void> deleteAllFor(int userId) =>
+      (delete(raisedAlerts)..where((a) => a.deviceId.isInQuery(_deviceIdsOf(userId)))).go();
+
+  /// The ids of [userId]'s devices.
+  JoinedSelectStatement<HasResultSet, dynamic> _deviceIdsOf(int userId) => selectOnly(devices)
+    ..addColumns([devices.id])
+    ..where(devices.userId.equals(userId));
 
   /// Deletes alerts raised before [beforeMs]; returns how many.
   Future<int> deleteOlderThan(int beforeMs) =>

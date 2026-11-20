@@ -65,6 +65,9 @@ Future<void> pumpSettings(
   int historyDays = 7,
   ActiveLink? activeLink,
   Map<String, dynamic>? heartbeat,
+
+  /// The config's `features.alerts`.
+  bool alerts = true,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 1600),
 }) async {
@@ -87,6 +90,7 @@ Future<void> pumpSettings(
   when(() => devices.removeDevice(any(), any())).thenAnswer((_) async => deviceStream.add(null));
 
   final json = validConfigJson()..['history'] = {'daysOnPhone': historyDays};
+  (json['features'] as Map<String, dynamic>)['alerts'] = alerts;
   if (heartbeat != null) {
     ((json['deviceProfiles'] as List).single as Map<String, dynamic>)['heartbeat'] = heartbeat;
   }

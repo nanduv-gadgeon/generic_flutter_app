@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -116,6 +117,96 @@ void main() {
     await tester.tap(find.text(band.name));
     await tester.pumpAndSettle();
     expect(find.text('device page ${band.id}'), findsOneWidget);
+  });
+
+  group('a list longer than the screen', () {
+    const profiles = ['smart_band_v1', 'ief_device_v1', 'ppg_motion_v1'];
+    final many = [
+      for (var i = 1; i <= 8; i++)
+        UserDevice(id: i, name: 'Test device $i', profileId: profiles[i % 3]),
+    ];
+    const screen = Size(390, 640);
+
+    ScrollPosition page(WidgetTester tester) =>
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+
+    testWidgets('dragging the last device to the top edge scrolls up and saves it first', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final service = await pumpHome(tester, devices: many, size: screen);
+      await startReordering(tester);
+      // Rows are built as they come near the screen.
+      await tester.scrollUntilVisible(
+        handle(many.last.name),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      final scrolled = page(tester).pixels;
+      expect(scrolled, greaterThan(0));
+
+      final drag = await tester.startGesture(tester.getCenter(handle(many.last.name)));
+      await tester.pump(kPressTimeout);
+      final from = tester.getCenter(handle(many.last.name)).dy;
+      for (var i = 0; i < 20; i++) {
+        await drag.moveBy(Offset(0, -(from - 10) / 20));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      // Held at the top edge, the page keeps scrolling up.
+      for (var i = 0; i < 120; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(page(tester).pixels, lessThan(scrolled));
+      await drag.up();
+      await tester.pumpAndSettle();
+
+      expect(savedOrder(service).first, many.last.id);
+      semantics.dispose();
+    });
+
+    testWidgets('a device moved past the bottom edge with the arrow keys is scrolled into view', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final service = await pumpHome(tester, devices: many, size: screen);
+      await startReordering(tester);
+      // The last row whose handle is fully on screen.
+      final lastShown = many.lastWhere(
+        (d) =>
+            handle(d.name).evaluate().isNotEmpty &&
+            tester.getRect(handle(d.name)).bottom <= screen.height,
+      );
+      final index = many.indexOf(lastShown);
+
+      await tester.tap(handle(lastShown.name));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+
+      expect(savedOrder(service).indexOf(lastShown.id), index + 1);
+      expect(page(tester).pixels, greaterThan(0));
+      expect(tester.getRect(handle(lastShown.name)).bottom, lessThanOrEqualTo(screen.height));
+      semantics.dispose();
+    });
+
+    testWidgets('focus stays on a handle moved with the arrow keys', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final service = await pumpHome(tester, devices: many, size: screen);
+      await startReordering(tester);
+
+      await tester.tap(handle(many.first.name));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+
+      final saves = verify(() => service.reorder(fakeUser.id, captureAny())).captured;
+      expect(saves, hasLength(2));
+      expect((saves.last as List<int>).indexOf(many.first.id), 2);
+      semantics.dispose();
+    });
   });
 
   testWidgets('fits a small phone at large text size', (tester) async {

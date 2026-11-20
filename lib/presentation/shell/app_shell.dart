@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/app_config_provider.dart';
+import '../../application/devices_provider.dart';
 import '../../application/history_provider.dart';
 import '../../application/notification_prompt.dart';
 import '../../core/di/alerts.dart';
@@ -87,6 +88,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     ];
     final selected = tabs.indexWhere((t) => t.branch == shell.currentIndex);
     final tokens = Theme.of(context).extension<AppTokens>();
+    final unread = features.alerts ? ref.watch(unreadAlertCountProvider).value ?? 0 : 0;
 
     return Scaffold(
       body: shell,
@@ -110,7 +112,13 @@ class _AppShellState extends ConsumerState<AppShell> {
               );
             },
             destinations: [
-              for (final t in tabs) NavigationDestination(icon: Icon(t.icon), label: t.label),
+              for (final t in tabs)
+                NavigationDestination(
+                  icon: t.branch == AppShell.alertsBranch
+                      ? _AlertsIcon(icon: t.icon, unread: unread, tokens: tokens)
+                      : Icon(t.icon),
+                  label: t.label,
+                ),
             ],
           ),
         ),
@@ -135,6 +143,39 @@ class _AppShellState extends ConsumerState<AppShell> {
           color: colourFor(s),
           fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+/// The Alerts tab's bell with the unread count in a red badge (mockup 34): "99+" above
+/// [maxShown], none at 0. A screen reader hears "8 unread" with the tab's name.
+class _AlertsIcon extends StatelessWidget {
+  const _AlertsIcon({required this.icon, required this.unread, required this.tokens});
+
+  final IconData icon;
+  final int unread;
+  final AppTokens? tokens;
+
+  static const maxShown = 99;
+
+  @override
+  Widget build(BuildContext context) {
+    if (unread <= 0) return Icon(icon);
+    final l10n = context.l10n;
+    return Semantics(
+      label: l10n.shellAlertsUnread(unread),
+      child: Badge(
+        label: ExcludeSemantics(
+          child: Text(unread > maxShown ? l10n.shellBadgeOverflow(maxShown) : '$unread'),
+        ),
+        largeSize: 18,
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        backgroundColor: tokens?.danger,
+        // `surface` is light on the light theme's red and dark on the dark theme's, so it reads.
+        textColor: tokens?.surface,
+        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        child: Icon(icon),
       ),
     );
   }

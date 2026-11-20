@@ -16,7 +16,12 @@ void main() {
   const devices = [band, patch];
 
   Future<void> swipeLeft(WidgetTester tester, String name) async {
-    await tester.ensureVisible(find.text(name));
+    // Cards far below the screen are built only once scrolled near.
+    await tester.scrollUntilVisible(
+      find.text(name),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.drag(find.text(name), const Offset(-500, 0));
     await tester.pumpAndSettle();

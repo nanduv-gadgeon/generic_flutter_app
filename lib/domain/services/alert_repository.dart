@@ -16,6 +16,12 @@ abstract interface class AlertRepository {
   /// Marks all of [userId]'s alerts read.
   Future<void> markAllRead(int userId);
 
+  /// Deletes [userId]'s alert [alertId]; nothing if it is not theirs.
+  Future<void> delete(int userId, int alertId);
+
+  /// Deletes all of [userId]'s alerts.
+  Future<void> deleteAll(int userId);
+
   /// Deletes alerts raised before [before]; returns how many.
   Future<int> deleteOlderThan(DateTime before);
 }

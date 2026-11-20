@@ -83,62 +83,86 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         (ref.watch(bluetoothOffProvider).value ?? false) &&
         devices.any((d) => d.transport == Transport.ble);
 
+    // Slivers, so the reorder list scrolls this page itself while a row is dragged to an edge.
+    // SafeArea already clears the status bar; the mockup's 56 px top included it.
+    const side = EdgeInsets.symmetric(horizontal: 16);
     return SafeArea(
-      child: SingleChildScrollView(
-        // SafeArea already clears the status bar; the mockup's 56 px top included it.
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Header(
-              greeting: context.l10n.devicesGreeting(now),
-              name: context.l10n.devicesFirstName(name),
-              onAdd: addDevice,
-            ),
-            const SizedBox(height: 18),
-            _TotalsRow(summary: summary),
-            if (bluetoothOff) ...[const SizedBox(height: 14), const BluetoothOffBanner()],
-            const SizedBox(height: 18),
-            MyDevicesHeading(
-              reordering: reordering,
-              onToggle: canReorder ? () => setState(() => _reordering = !reordering) : null,
-              onDebugLongPress: kDebugMode ? _toggleDummies : null,
-            ),
-            // While reordering: how to move devices; otherwise how to delete one (mockup 07).
-            if (devices.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                reordering ? context.l10n.devicesReorderHint : context.l10n.removeDeviceSwipeHint,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).extension<AppTokens>()?.muted,
-                ),
-              ),
-            ],
-            const SizedBox(height: 18),
-            if (devices.isEmpty)
-              EmptyDevicesCard(onAdd: addDevice)
-            else ...[
-              // Reorder mode shows compact rows with handles; swiping to delete is off there.
-              if (reordering)
-                HomeReorderList(devices: devices, onReorder: ref.read(saveDeviceOrderProvider))
-              else
-                for (final device in devices) ...[
-                  SwipeToDelete(
-                    device: device,
-                    onRemoved: (id) => setState(() => _removed.add(id)),
-                    builder: (onDelete) => HomeDeviceCard(
-                      device: device,
-                      onOpen: () => context.push(HomeScreen.deviceRoute(device.id)),
-                      onDelete: onDelete,
-                    ),
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _Header(
+                    greeting: context.l10n.devicesGreeting(now),
+                    name: context.l10n.devicesFirstName(name),
+                    onAdd: addDevice,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
+                  _TotalsRow(summary: summary),
+                  if (bluetoothOff) ...[const SizedBox(height: 14), const BluetoothOffBanner()],
+                  const SizedBox(height: 18),
+                  MyDevicesHeading(
+                    reordering: reordering,
+                    onToggle: canReorder ? () => setState(() => _reordering = !reordering) : null,
+                    onDebugLongPress: kDebugMode ? _toggleDummies : null,
+                  ),
+                  // While reordering: how to move devices; otherwise how to delete one (mockup 07).
+                  if (devices.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      reordering
+                          ? context.l10n.devicesReorderHint
+                          : context.l10n.removeDeviceSwipeHint,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).extension<AppTokens>()?.muted,
+                      ),
+                    ),
+                  ],
                 ],
-              AddDeviceTile(onAdd: addDevice),
-            ],
+              ),
+            ),
+          ),
+          if (devices.isEmpty)
+            SliverPadding(
+              padding: side.copyWith(bottom: 24),
+              sliver: SliverToBoxAdapter(child: EmptyDevicesCard(onAdd: addDevice)),
+            )
+          else ...[
+            SliverPadding(
+              padding: side,
+              // Reorder mode shows compact rows with handles; swiping to delete is off there.
+              sliver: reordering
+                  ? HomeReorderList(devices: devices, onReorder: ref.read(saveDeviceOrderProvider))
+                  : SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final device in devices) ...[
+                            SwipeToDelete(
+                              device: device,
+                              onRemoved: (id) => setState(() => _removed.add(id)),
+                              builder: (onDelete) => HomeDeviceCard(
+                                device: device,
+                                onOpen: () => context.push(HomeScreen.deviceRoute(device.id)),
+                                onDelete: onDelete,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ],
+                      ),
+                    ),
+            ),
+            SliverPadding(
+              padding: side.copyWith(bottom: 24),
+              sliver: SliverToBoxAdapter(child: AddDeviceTile(onAdd: addDevice)),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }

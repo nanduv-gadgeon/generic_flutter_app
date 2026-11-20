@@ -33,6 +33,12 @@ class LocalAlertRepository implements AlertRepository {
   Future<void> markAllRead(int userId) => _db.alertsDao.markAllRead(userId);
 
   @override
+  Future<void> delete(int userId, int alertId) => _db.alertsDao.deleteOne(userId, alertId);
+
+  @override
+  Future<void> deleteAll(int userId) => _db.alertsDao.deleteAllFor(userId);
+
+  @override
   Future<int> deleteOlderThan(DateTime before) =>
       _db.alertsDao.deleteOlderThan(before.toUtc().millisecondsSinceEpoch);
 

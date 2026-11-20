@@ -63,6 +63,30 @@ void main() {
     expect((await repo.watchAll(userId).first).every((a) => a.read), isTrue);
   });
 
+  test("deletes one alert, only the user's own", () async {
+    final first = await repo.add(hr(band, 0));
+    await repo.add(hr(band, 1));
+    final others = await repo.add(hr(othersBand, 2));
+
+    await repo.delete(userId, first);
+    await repo.delete(userId, others);
+
+    expect((await repo.watchAll(userId).first).map((a) => a.id), [first + 1]);
+    expect((await repo.watchAll(otherUserId).first).single.id, others);
+  });
+
+  test("deletes all of one user's alerts", () async {
+    await repo.add(hr(band, 0));
+    await repo.add(hr(band, 1));
+    await repo.add(hr(othersBand, 2));
+
+    await repo.deleteAll(userId);
+
+    expect(await repo.watchAll(userId).first, isEmpty);
+    expect(await repo.watchUnreadCount(userId).first, 0);
+    expect(await repo.watchAll(otherUserId).first, hasLength(1));
+  });
+
   test('deletes alerts older than a time', () async {
     await repo.add(hr(band, 0));
     await repo.add(hr(band, 10));

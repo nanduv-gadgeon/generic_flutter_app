@@ -161,6 +161,50 @@ void main() {
     verifyNever(() => alerts.markAllRead(any()));
   });
 
+  group('deleting', () {
+    final alert = _alert(1, AlertKind.offline);
+    setUp(() {
+      when(() => alerts.delete(any(), any())).thenAnswer((_) async {});
+      when(() => alerts.deleteAll(any())).thenAnswer((_) async {});
+      when(() => alerts.add(alert)).thenAnswer((_) async => 9);
+    });
+
+    final cases = <(String, Future<void> Function(ProviderContainer), void Function())>[
+      (
+        'one alert',
+        (c) => c.read(deleteAlertProvider)(7),
+        () => verify(() => alerts.delete(fakeUser.id, 7)).called(1),
+      ),
+      (
+        'all alerts',
+        (c) => c.read(clearAlertsProvider)(),
+        () => verify(() => alerts.deleteAll(fakeUser.id)).called(1),
+      ),
+      (
+        'Undo stores it again',
+        (c) => c.read(restoreAlertProvider)(alert),
+        () => verify(() => alerts.add(alert)).called(1),
+      ),
+    ];
+
+    for (final (name, run, check) in cases) {
+      test('$name for the logged-in user', () async {
+        await logIn();
+        await run(container);
+        check();
+      });
+
+      test('$name: nothing when nobody is logged in', () async {
+        when(() => auth.currentUser()).thenAnswer((_) async => null);
+        await container.read(authControllerProvider.future);
+        await run(container);
+        verifyNever(() => alerts.delete(any(), any()));
+        verifyNever(() => alerts.deleteAll(any()));
+        verifyNever(() => alerts.add(alert));
+      });
+    }
+  });
+
   test('the minute tick gives the time now and again every minute', () {
     fakeAsync((async) {
       var now = DateTime(2026, 10, 24, 12);

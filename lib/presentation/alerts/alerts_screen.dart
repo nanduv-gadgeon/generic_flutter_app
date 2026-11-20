@@ -7,13 +7,16 @@ import '../../core/theme/app_tokens.dart';
 import '../../domain/alerts/alert_category.dart';
 import '../../l10n/l10n.dart';
 import '../widgets/dashed_border_box.dart';
+import '../widgets/delete_panel.dart';
 import '../widgets/success_snack_bar.dart';
 import 'alert_card.dart';
 import 'alert_filter_chips.dart';
+import 'alerts_header.dart';
 
 /// Alerts tab (mockup 34; filters from mockup v2.1): the logged-in user's alerts, newest first,
 /// filtered by category, and "Mark all read". Only that button marks alerts read (all of them,
-/// whatever the filter); opening the tab does not.
+/// whatever the filter); opening the tab does not. Swiping a card left deletes it, with Undo;
+/// "Clear all" deletes every alert after asking.
 class AlertsScreen extends ConsumerStatefulWidget {
   const AlertsScreen({super.key});
 
@@ -25,11 +28,20 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
   /// The picked filter; null is "All". Kept while the user visits other tabs.
   AlertCategory? _filter;
 
+  /// Alerts swiped away that the list still has; a dismissed card must leave the list at once.
+  final _hidden = <int>{};
+
   @override
   Widget build(BuildContext context) {
     final alerts = ref.watch(alertListProvider);
     final now = ref.watch(minuteTickProvider).value ?? ref.watch(clockProvider)();
-    final all = alerts.value ?? const <AlertListItem>[];
+    final stored = alerts.value ?? const <AlertListItem>[];
+    // Once the list no longer has a deleted alert, it need not be hidden any more.
+    _hidden.removeWhere((id) => !stored.any((i) => i.alert.id == id));
+    final all = [
+      for (final i in stored)
+        if (!_hidden.contains(i.alert.id)) i,
+    ];
     final items = [
       for (final i in all)
         if (_filter == null || categoryOf(i.alert.kind) == _filter) i,
@@ -60,7 +72,10 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _Header(onMarkAllRead: anyUnread ? () => _markAllRead(context, ref) : null),
+                  AlertsHeader(
+                    onMarkAllRead: anyUnread ? () => _markAllRead(context, ref) : null,
+                    onClearAll: all.isNotEmpty ? _clearAll : null,
+                  ),
                   const SizedBox(height: 14),
                   AlertFilterChips(
                     selected: _filter,
@@ -71,13 +86,79 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
             );
           }
           if (message != null) return message;
+          final item = items[i - 1];
           return Padding(
+            key: ValueKey(item.alert.id),
             padding: EdgeInsets.only(top: i == 1 ? 0 : 10),
-            child: AlertCard(item: items[i - 1], now: now),
+            child: Dismissible(
+              key: ValueKey('swipe-${item.alert.id}'),
+              direction: DismissDirection.endToStart,
+              background: DeletePanel(label: context.l10n.alertDelete),
+              onDismissed: (_) => _delete(item),
+              child: AlertCard(item: item, now: now, onDelete: () => _delete(item)),
+            ),
           );
         },
       ),
     );
+  }
+
+  /// Deletes [item] (swipe or the screen reader action); the snack bar offers Undo.
+  Future<void> _delete(AlertListItem item) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final delete = ref.read(deleteAlertProvider);
+    final restore = ref.read(restoreAlertProvider);
+    final id = item.alert.id;
+    if (id == null) return; // Stored alerts always have one.
+    setState(() => _hidden.add(id));
+    try {
+      await delete(id);
+    } on Exception {
+      // After a frame, so the dismissed card leaves the tree and comes back as a new one.
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) setState(() => _hidden.remove(id));
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.alertDeleteFailed)));
+      return;
+    }
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.alertDeleted),
+          action: SnackBarAction(
+            label: l10n.alertDeleteUndo,
+            onPressed: () async {
+              try {
+                await restore(item.alert);
+              } on Exception {
+                messenger.showSnackBar(SnackBar(content: Text(l10n.alertRestoreFailed)));
+              }
+            },
+          ),
+        ),
+      );
+  }
+
+  /// Asks, then deletes all of the user's alerts, whatever the filter.
+  Future<void> _clearAll() async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final clear = ref.read(clearAlertsProvider);
+    final success = successSnackBar(context, l10n.alertsCleared);
+    if (!await confirmClearAlerts(context)) return;
+    try {
+      await clear();
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(success);
+    } on Exception {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.alertsClearFailed)));
+    }
   }
 
   static Future<void> _markAllRead(BuildContext context, WidgetRef ref) async {
@@ -94,50 +175,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(l10n.alertsMarkAllReadFailed)));
     }
-  }
-}
-
-/// "Alerts" and "Mark all read" (disabled when nothing is unread). With large text on a small
-/// phone the button moves under the title.
-class _Header extends StatelessWidget {
-  const _Header({required this.onMarkAllRead});
-
-  final VoidCallback? onMarkAllRead;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppTokens>();
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 10,
-      children: [
-        Semantics(
-          header: true,
-          child: Text(
-            context.l10n.alertsTitle,
-            style: Theme.of(context).textTheme.headlineMedium
-                ?.copyWith(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5),
-          ),
-        ),
-        Semantics(
-          button: true,
-          label: context.l10n.alertsMarkAllRead,
-          enabled: onMarkAllRead != null,
-          excludeSemantics: true,
-          child: TextButton(
-            onPressed: onMarkAllRead,
-            style: TextButton.styleFrom(
-              minimumSize: const Size(44, 44),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              foregroundColor: tokens?.accent,
-              textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            ),
-            child: Text(context.l10n.alertsMarkAllRead),
-          ),
-        ),
-      ],
-    );
   }
 }
 

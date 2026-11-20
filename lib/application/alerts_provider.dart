@@ -65,6 +65,38 @@ Future<void> Function() markAllAlertsRead(Ref ref) {
   };
 }
 
+/// Deletes one of the logged-in user's alerts (Alerts list, swipe left). Does nothing when nobody
+/// is logged in.
+@riverpod
+Future<void> Function(int alertId) deleteAlert(Ref ref) {
+  final user = ref.watch(authControllerProvider).value;
+  final repository = ref.watch(alertRepositoryProvider);
+  return (alertId) async {
+    if (user != null) await repository.delete(user.id, alertId);
+  };
+}
+
+/// Stores a deleted alert again, as it was (the Undo after a swipe). It gets a new id.
+@riverpod
+Future<void> Function(RaisedAlert alert) restoreAlert(Ref ref) {
+  final user = ref.watch(authControllerProvider).value;
+  final repository = ref.watch(alertRepositoryProvider);
+  return (alert) async {
+    if (user != null) await repository.add(alert);
+  };
+}
+
+/// Deletes all of the logged-in user's alerts (Alerts list, "Clear all"). Does nothing when
+/// nobody is logged in.
+@riverpod
+Future<void> Function() clearAlerts(Ref ref) {
+  final user = ref.watch(authControllerProvider).value;
+  final repository = ref.watch(alertRepositoryProvider);
+  return () async {
+    if (user != null) await repository.deleteAll(user.id);
+  };
+}
+
 /// The time now, and again every minute, so "10 min ago" stays true while a screen is open.
 @riverpod
 Stream<DateTime> minuteTick(Ref ref) async* {

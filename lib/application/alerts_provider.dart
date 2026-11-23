@@ -4,6 +4,7 @@ import '../core/di/alerts.dart';
 import '../domain/models/device_profile.dart';
 import '../domain/services/alert_repository.dart';
 import 'auth_controller.dart';
+import 'clock_ticks.dart';
 import 'device_profiles_provider.dart';
 import 'devices_provider.dart';
 
@@ -99,8 +100,5 @@ Future<void> Function() clearAlerts(Ref ref) {
 
 /// The time now, and again every minute, so "10 min ago" stays true while a screen is open.
 @riverpod
-Stream<DateTime> minuteTick(Ref ref) async* {
-  final now = ref.watch(clockProvider);
-  yield now();
-  yield* Stream.periodic(const Duration(minutes: 1), (_) => now());
-}
+Stream<DateTime> minuteTick(Ref ref) =>
+    clockTicks(ref, ref.watch(clockProvider), const Duration(minutes: 1));

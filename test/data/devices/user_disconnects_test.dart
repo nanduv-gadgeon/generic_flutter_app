@@ -40,6 +40,9 @@ class _FakeConnections implements LiveConnections {
   Stream<(int, LiveUpdate)> watchAll() => all.stream;
 
   @override
+  DateTime? lastHeartbeatAt(int deviceId) => null;
+
+  @override
   Stream<ActiveLink?> watchActive() => Stream.value(null);
 
   @override

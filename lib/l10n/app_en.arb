@@ -1443,12 +1443,19 @@
   "alertCardDetail": "{device} · {time}",
   "@alertCardDetail": { "description": "Under an alert's title, e.g. \"Test band · 10 min ago\".", "placeholders": { "device": { "type": "String" }, "time": { "type": "String" } } },
   "alertTimeJustNow": "Just now",
+  "@alertTimeJustNow": { "description": "An alert raised less than a minute ago." },
   "alertTimeMinutesAgo": "{minutes} min ago",
-  "@alertTimeMinutesAgo": { "placeholders": { "minutes": { "type": "int" } } },
+  "@alertTimeMinutesAgo": { "description": "An alert raised 1 to 59 minutes ago, as in the mockup: \"10 min ago\".", "placeholders": { "minutes": { "type": "int" } } },
   "alertTimeToday": "Today, {time}",
-  "@alertTimeToday": { "placeholders": { "time": { "type": "String" } } },
+  "@alertTimeToday": { "description": "An alert raised earlier today, an hour ago or more, e.g. \"Today, 07:10\".", "placeholders": { "time": { "type": "String" } } },
   "alertTimeYesterday": "Yesterday, {time}",
-  "@alertTimeYesterday": { "placeholders": { "time": { "type": "String" } } },
+  "@alertTimeYesterday": { "description": "An alert raised yesterday, e.g. \"Yesterday, 18:40\".", "placeholders": { "time": { "type": "String" } } },
   "alertTimeDate": "{weekday} {day} {month}, {time}",
-  "@alertTimeDate": { "description": "An older alert's time, e.g. \"Fri 23 Oct, 13:05\".", "placeholders": { "weekday": { "type": "String" }, "day": { "type": "String" }, "month": { "type": "String" }, "time": { "type": "String" } } }
+  "@alertTimeDate": { "description": "An older alert's time this year, e.g. \"Fri 23 Oct, 13:05\".", "placeholders": { "weekday": { "type": "String" }, "day": { "type": "String" }, "month": { "type": "String" }, "time": { "type": "String" } } },
+  "alertTimeDateYear": "{weekday} {day} {month} {year}, {time}",
+  "@alertTimeDateYear": { "description": "An alert's time in another year, e.g. \"Fri 23 Oct 2025, 13:05\".", "placeholders": { "weekday": { "type": "String" }, "day": { "type": "String" }, "month": { "type": "String" }, "year": { "type": "String" }, "time": { "type": "String" } } },
+  "alertTimeFull": "{date} at {time}",
+  "@alertTimeFull": { "description": "An alert's exact time, spoken by screen readers, e.g. \"Monday, November 23, 2026 at 11:49\".", "placeholders": { "date": { "type": "String" }, "time": { "type": "String" } } },
+  "alertCardLabel": "{device}, {time}",
+  "@alertCardLabel": { "description": "Spoken for the line under an alert's title: the device and the alert's exact time.", "placeholders": { "device": { "type": "String" }, "time": { "type": "String" } } }
 }

@@ -83,6 +83,9 @@ class UserDisconnects implements LiveReadings {
   Stream<(int, LiveUpdate)> watchAll() => _inner.watchAll();
 
   @override
+  DateTime? lastHeartbeatAt(int deviceId) => _inner.lastHeartbeatAt(deviceId);
+
+  @override
   Stream<ActiveLink?> watchActive() => _inner.watchActive();
 
   @override

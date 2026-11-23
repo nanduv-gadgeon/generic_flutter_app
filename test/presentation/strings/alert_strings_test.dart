@@ -130,10 +130,11 @@ void main() {
     // Saturday 24 Oct 2026, 12:00 on the phone's clock.
     final now = DateTime(2026, 10, 24, 12);
 
-    // raised at -> shown as
+    // raised at -> shown as (mockup 34)
     final times = <DateTime, String>{
       now: 'Just now',
       now.add(const Duration(minutes: 5)): 'Just now',
+      now.add(const Duration(days: 3)): 'Just now',
       now.subtract(const Duration(seconds: 59)): 'Just now',
       now.subtract(const Duration(minutes: 1)): '1 min ago',
       now.subtract(const Duration(minutes: 10)): '10 min ago',
@@ -141,23 +142,41 @@ void main() {
       now.subtract(const Duration(hours: 1)): 'Today, 11:00',
       DateTime(2026, 10, 24, 7, 10): 'Today, 07:10',
       DateTime(2026, 10, 24): 'Today, 00:00',
+      // Under 24 hours, but on the day before: Yesterday.
       DateTime(2026, 10, 23, 23, 59): 'Yesterday, 23:59',
       DateTime(2026, 10, 23, 18, 40): 'Yesterday, 18:40',
       DateTime(2026, 10, 23): 'Yesterday, 00:00',
-      DateTime(2026, 10, 22, 13, 5): 'Thu 22 Oct, 13:05',
-      DateTime(2026, 10, 18, 9): 'Sun 18 Oct, 09:00',
+      DateTime(2026, 10, 22, 23, 59): 'Thu 22 Oct, 23:59',
+      DateTime(2026, 10, 16, 13, 5): 'Fri 16 Oct, 13:05',
+      DateTime(2026, 1, 1, 8): 'Thu 1 Jan, 08:00',
+      DateTime(2025, 10, 23, 13, 5): 'Thu 23 Oct 2025, 13:05',
+      DateTime(2020, 11, 15, 8): 'Sun 15 Nov 2020, 08:00',
     };
     for (final MapEntry(key: at, value: text) in times.entries) {
-      test('$at -> "$text"', () => expect(en.alertTime(at, now), text));
+      test('$at -> "$text"', () => expect(en.alertTime(at, now).short, text));
     }
 
-    test('a stored UTC time is shown on the phone\'s clock', () {
-      final at = now.toUtc().subtract(const Duration(hours: 2));
-      expect(en.alertTime(at, now), 'Today, 10:00');
+    test('the full time is exact, for screen readers', () {
+      expect(
+        en.alertTime(DateTime(2026, 10, 24, 11, 49), now).full,
+        'Saturday, October 24, 2026 at 11:49',
+      );
+      expect(
+        en.alertTime(DateTime(2025, 3, 2, 16, 30), now).full,
+        'Sunday, March 2, 2025 at 16:30',
+      );
     });
 
-    test('yesterday across a new year', () {
-      expect(en.alertTime(DateTime(2026, 12, 31, 20), DateTime(2027, 1, 1, 9)), 'Yesterday, 20:00');
+    test("a stored UTC time is shown on the phone's clock", () {
+      final at = now.toUtc().subtract(const Duration(hours: 26));
+      expect(en.alertTime(at, now).short, 'Yesterday, 10:00');
+    });
+
+    test('today, yesterday and dates across a new year', () {
+      final newYear = DateTime(2027, 1, 1, 21);
+      expect(en.alertTime(DateTime(2027, 1, 1, 0, 5), newYear).short, 'Today, 00:05');
+      expect(en.alertTime(DateTime(2026, 12, 31, 20), newYear).short, 'Yesterday, 20:00');
+      expect(en.alertTime(DateTime(2026, 12, 28, 9), newYear).short, 'Mon 28 Dec 2026, 09:00');
     });
   });
 }

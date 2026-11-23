@@ -90,7 +90,39 @@ void main() {
     verifyNever(() => alerts.add(any()));
   });
 
-  test('a limit turned back on in Device settings raises again at once', () async {
+  test('an alert raised, its limit turned off and on: raises again while still over', () async {
+    await send(LiveValue(Sample('hr', 150, at)));
+    limits.add({
+      band: const [AlertLimit(key: 'hr', above: 110, enabled: false)],
+    });
+    await pumpEventQueue();
+    // No reading while it is off: turning it off alone ends the open alert.
+    limits.add({
+      band: const [AlertLimit(key: 'hr', above: 110)],
+    });
+    await pumpEventQueue();
+
+    await send(LiveValue(Sample('hr', 151, at)));
+
+    expect(stored().map((a) => (a.kind, a.value)), [
+      (AlertKind.above, 150),
+      (AlertKind.above, 151),
+    ]);
+  });
+
+  test('an alert raised and its limit left on: nothing more while still over', () async {
+    await send(LiveValue(Sample('hr', 150, at)));
+    limits.add({
+      band: const [AlertLimit(key: 'hr', above: 110), AlertLimit(key: 'battery', below: 15)],
+    });
+    await pumpEventQueue();
+
+    await send(LiveValue(Sample('hr', 151, at)));
+
+    expect(stored().map((a) => a.value), [150]);
+  });
+
+  test('a limit off from the start, then turned on, raises at once', () async {
     limits.add({
       band: const [AlertLimit(key: 'hr', above: 110, enabled: false)],
     });

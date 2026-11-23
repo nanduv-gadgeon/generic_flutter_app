@@ -70,6 +70,9 @@ Future<void> pumpSettings(
   bool alerts = true,
   Brightness brightness = Brightness.light,
   Size size = const Size(390, 1600),
+
+  /// The clock, when a test moves time on; otherwise [testNow].
+  DateTime Function()? clock,
 }) async {
   tester.view
     ..physicalSize = size
@@ -99,7 +102,7 @@ Future<void> pumpSettings(
       appConfigProvider.overrideWith((_) async => AppConfig.fromJson(json)),
       authServiceProvider.overrideWithValue(auth),
       deviceServiceProvider.overrideWithValue(devices),
-      clockProvider.overrideWithValue(() => testNow),
+      clockProvider.overrideWithValue(clock ?? () => testNow),
       activeLinkProvider.overrideWith((_) => Stream.value(activeLink)),
       liveReadingsProvider.overrideWithValue(live),
     ],

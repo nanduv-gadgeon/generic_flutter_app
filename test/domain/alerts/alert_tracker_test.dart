@@ -85,6 +85,26 @@ void main() {
     expect(feed(tracker, 'battery', [14]), hasLength(1), reason: '14 is a new crossing');
   });
 
+  test('closing an open alert lets it raise again; other keys stay open', () {
+    final tracker = AlertTracker();
+    expect(feed(tracker, 'hr', [120]), hasLength(1));
+    expect(feed(tracker, 'battery', [12]), hasLength(1));
+
+    tracker.close(1, 'hr');
+
+    expect(feed(tracker, 'hr', [121]), hasLength(1), reason: 'closed: raises again');
+    expect(feed(tracker, 'battery', [12]), isEmpty, reason: 'still open');
+  });
+
+  test('closing the battery also forgets its lowest level', () {
+    final tracker = AlertTracker();
+    expect(feed(tracker, 'battery', [12]), hasLength(1));
+
+    tracker.close(1, 'battery');
+
+    expect(feed(tracker, 'battery', [12]), hasLength(1));
+  });
+
   test('forget and clear drop what is open', () {
     final tracker = AlertTracker();
     feed(tracker, 'hr', [120], device: 1);

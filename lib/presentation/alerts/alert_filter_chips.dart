@@ -5,10 +5,18 @@ import '../../domain/alerts/alert_category.dart';
 import '../../l10n/l10n.dart';
 import '../strings/alert_strings.dart';
 
-/// The row of filters over the Alerts list (mockup v2.1): All, then one per [AlertCategory]. It
+/// The row of filters over the Alerts list (mockup v2.1): All, then one per category the user has alerts in. It
 /// scrolls sideways when it does not fit. The picked one is filled and announced as selected.
 class AlertFilterChips extends StatelessWidget {
-  const AlertFilterChips({super.key, required this.selected, required this.onSelected});
+  const AlertFilterChips({
+    super.key,
+    required this.categories,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  /// The filters besides "All", in order: the categories of the stored alerts.
+  final List<AlertCategory> categories;
 
   /// Null is "All".
   final AlertCategory? selected;
@@ -23,7 +31,7 @@ class AlertFilterChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            for (final (i, category) in <AlertCategory?>[null, ...AlertCategory.values].indexed)
+            for (final (i, category) in <AlertCategory?>[null, ...categories].indexed)
               Padding(
                 padding: EdgeInsets.only(left: i == 0 ? 0 : 6),
                 child: _Chip(

@@ -5,6 +5,7 @@ import 'package:generic_flutter_app/application/alerts_provider.dart';
 import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/theme/app_theme.dart';
 import 'package:generic_flutter_app/domain/alerts/alert.dart';
+import 'package:generic_flutter_app/domain/alerts/alert_category.dart';
 import 'package:generic_flutter_app/presentation/alerts/alerts_screen.dart';
 
 import '../../fixtures/l10n.dart';
@@ -59,21 +60,25 @@ final mixedAlerts = [
   alertItem(AlertKind.offline, at: DateTime(2026, 10, 23, 18, 40), read: true),
 ];
 
-/// What the screen asked for: Mark all read, deletes (alert ids), Clear all and Undo.
+/// What the screen asked for: Mark all read and Clear all (the filter each time; null is "All"),
+/// deletes (alert ids) and Undo.
 class AlertCalls {
-  int markAllRead = 0;
+  final markedRead = <AlertCategory?>[];
+  int get markAllRead => markedRead.length;
   final deleted = <int>[];
-  int cleared = 0;
+  final clearedFilters = <AlertCategory?>[];
+  int get cleared => clearedFilters.length;
   final restored = <RaisedAlert>[];
 }
 
-/// Pumps the Alerts tab with [items], or the list [stream] gives. Each action runs its callback
+/// Pumps the Alerts tab with [items], or the list [stream] gives, and [filters] offered. Each action runs its callback
 /// after it is recorded; a callback that throws fails it.
 Future<AlertCalls> pumpAlerts(
   WidgetTester tester, {
   List<AlertListItem> items = const [],
   Stream<List<AlertListItem>>? stream,
   Object? error,
+  List<AlertCategory> filters = const [AlertCategory.reading, AlertCategory.health],
   Future<void> Function()? markAllRead,
   Future<void> Function(int alertId)? delete,
   Future<void> Function()? clear,
@@ -95,16 +100,17 @@ Future<AlertCalls> pumpAlerts(
           (ref) => error != null ? Stream.error(error) : stream ?? Stream.value(items),
         ),
         minuteTickProvider.overrideWith((ref) => Stream.value(alertsNow)),
-        markAllAlertsReadProvider.overrideWithValue(() async {
-          calls.markAllRead++;
+        alertFiltersProvider.overrideWithValue(filters),
+        markAllAlertsReadProvider.overrideWithValue((filter) async {
+          calls.markedRead.add(filter);
           await markAllRead?.call();
         }),
         deleteAlertProvider.overrideWithValue((id) async {
           calls.deleted.add(id);
           await delete?.call(id);
         }),
-        clearAlertsProvider.overrideWithValue(() async {
-          calls.cleared++;
+        clearAlertsProvider.overrideWithValue((filter) async {
+          calls.clearedFilters.add(filter);
           await clear?.call();
         }),
         restoreAlertProvider.overrideWithValue((alert) async {

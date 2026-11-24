@@ -30,13 +30,17 @@ class LocalAlertRepository implements AlertRepository {
   Stream<int> watchUnreadCount(int userId) => _db.alertsDao.watchUnreadCount(userId);
 
   @override
-  Future<void> markAllRead(int userId) => _db.alertsDao.markAllRead(userId);
+  Future<void> markAllRead(int userId, {Set<AlertKind>? kinds}) =>
+      _db.alertsDao.markAllRead(userId, kinds: _names(kinds));
 
   @override
   Future<void> delete(int userId, int alertId) => _db.alertsDao.deleteOne(userId, alertId);
 
   @override
-  Future<void> deleteAll(int userId) => _db.alertsDao.deleteAllFor(userId);
+  Future<void> deleteAll(int userId, {Set<AlertKind>? kinds}) =>
+      _db.alertsDao.deleteAllFor(userId, kinds: _names(kinds));
+
+  static Set<String>? _names(Set<AlertKind>? kinds) => kinds?.map((k) => k.name).toSet();
 
   @override
   Future<int> deleteOlderThan(DateTime before) =>

@@ -13,14 +13,16 @@ abstract interface class AlertRepository {
   /// How many of [userId]'s alerts are not read yet; emits again when it changes.
   Stream<int> watchUnreadCount(int userId);
 
-  /// Marks all of [userId]'s alerts read.
-  Future<void> markAllRead(int userId);
+  /// Marks all of [userId]'s alerts read; with [kinds], only alerts of those kinds (the Alerts
+  /// list's filter).
+  Future<void> markAllRead(int userId, {Set<AlertKind>? kinds});
 
   /// Deletes [userId]'s alert [alertId]; nothing if it is not theirs.
   Future<void> delete(int userId, int alertId);
 
-  /// Deletes all of [userId]'s alerts.
-  Future<void> deleteAll(int userId);
+  /// Deletes all of [userId]'s alerts; with [kinds], only alerts of those kinds (the Alerts
+  /// list's filter).
+  Future<void> deleteAll(int userId, {Set<AlertKind>? kinds});
 
   /// Deletes alerts raised before [before]; returns how many.
   Future<int> deleteOlderThan(DateTime before);

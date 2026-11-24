@@ -21,13 +21,13 @@ class FakeAlertRepository implements AlertRepository {
   Stream<int> watchUnreadCount(int userId) => Stream.value(unread);
 
   @override
-  Future<void> markAllRead(int userId) async {}
+  Future<void> markAllRead(int userId, {Set<AlertKind>? kinds}) async {}
 
   @override
   Future<void> delete(int userId, int alertId) async {}
 
   @override
-  Future<void> deleteAll(int userId) async {}
+  Future<void> deleteAll(int userId, {Set<AlertKind>? kinds}) async {}
 
   @override
   Future<int> deleteOlderThan(DateTime before) async => 0;

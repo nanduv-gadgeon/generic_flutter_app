@@ -6,6 +6,7 @@ import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
 import '../../domain/alerts/alert_category.dart';
 import '../../l10n/l10n.dart';
+import '../strings/alert_strings.dart';
 import '../widgets/dashed_border_box.dart';
 import '../widgets/delete_panel.dart';
 import '../widgets/success_snack_bar.dart';
@@ -14,9 +15,10 @@ import 'alert_filter_chips.dart';
 import 'alerts_header.dart';
 
 /// Alerts tab (mockup 34; filters from mockup v2.1): the logged-in user's alerts, newest first,
-/// filtered by category, and "Mark all read". Only that button marks alerts read (all of them,
-/// whatever the filter); opening the tab does not. Swiping a card left deletes it, with Undo;
-/// "Clear all" deletes every alert after asking.
+/// filtered by category, and "Mark all read". A filter shows only while it has alerts.
+/// Only that button marks alerts read (those under the picked filter); opening the tab does not.
+/// Swiping a card left deletes it, with Undo; "Clear all" deletes the alerts under the picked
+/// filter after asking.
 class AlertsScreen extends ConsumerStatefulWidget {
   const AlertsScreen({super.key});
 
@@ -25,7 +27,8 @@ class AlertsScreen extends ConsumerStatefulWidget {
 }
 
 class _AlertsScreenState extends ConsumerState<AlertsScreen> {
-  /// The picked filter; null is "All". Kept while the user visits other tabs.
+  /// The picked filter; null is "All". Kept while the user visits other tabs; "All" is used while
+  /// it is not shown.
   AlertCategory? _filter;
 
   /// Alerts swiped away that the list still has; a dismissed card must leave the list at once.
@@ -42,11 +45,13 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       for (final i in stored)
         if (!_hidden.contains(i.alert.id)) i,
     ];
+    final filters = ref.watch(alertFiltersProvider);
+    final filter = filters.contains(_filter) ? _filter : null;
     final items = [
       for (final i in all)
-        if (_filter == null || categoryOf(i.alert.kind) == _filter) i,
+        if (filter == null || categoryOf(i.alert.kind) == filter) i,
     ];
-    final anyUnread = all.any((i) => !i.alert.read);
+    final anyUnread = items.any((i) => !i.alert.read);
 
     // While Riverpod retries a failed load, the error stays on the loading state.
     final Widget? message = switch (alerts) {
@@ -73,12 +78,13 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AlertsHeader(
-                    onMarkAllRead: anyUnread ? () => _markAllRead(context, ref) : null,
-                    onClearAll: all.isNotEmpty ? _clearAll : null,
+                    onMarkAllRead: anyUnread ? () => _markAllRead(context, ref, filter) : null,
+                    onClearAll: items.isNotEmpty ? () => _clearAll(filter) : null,
                   ),
                   const SizedBox(height: 14),
                   AlertFilterChips(
-                    selected: _filter,
+                    categories: filters,
+                    selected: filter,
                     onSelected: (category) => setState(() => _filter = category),
                   ),
                 ],
@@ -142,15 +148,15 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       );
   }
 
-  /// Asks, then deletes all of the user's alerts, whatever the filter.
-  Future<void> _clearAll() async {
+  /// Asks, then deletes the user's alerts under [filter] (all of them for "All").
+  Future<void> _clearAll(AlertCategory? filter) async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.of(context);
     final clear = ref.read(clearAlertsProvider);
-    final success = successSnackBar(context, l10n.alertsCleared);
-    if (!await confirmClearAlerts(context)) return;
+    final success = successSnackBar(context, l10n.alertsClearedText(filter));
+    if (!await confirmClearAlerts(context, filter)) return;
     try {
-      await clear();
+      await clear(filter);
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(success);
@@ -161,12 +167,17 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     }
   }
 
-  static Future<void> _markAllRead(BuildContext context, WidgetRef ref) async {
+  /// Marks the user's alerts under [filter] read (all of them for "All").
+  static Future<void> _markAllRead(
+    BuildContext context,
+    WidgetRef ref,
+    AlertCategory? filter,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
-    final success = successSnackBar(context, l10n.alertsMarkedAllRead);
+    final success = successSnackBar(context, l10n.alertsMarkedRead(filter));
     try {
-      await ref.read(markAllAlertsReadProvider)();
+      await ref.read(markAllAlertsReadProvider)(filter);
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(success);

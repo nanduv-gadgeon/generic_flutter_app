@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/application/alerts_provider.dart';
+import 'package:generic_flutter_app/domain/alerts/alert.dart';
+import 'package:generic_flutter_app/domain/alerts/alert_category.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import '../../fixtures/l10n.dart';
@@ -123,18 +125,42 @@ void main() {
       expect(find.text(firstTitle), findsOneWidget);
     });
 
-    testWidgets('confirmed: deletes all, whatever the filter, and says so', (tester) async {
+    testWidgets('confirmed under All: deletes every alert and says so', (tester) async {
       final calls = await pumpAlerts(tester, items: mixedAlerts);
-      await tester.tap(find.text(en.alertFilterHealth));
-      await tester.pumpAndSettle();
 
       await tester.tap(clearAllButton());
       await tester.pumpAndSettle();
       await tester.tap(confirmClear());
       await tester.pumpAndSettle();
 
-      expect(calls.cleared, 1);
+      expect(calls.clearedFilters, [null]);
       expect(find.text(en.alertsCleared), findsOneWidget);
+    });
+
+    testWidgets('under a filter: asks about that filter only and clears only it', (tester) async {
+      final calls = await pumpAlerts(tester, items: mixedAlerts);
+      await tester.tap(find.text(en.alertFilterHealth));
+      await tester.pumpAndSettle();
+
+      await tester.tap(clearAllButton());
+      await tester.pumpAndSettle();
+      expect(find.text(en.alertsClearFilterTitle(en.alertFilterHealth)), findsOneWidget);
+      expect(find.text(en.alertsClearFilterBody(en.alertFilterHealth)), findsOneWidget);
+      await tester.tap(confirmClear());
+      await tester.pumpAndSettle();
+
+      expect(calls.clearedFilters, [AlertCategory.health]);
+      expect(find.text(en.alertsFilterCleared(en.alertFilterHealth)), findsOneWidget);
+    });
+
+    testWidgets('is off under a filter with no alerts, on under All', (tester) async {
+      await pumpAlerts(tester, items: [alertItem(AlertKind.offline, at: alertsNow)]);
+      expect(tester.widget<TextButton>(clearAllButton()).onPressed, isNotNull);
+
+      await tester.tap(find.text(en.alertFilterReadings));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<TextButton>(clearAllButton()).onPressed, isNull);
     });
 
     testWidgets('failing says so', (tester) async {

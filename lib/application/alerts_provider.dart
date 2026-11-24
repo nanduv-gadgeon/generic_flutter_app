@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../core/di/alerts.dart';
+import '../domain/alerts/alert_category.dart';
 import '../domain/models/device_profile.dart';
 import '../domain/services/alert_repository.dart';
 import 'auth_controller.dart';
@@ -55,14 +56,26 @@ AlertListItem _item(RaisedAlert alert, String deviceName, DeviceProfile? profile
   offlineAfterMissed: (profile?.heartbeatOrDefault ?? const HeartbeatSettings()).offlineAfterMissed,
 );
 
-/// Marks all of the logged-in user's alerts read (Alerts list, "Mark all read"). Does nothing
-/// when nobody is logged in.
+/// The Alerts list's filters besides "All", in order: the categories of the user's stored alerts,
+/// so a filter shows only while it has alerts.
 @riverpod
-Future<void> Function() markAllAlertsRead(Ref ref) {
+List<AlertCategory> alertFilters(Ref ref) {
+  final items = ref.watch(alertListProvider).value ?? const <AlertListItem>[];
+  final found = {for (final item in items) categoryOf(item.alert.kind)};
+  return [
+    for (final category in AlertCategory.values)
+      if (found.contains(category)) category,
+  ];
+}
+
+/// Marks the logged-in user's alerts read (Alerts list, "Mark all read"): those under [filter],
+/// or all of them when it is null ("All"). Does nothing when nobody is logged in.
+@riverpod
+Future<void> Function(AlertCategory? filter) markAllAlertsRead(Ref ref) {
   final user = ref.watch(authControllerProvider).value;
   final repository = ref.watch(alertRepositoryProvider);
-  return () async {
-    if (user != null) await repository.markAllRead(user.id);
+  return (filter) async {
+    if (user != null) await repository.markAllRead(user.id, kinds: kindsOf(filter));
   };
 }
 
@@ -87,14 +100,14 @@ Future<void> Function(RaisedAlert alert) restoreAlert(Ref ref) {
   };
 }
 
-/// Deletes all of the logged-in user's alerts (Alerts list, "Clear all"). Does nothing when
-/// nobody is logged in.
+/// Deletes the logged-in user's alerts (Alerts list, "Clear all"): those under [filter], or all
+/// of them when it is null ("All"). Does nothing when nobody is logged in.
 @riverpod
-Future<void> Function() clearAlerts(Ref ref) {
+Future<void> Function(AlertCategory? filter) clearAlerts(Ref ref) {
   final user = ref.watch(authControllerProvider).value;
   final repository = ref.watch(alertRepositoryProvider);
-  return () async {
-    if (user != null) await repository.deleteAll(user.id);
+  return (filter) async {
+    if (user != null) await repository.deleteAll(user.id, kinds: kindsOf(filter));
   };
 }
 

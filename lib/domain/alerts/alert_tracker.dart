@@ -3,7 +3,7 @@ import 'alert.dart';
 import 'alert_rules.dart';
 
 /// Raises each alert once per crossing: a condition that stays met raises nothing more until it
-/// has cleared ([rearms], or the device back online). Low battery is the exception: while it stays
+/// has cleared ([rearms], the device back online, or the limit turned off: [close]). Low battery is the exception: while it stays
 /// below its limit, each new whole-percent low raises another alert (14 %, 13 %, 12 %…), so the
 /// user sees it running down. Kept in memory.
 class AlertTracker {
@@ -66,6 +66,13 @@ class AlertTracker {
     }
     if (!_open.add(id)) return null;
     return RaisedAlert(deviceId: deviceId, kind: AlertKind.offline, at: at);
+  }
+
+  /// Ends [deviceId]'s open alert for [key], as if the value had cleared: its limit was turned
+  /// off in Device settings, so turning it back on alerts again while the value is still over.
+  void close(int deviceId, String key) {
+    _open.remove((deviceId, key));
+    _lowestBattery.remove((deviceId, key));
   }
 
   /// Drops what is known about [deviceId] (removed).

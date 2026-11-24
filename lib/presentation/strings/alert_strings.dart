@@ -68,26 +68,38 @@ extension AlertStrings on AppLocalizations {
     AlertCategory.health => alertFilterHealth,
   };
 
-  /// When an alert was raised, as of [now]: "Just now", "10 min ago", "Today, 07:10",
-  /// "Yesterday, 18:40", "Fri 23 Oct, 13:05". A time in the future counts as now.
-  String alertTime(DateTime at, DateTime now) {
+  /// When an alert was raised, as of [now], on the phone's clock, as in mockup 34. [AlertTime.short]
+  /// is shown: "Just now" (under a minute), "10 min ago" (under an hour), "Today, 07:10",
+  /// "Yesterday, 18:40", "Fri 23 Oct, 13:05", and "Fri 23 Oct 2025, 13:05" for another year.
+  /// [AlertTime.full] is the exact time, for screen readers: "Monday, November 23, 2026 at 11:49".
+  /// A time in the future counts as now.
+  AlertTime alertTime(DateTime at, DateTime now) {
     final local = at.toLocal();
     final current = now.toLocal();
-    final ago = current.difference(local);
+    final time = DateFormat.Hm(localeName).format(local);
+    final full = alertTimeFull(DateFormat.yMMMMEEEEd(localeName).format(local), time);
+    return (short: _shortTime(local, current, time), full: full);
+  }
+
+  String _shortTime(DateTime at, DateTime now, String time) {
+    final ago = now.difference(at);
     if (ago < const Duration(minutes: 1)) return alertTimeJustNow;
     if (ago < const Duration(hours: 1)) return alertTimeMinutesAgo(ago.inMinutes);
-    final time = DateFormat.Hm(localeName).format(local);
-    final day = DateTime(local.year, local.month, local.day);
     // Calendar days, not 24-hour spans, so a daylight-saving change does not shift them.
-    if (day == DateTime(current.year, current.month, current.day)) return alertTimeToday(time);
-    if (day == DateTime(current.year, current.month, current.day - 1)) {
-      return alertTimeYesterday(time);
-    }
-    return alertTimeDate(
-      DateFormat.E(localeName).format(local),
-      DateFormat.d(localeName).format(local),
-      DateFormat.MMM(localeName).format(local),
-      time,
-    );
+    final days = DateTime.utc(
+      now.year,
+      now.month,
+      now.day,
+    ).difference(DateTime.utc(at.year, at.month, at.day)).inDays;
+    if (days <= 0) return alertTimeToday(time);
+    if (days == 1) return alertTimeYesterday(time);
+    final weekday = DateFormat.E(localeName).format(at);
+    final day = DateFormat.d(localeName).format(at);
+    final month = DateFormat.MMM(localeName).format(at);
+    if (at.year == now.year) return alertTimeDate(weekday, day, month, time);
+    return alertTimeDateYear(weekday, day, month, DateFormat.y(localeName).format(at), time);
   }
 }
+
+/// An alert's time: [short] for the card, [full] (the exact time) for screen readers.
+typedef AlertTime = ({String short, String full});

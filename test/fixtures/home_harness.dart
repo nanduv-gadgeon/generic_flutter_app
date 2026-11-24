@@ -66,6 +66,12 @@ Future<MockDeviceService> pumpHome(
 
   /// The phone's Bluetooth is off.
   bool bluetoothOff = false,
+
+  /// The clock, when a test moves time on; otherwise [now].
+  DateTime Function()? clock,
+
+  /// The connected device's live last-heartbeat time, by device id.
+  Map<int, DateTime> heartbeats = const {},
 }) async {
   tester.view
     ..physicalSize = size
@@ -81,6 +87,8 @@ Future<MockDeviceService> pumpHome(
   final live = MockLiveReadings();
   when(live.watchActive).thenAnswer((_) => Stream.value(active));
   when(live.watchAll).thenAnswer((_) => const Stream.empty());
+  when(() => live.lastHeartbeatAt(any()))
+      .thenAnswer((i) => heartbeats[i.positionalArguments.first as int]);
   when(live.watchDisconnected).thenAnswer((_) => Stream.value(disconnected));
   final readings = MockReadingRepository();
   when(() => readings.watchLatest(any()))
@@ -110,7 +118,7 @@ Future<MockDeviceService> pumpHome(
       alertRepositoryProvider.overrideWithValue(FakeAlertRepository()),
       appConfigProvider.overrideWith((ref) async => _config),
       deviceProfileRegistryProvider.overrideWith((ref) async => _registry),
-      clockProvider.overrideWithValue(() => now ?? DateTime(2026, 1, 1, 9)),
+      clockProvider.overrideWithValue(clock ?? () => now ?? DateTime(2026, 1, 1, 9)),
     ],
   );
   addTearDown(container.dispose);

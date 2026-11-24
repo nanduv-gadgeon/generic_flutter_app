@@ -57,6 +57,34 @@ void main() {
     expect(find.text('No alerts'), findsNothing);
   });
 
+  testWidgets('screen readers hear the exact time, not "10 min ago"', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpAlerts(tester, items: mixedAlerts);
+
+    expect(
+      find.bySemanticsLabel(
+        RegExp(
+          'Heart rate above 110 bpm.*Test band, Saturday, October 24, 2026 at 11:50',
+          dotAll: true,
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel(RegExp('min ago')), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets("times use the 24-hour clock, as in the mockup, whatever the phone's setting", (
+    tester,
+  ) async {
+    tester.platformDispatcher.alwaysUse24HourFormatTestValue = false;
+    addTearDown(tester.platformDispatcher.clearAlwaysUse24HourTestValue);
+    final day = alertsNow.subtract(const Duration(days: 1, hours: 5));
+    await pumpAlerts(tester, items: [alertItem(AlertKind.offline, at: day)]);
+
+    expect(find.text('Test band · Yesterday, 07:00'), findsOneWidget);
+  });
+
   testWidgets('unread alerts are announced as unread; read ones are not', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpAlerts(tester, items: mixedAlerts);
@@ -118,13 +146,13 @@ void main() {
     await pumpAlerts(tester, items: many);
 
     await tester.scrollUntilVisible(
-      find.text('Test band · Wed 21 Oct, 06:00'),
+      find.text('Test band · Tue 20 Oct, 21:00'),
       300,
       // The first is the list; the filter row scrolls sideways inside it.
       scrollable: find.byType(Scrollable).first,
     );
 
-    expect(find.text('Test band · Wed 21 Oct, 06:00'), findsOneWidget);
+    expect(find.text('Test band · Tue 20 Oct, 21:00'), findsOneWidget);
   });
 
   testWidgets('shows the six filters with All picked', (tester) async {

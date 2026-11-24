@@ -4,6 +4,8 @@ import 'package:generic_flutter_app/domain/services/live_readings.dart';
 
 /// Live readings the test sends by hand to everyone watching; counts who listens.
 class ScriptedLiveReadings implements LiveReadings {
+  /// What [lastHeartbeatAt] gives, by device id.
+  final heartbeats = <int, DateTime>{};
   final _controllers = <StreamController<LiveUpdate>>[];
   int listens = 0;
   int cancels = 0;
@@ -24,6 +26,9 @@ class ScriptedLiveReadings implements LiveReadings {
 
   @override
   Stream<(int, LiveUpdate)> watchAll() => all.stream;
+
+  @override
+  DateTime? lastHeartbeatAt(int deviceId) => heartbeats[deviceId];
 
   @override
   Stream<ActiveLink?> watchActive() => Stream.value(null);

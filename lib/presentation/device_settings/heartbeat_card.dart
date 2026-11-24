@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../application/dashboard_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../domain/models/device_details.dart';
 import '../../domain/models/heartbeat_settings.dart';
@@ -21,7 +22,9 @@ class HeartbeatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final last = device.lastHeartbeatAt;
+    // Live and ticking every second, like the dashboard's.
+    final last = ref.watch(lastHeartbeatProvider(device.id, device.lastHeartbeatAt));
+    final now = ref.watch(dashboardNowProvider).value ?? this.now;
     final link = ref.watch(activeLinkProvider).value;
     final status = link == null || link.deviceId != device.id
         ? context.l10n.deviceSettingsNotConnected

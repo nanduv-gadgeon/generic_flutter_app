@@ -109,6 +109,10 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
     final showBanner =
         !bluetoothOff && (linkState == LinkState.offline || _reconnect != _Reconnect.idle);
     final now = ref.watch(dashboardNowProvider).value ?? ref.watch(clockProvider)();
+    // The monitor's time moves with every message; the offline update alone would lag.
+    final heardAt = ref.watch(
+      lastHeartbeatProvider(deviceId, live.lastHeartbeatAt ?? device.lastHeartbeatAt),
+    );
     final summary = ref.watch(eventSummaryProvider(deviceId));
     final stored = ref.watch(latestReadingsProvider(deviceId)).value ?? const {};
     final values = dashboardValues(profile, live, stored, summary);
@@ -159,7 +163,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
             if (showBanner) ...[
               const SizedBox(height: 14),
               OfflineBanner(
-                lastHeartbeatAt: live.lastHeartbeatAt ?? device.lastHeartbeatAt,
+                lastHeartbeatAt: heardAt,
                 now: now,
                 trying: _reconnect == _Reconnect.trying,
                 failed: _reconnect == _Reconnect.failed,
@@ -180,7 +184,7 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
                 status: live.status,
                 offline: live.online || live.status == LiveStatus.disconnected
                     ? null
-                    : context.l10n.deviceOffline(switch (live.lastHeartbeatAt) {
+                    : context.l10n.deviceOffline(switch (heardAt) {
                         final at? => now.difference(at),
                         null => null,
                       }),
@@ -256,7 +260,9 @@ class _LiveDeviceScreenState extends ConsumerState<LiveDeviceScreen> {
       link: linkState,
       bluetoothOff: bluetoothOff,
       battery: data.values[batteryKey] ?? device.batteryPercent?.toDouble(),
-      lastHeartbeatAt: live.lastHeartbeatAt ?? device.lastHeartbeatAt,
+      lastHeartbeatAt: ref.watch(
+        lastHeartbeatProvider(deviceId, live.lastHeartbeatAt ?? device.lastHeartbeatAt),
+      ),
       summary: summary,
       lastReadingAt: today?.lastOrNull?.at,
       channelsLive: profile.readings.where((r) => data.values.containsKey(r.key)).length,

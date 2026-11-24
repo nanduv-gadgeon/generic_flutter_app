@@ -57,6 +57,12 @@ class LocalAlertEngine implements AlertEngine {
     for (final id in _limits?.keys ?? const <int>[]) {
       if (!limits.containsKey(id)) _tracker.forget(id); // Removed.
     }
+    // A limit turned off ends its open alert, so turning it back on alerts again at once.
+    for (final MapEntry(key: id, value: rules) in limits.entries) {
+      for (final rule in rules) {
+        if (!rule.enabled) _tracker.close(id, rule.key);
+      }
+    }
     _limits = limits;
   }
 

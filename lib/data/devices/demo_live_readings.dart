@@ -102,6 +102,10 @@ class DemoLiveReadings implements LiveConnections {
   }
 
   @override
+  DateTime? lastHeartbeatAt(int deviceId) =>
+      _sessions[deviceId]?._heartbeat?.lastAt ?? _inner.lastHeartbeatAt(deviceId);
+
+  @override
   Future<void> retry(int deviceId) async {
     if (!_sessions.containsKey(deviceId)) await _inner.retry(deviceId);
   }

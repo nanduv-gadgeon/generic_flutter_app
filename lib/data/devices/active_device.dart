@@ -80,6 +80,10 @@ class ActiveDevice implements LiveConnections {
   int? get activeId => _active?.deviceId;
 
   @override
+  DateTime? lastHeartbeatAt(int deviceId) =>
+      _active?.deviceId == deviceId ? _active?.monitor?.lastAt : null;
+
+  @override
   Future<void> start(int userId) async {
     await _devices?.cancel();
     _devices = _db.devicesDao.watchForUser(userId).listen((devices) {

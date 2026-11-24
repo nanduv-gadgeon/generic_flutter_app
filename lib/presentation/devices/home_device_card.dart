@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/bluetooth_provider.dart';
+import '../../application/dashboard_provider.dart';
 import '../../application/device_profiles_provider.dart';
 import '../../application/devices_provider.dart';
 import '../../core/theme/app_tokens.dart';
@@ -39,7 +40,8 @@ class HomeDeviceCard extends ConsumerWidget {
         : null;
     final latest = ref.watch(latestReadingsProvider(device.id)).value ?? const {};
     final link = ref.watch(activeLinkProvider).value;
-    final now = ref.watch(clockProvider)();
+    // Ticks every second, so "Seen" counts up like the dashboard's.
+    final now = ref.watch(dashboardNowProvider).value ?? ref.watch(clockProvider)();
 
     final quick = _quickReading(context, profile, latest);
     final off = ref.watch(disconnectedDevicesProvider).value ?? const <int>{};
@@ -61,7 +63,7 @@ class HomeDeviceCard extends ConsumerWidget {
       LinkState.disconnected => (tokens?.muted, tokens?.chipBg),
     };
     final battery = device.batteryPercent;
-    final seenAt = device.lastHeartbeatAt;
+    final seenAt = ref.watch(lastHeartbeatProvider(device.id, device.lastHeartbeatAt));
     final seen = seenAt == null
         ? context.l10n.devicesNotSeen
         : context.l10n.devicesSeen(now.difference(seenAt));

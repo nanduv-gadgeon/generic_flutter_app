@@ -9,9 +9,9 @@ import '../strings/alert_strings.dart';
 import '../widgets/device_icons.dart';
 
 /// One alert of the Alerts list (mockup 34): a round icon, the title, "device · time", a source
-/// chip and a dot while it is unread. Read as one item; "Unread" is spoken, so the dot's colour is
-/// never the only signal. With [onDelete], screen readers get a "Delete alert" action, as the
-/// list's swipe left.
+/// chip and a dot while it is unread. Read as one item, with the alert's exact time in place of
+/// "5 min ago"; "Unread" is spoken, so the dot's colour is never the only signal. With
+/// [onDelete], screen readers get a "Delete alert" action, as the list's swipe left.
 class AlertCard extends StatelessWidget {
   const AlertCard({super.key, required this.item, required this.now, this.onDelete});
 
@@ -31,6 +31,7 @@ class AlertCard extends StatelessWidget {
     final unread = !alert.read;
     final tone = _tone(alert.kind, unread: unread, tokens: tokens);
     final source = l10n.alertSource(alert.kind);
+    final time = l10n.alertTime(alert.at, now);
 
     return MergeSemantics(
       child: Semantics(
@@ -68,9 +69,14 @@ class AlertCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      l10n.alertCardDetail(item.deviceName, l10n.alertTime(alert.at, now)),
-                      style: TextStyle(fontSize: 13, color: tokens.muted),
+                    Semantics(
+                      label: l10n.alertCardLabel(item.deviceName, time.full),
+                      child: ExcludeSemantics(
+                        child: Text(
+                          l10n.alertCardDetail(item.deviceName, time.short),
+                          style: TextStyle(fontSize: 13, color: tokens.muted),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     _SourceChip(text: source, tokens: tokens),

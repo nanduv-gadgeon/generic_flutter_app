@@ -7,6 +7,7 @@ import '../domain/dashboard/event_summary.dart';
 import '../domain/decoder/decoded_packet.dart';
 import '../domain/history/local_day.dart';
 import '../domain/models/device_profile.dart';
+import 'clock_ticks.dart';
 import 'devices_provider.dart';
 import 'live_device_provider.dart';
 
@@ -20,10 +21,19 @@ const trendWindow = Duration(minutes: 30);
 
 /// The time now, once a second, so "updated 2 s ago" and today's run time keep up.
 @riverpod
-Stream<DateTime> dashboardNow(Ref ref) async* {
-  final clock = ref.watch(clockProvider);
-  yield clock();
-  yield* Stream.periodic(const Duration(seconds: 1), (_) => clock());
+Stream<DateTime> dashboardNow(Ref ref) =>
+    clockTicks(ref, ref.watch(clockProvider), const Duration(seconds: 1));
+
+/// When [deviceId] was last heard from: the live time while it is the connected device, otherwise
+/// [saved] (the device row's, stored at most every 10 s), whichever is newer. Read again every
+/// second with [dashboardNowProvider], so Home, Device settings and the dashboard all show the
+/// same, current "ago". Connects nothing.
+@riverpod
+DateTime? lastHeartbeat(Ref ref, int deviceId, DateTime? saved) {
+  ref.watch(dashboardNowProvider);
+  final live = ref.watch(liveReadingsProvider).lastHeartbeatAt(deviceId);
+  if (live == null || saved == null) return live ?? saved;
+  return live.isAfter(saved) ? live : saved;
 }
 
 /// The device's [key] readings from the last 30 minutes, oldest first.

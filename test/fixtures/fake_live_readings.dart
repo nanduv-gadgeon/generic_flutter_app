@@ -2,6 +2,9 @@ import 'package:generic_flutter_app/domain/services/live_readings.dart';
 
 /// Live readings that connect nothing; records who logged in and out.
 class FakeLiveReadings implements LiveReadings {
+  /// What [lastHeartbeatAt] gives, by device id.
+  final heartbeats = <int, DateTime>{};
+
   final started = <int>[];
   int stops = 0;
 
@@ -10,6 +13,9 @@ class FakeLiveReadings implements LiveReadings {
 
   @override
   Stream<(int, LiveUpdate)> watchAll() => const Stream.empty();
+
+  @override
+  DateTime? lastHeartbeatAt(int deviceId) => heartbeats[deviceId];
 
   @override
   Stream<ActiveLink?> watchActive() => Stream.value(null);

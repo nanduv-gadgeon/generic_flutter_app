@@ -34,6 +34,11 @@ abstract interface class LiveConnections {
   /// Starts with the current one.
   Stream<ActiveLink?> watchActive();
 
+  /// When [deviceId] was last heard from, while it is the connected device; null otherwise. It
+  /// moves on with every message the device sends ([LiveHeartbeat] only says when the device goes
+  /// offline or comes back), with no update: screens read it on a clock. Connects nothing.
+  DateTime? lastHeartbeatAt(int deviceId);
+
   /// [userId] logged in: a device they remove is disconnected. Connects nothing.
   Future<void> start(int userId);
 

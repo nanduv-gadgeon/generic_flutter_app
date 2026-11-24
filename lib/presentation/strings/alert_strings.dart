@@ -68,6 +68,23 @@ extension AlertStrings on AppLocalizations {
     AlertCategory.health => alertFilterHealth,
   };
 
+  /// After "Mark all read": "All alerts marked as read", or "Readings alerts marked as read" under
+  /// a filter.
+  String alertsMarkedRead(AlertCategory? filter) =>
+      filter == null ? alertsMarkedAllRead : alertsMarkedFilterRead(alertFilter(filter));
+
+  /// The "Clear all" question and its text, for "All" or one filter.
+  ({String title, String body}) alertsClearQuestion(AlertCategory? filter) => filter == null
+      ? (title: alertsClearAllTitle, body: alertsClearAllBody)
+      : (
+          title: alertsClearFilterTitle(alertFilter(filter)),
+          body: alertsClearFilterBody(alertFilter(filter)),
+        );
+
+  /// After "Clear all": "All alerts cleared", or "Readings alerts cleared" under a filter.
+  String alertsClearedText(AlertCategory? filter) =>
+      filter == null ? alertsCleared : alertsFilterCleared(alertFilter(filter));
+
   /// When an alert was raised, as of [now], on the phone's clock, as in mockup 34. [AlertTime.short]
   /// is shown: "Just now" (under a minute), "10 min ago" (under an hour), "Today, 07:10",
   /// "Yesterday, 18:40", "Fri 23 Oct, 13:05", and "Fri 23 Oct 2025, 13:05" for another year.

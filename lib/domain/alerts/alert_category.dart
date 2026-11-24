@@ -24,3 +24,11 @@ AlertCategory categoryOf(AlertKind kind) => switch (kind) {
   AlertKind.above || AlertKind.below => AlertCategory.reading,
   AlertKind.batteryLow || AlertKind.offline => AlertCategory.health,
 };
+
+/// The alert kinds listed under [category]; every kind when it is null ("All").
+Set<AlertKind>? kindsOf(AlertCategory? category) => category == null
+    ? null
+    : {
+        for (final kind in AlertKind.values)
+          if (categoryOf(kind) == category) kind,
+      };

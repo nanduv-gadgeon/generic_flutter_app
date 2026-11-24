@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/alerts/alert.dart';
+import 'package:generic_flutter_app/domain/alerts/alert_category.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'alerts_test_app.dart';
@@ -155,16 +156,39 @@ void main() {
     expect(find.text('Test band · Tue 20 Oct, 21:00'), findsOneWidget);
   });
 
-  testWidgets('shows the six filters with All picked', (tester) async {
+  testWidgets('shows All and the offered filters, with All picked', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpAlerts(tester, items: mixedAlerts);
 
     for (final label in _filters) {
-      expect(find.text(label), findsOneWidget, reason: label);
+      final offered = ['All', 'Readings', 'Device health'].contains(label);
+      expect(find.text(label), offered ? findsOneWidget : findsNothing, reason: label);
     }
     expect(tester.getSemantics(find.text('All')), isSemantics(isSelected: true, isButton: true));
     expect(tester.getSemantics(find.text('Readings')), isSemantics(isSelected: false));
     semantics.dispose();
+  });
+
+  testWidgets('every filter shows when every category is offered, in order', (tester) async {
+    await pumpAlerts(tester, items: mixedAlerts, filters: AlertCategory.values);
+
+    final chips = [for (final label in _filters) tester.getTopLeft(find.text(label)).dx];
+    expect(chips, orderedEquals([...chips]..sort()));
+  });
+
+  testWidgets('a picked filter no longer offered goes back to All', (tester) async {
+    await pumpAlerts(tester, items: mixedAlerts);
+    await tester.tap(find.text('Readings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Battery low (12%)'), findsNothing);
+
+    await pumpAlerts(tester, items: mixedAlerts, filters: const [AlertCategory.health]);
+
+    expect(find.text('Readings'), findsNothing);
+    expect(tester.getSemantics(find.text('All')), isSemantics(isSelected: true, isButton: true));
+    for (final title in _mixedTitles) {
+      expect(find.text(title), findsOneWidget);
+    }
   });
 
   // filter -> titles shown
@@ -195,7 +219,7 @@ void main() {
 
   for (final filter in ['Device events', 'Episodes', 'Channels']) {
     testWidgets('$filter, with no such alerts, says there are none of this type', (tester) async {
-      await pumpAlerts(tester, items: mixedAlerts);
+      await pumpAlerts(tester, items: mixedAlerts, filters: AlertCategory.values);
 
       await tester.ensureVisible(find.text(filter));
       await tester.tap(find.text(filter));
@@ -207,21 +231,43 @@ void main() {
     });
   }
 
-  testWidgets('Mark all read under a filter still marks every alert', (tester) async {
-    final calls = await pumpAlerts(
-      tester,
-      items: [
-        alertItem(AlertKind.above, at: alertsNow, reading: hrReading, read: true),
-        alertItem(AlertKind.offline, at: alertsNow),
-      ],
-    );
-    await tester.tap(find.text('Readings'));
-    await tester.pumpAndSettle();
+  group('Mark all read under a filter', () {
+    // A read reading alert and an unread Offline one.
+    final items = [
+      alertItem(AlertKind.above, at: alertsNow, reading: hrReading, read: true),
+      alertItem(AlertKind.offline, at: alertsNow),
+    ];
+    Finder markAllRead() => find.widgetWithText(TextButton, 'Mark all read');
 
-    await tester.tap(find.text('Mark all read'));
-    await tester.pumpAndSettle();
+    testWidgets('is off when nothing under it is unread', (tester) async {
+      await pumpAlerts(tester, items: items);
+      await tester.tap(find.text('Readings'));
+      await tester.pumpAndSettle();
 
-    expect(calls.markAllRead, 1, reason: 'an unread alert under another filter keeps it on');
+      expect(tester.widget<TextButton>(markAllRead()).onPressed, isNull);
+    });
+
+    testWidgets('marks only that filter and says so', (tester) async {
+      final calls = await pumpAlerts(tester, items: items);
+      await tester.tap(find.text('Device health'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(markAllRead());
+      await tester.pumpAndSettle();
+
+      expect(calls.markedRead, [AlertCategory.health]);
+      expect(find.text('Device health alerts marked as read'), findsOneWidget);
+    });
+
+    testWidgets('under All marks every alert', (tester) async {
+      final calls = await pumpAlerts(tester, items: items);
+
+      await tester.tap(markAllRead());
+      await tester.pumpAndSettle();
+
+      expect(calls.markedRead, [null]);
+      expect(find.text('All alerts marked as read'), findsOneWidget);
+    });
   });
 
   // (brightness, size, text scale) a user may have

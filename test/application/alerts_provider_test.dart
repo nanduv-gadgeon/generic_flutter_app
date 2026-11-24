@@ -11,6 +11,7 @@ import 'package:generic_flutter_app/core/config/app_config.dart';
 import 'package:generic_flutter_app/core/config/device_profile_registry.dart';
 import 'package:generic_flutter_app/core/di/alerts.dart';
 import 'package:generic_flutter_app/core/di/services.dart';
+import 'package:generic_flutter_app/domain/alerts/alert_category.dart';
 import 'package:generic_flutter_app/domain/services/alert_repository.dart';
 import 'package:generic_flutter_app/domain/services/device_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -49,7 +50,7 @@ void main() {
     devices = MockDeviceService();
     alerts = MockAlertRepository();
     when(() => alerts.watchUnreadCount(any())).thenAnswer((_) => Stream.value(0));
-    when(() => alerts.markAllRead(any())).thenAnswer((_) async {});
+    when(() => alerts.markAllRead(any(), kinds: any(named: 'kinds'))).thenAnswer((_) async {});
     container = ProviderContainer(
       overrides: [
         authServiceProvider.overrideWithValue(auth),
@@ -147,25 +148,95 @@ void main() {
   test('Mark all read marks the logged-in user\'s alerts', () async {
     await logIn();
 
-    await container.read(markAllAlertsReadProvider)();
+    await container.read(markAllAlertsReadProvider)(null);
 
     verify(() => alerts.markAllRead(fakeUser.id)).called(1);
+  });
+
+  test('Mark all read under a filter marks only its kinds', () async {
+    await logIn();
+
+    await container.read(markAllAlertsReadProvider)(AlertCategory.health);
+
+    verify(() => alerts.markAllRead(fakeUser.id, kinds: {AlertKind.batteryLow, AlertKind.offline}))
+        .called(1);
+  });
+
+  test('Clear all under a filter deletes only its kinds', () async {
+    when(() => alerts.deleteAll(any(), kinds: any(named: 'kinds'))).thenAnswer((_) async {});
+    await logIn();
+
+    await container.read(clearAlertsProvider)(AlertCategory.reading);
+
+    verify(() => alerts.deleteAll(fakeUser.id, kinds: {AlertKind.above, AlertKind.below}))
+        .called(1);
+  });
+
+  group('alertFilters', () {
+    /// The filters while [stored] (alerts of [_band]) are on the phone.
+    Future<List<AlertCategory>> filtersWith(Stream<List<RaisedAlert>> stored) async {
+      await logIn();
+      when(() => devices.watchDevices(fakeUser.id)).thenAnswer((_) => Stream.value([_band]));
+      when(() => alerts.watchAll(fakeUser.id)).thenAnswer((_) => stored);
+      final sub = container.listen(alertFiltersProvider, (_, _) {});
+      addTearDown(sub.close);
+      await listNow();
+      return container.read(alertFiltersProvider);
+    }
+
+    // stored alert kinds -> filters shown besides All, in order
+    final cases = <List<AlertKind>, List<AlertCategory>>{
+      []: [],
+      [AlertKind.offline]: [AlertCategory.health],
+      [AlertKind.batteryLow, AlertKind.offline]: [AlertCategory.health],
+      [AlertKind.below]: [AlertCategory.reading],
+      [AlertKind.offline, AlertKind.above]: [AlertCategory.reading, AlertCategory.health],
+    };
+    for (final MapEntry(key: kinds, value: filters) in cases.entries) {
+      test('${kinds.map((k) => k.name)} -> ${filters.map((c) => c.name)}', () async {
+        final stored = [for (final kind in kinds) _alert(1, kind, key: 'current')];
+        expect(await filtersWith(Stream.value(stored)), filters);
+      });
+    }
+
+    test('a filter goes when its last alert is deleted', () async {
+      final stored = StreamController<List<RaisedAlert>>();
+      addTearDown(stored.close);
+      final first = filtersWith(stored.stream);
+      stored.add([_alert(1, AlertKind.above, key: 'current'), _alert(1, AlertKind.offline)]);
+      expect(await first, [AlertCategory.reading, AlertCategory.health]);
+
+      stored.add([_alert(1, AlertKind.offline)]);
+      await pumpEventQueue();
+
+      expect(container.read(alertFiltersProvider), [AlertCategory.health]);
+    });
+
+    test('nobody logged in: no filters', () async {
+      when(() => auth.currentUser()).thenAnswer((_) async => null);
+      await container.read(authControllerProvider.future);
+      final sub = container.listen(alertFiltersProvider, (_, _) {});
+      addTearDown(sub.close);
+      await listNow();
+
+      expect(container.read(alertFiltersProvider), isEmpty);
+    });
   });
 
   test('Mark all read does nothing when nobody is logged in', () async {
     when(() => auth.currentUser()).thenAnswer((_) async => null);
     await container.read(authControllerProvider.future);
 
-    await container.read(markAllAlertsReadProvider)();
+    await container.read(markAllAlertsReadProvider)(null);
 
-    verifyNever(() => alerts.markAllRead(any()));
+    verifyNever(() => alerts.markAllRead(any(), kinds: any(named: 'kinds')));
   });
 
   group('deleting', () {
     final alert = _alert(1, AlertKind.offline);
     setUp(() {
       when(() => alerts.delete(any(), any())).thenAnswer((_) async {});
-      when(() => alerts.deleteAll(any())).thenAnswer((_) async {});
+      when(() => alerts.deleteAll(any(), kinds: any(named: 'kinds'))).thenAnswer((_) async {});
       when(() => alerts.add(alert)).thenAnswer((_) async => 9);
     });
 
@@ -177,7 +248,7 @@ void main() {
       ),
       (
         'all alerts',
-        (c) => c.read(clearAlertsProvider)(),
+        (c) => c.read(clearAlertsProvider)(null),
         () => verify(() => alerts.deleteAll(fakeUser.id)).called(1),
       ),
       (
@@ -199,7 +270,7 @@ void main() {
         await container.read(authControllerProvider.future);
         await run(container);
         verifyNever(() => alerts.delete(any(), any()));
-        verifyNever(() => alerts.deleteAll(any()));
+        verifyNever(() => alerts.deleteAll(any(), kinds: any(named: 'kinds')));
         verifyNever(() => alerts.add(alert));
       });
     }

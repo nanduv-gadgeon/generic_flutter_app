@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_tokens.dart';
+import '../../domain/alerts/alert_category.dart';
 import '../../l10n/l10n.dart';
+import '../strings/alert_strings.dart';
 
-/// "Alerts" with "Mark all read" (disabled when nothing is unread) and "Clear all" (disabled with
-/// no alerts). With large text on a small phone the buttons move under the title.
+/// "Alerts" with "Mark all read" (disabled when nothing under the filter is unread) and "Clear
+/// all" (disabled with no alerts under the filter). With large text on a small phone the buttons
+/// move under the title.
 class AlertsHeader extends StatelessWidget {
   const AlertsHeader({super.key, required this.onMarkAllRead, required this.onClearAll});
 
@@ -72,16 +75,18 @@ class _HeaderButton extends StatelessWidget {
   }
 }
 
-/// Asks "Clear all alerts?" before deleting them. True when the user confirms.
-Future<bool> confirmClearAlerts(BuildContext context) async {
+/// Asks "Clear all alerts?" (or "Clear all Readings alerts?" under [filter]) before deleting them.
+/// True when the user confirms.
+Future<bool> confirmClearAlerts(BuildContext context, AlertCategory? filter) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) {
       final l10n = context.l10n;
       final tokens = Theme.of(context).extension<AppTokens>();
+      final question = l10n.alertsClearQuestion(filter);
       return AlertDialog(
-        title: Text(l10n.alertsClearAllTitle),
-        content: Text(l10n.alertsClearAllBody),
+        title: Text(question.title),
+        content: Text(question.body),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

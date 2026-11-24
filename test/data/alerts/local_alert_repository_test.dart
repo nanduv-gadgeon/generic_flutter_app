@@ -87,6 +87,48 @@ void main() {
     expect(await repo.watchAll(otherUserId).first, hasLength(1));
   });
 
+  group('only some kinds (an Alerts filter)', () {
+    late RaisedAlert offline;
+    setUp(() {
+      offline = RaisedAlert(deviceId: band, kind: AlertKind.offline, at: t0);
+    });
+
+    test('mark all read leaves other kinds unread', () async {
+      await repo.add(hr(band, 0));
+      await repo.add(offline);
+      await repo.add(RaisedAlert(deviceId: othersBand, kind: AlertKind.offline, at: t0));
+
+      await repo.markAllRead(userId, kinds: {AlertKind.batteryLow, AlertKind.offline});
+
+      final alerts = await repo.watchAll(userId).first;
+      expect(
+        {for (final a in alerts) a.kind: a.read},
+        {AlertKind.above: false, AlertKind.offline: true},
+      );
+      expect(await repo.watchUnreadCount(otherUserId).first, 1);
+    });
+
+    test('delete all keeps other kinds and other users', () async {
+      await repo.add(hr(band, 0));
+      await repo.add(offline);
+      await repo.add(hr(othersBand, 1));
+
+      await repo.deleteAll(userId, kinds: {AlertKind.above, AlertKind.below});
+
+      expect((await repo.watchAll(userId).first).single.kind, AlertKind.offline);
+      expect(await repo.watchAll(otherUserId).first, hasLength(1));
+    });
+
+    test('an empty set touches nothing', () async {
+      await repo.add(hr(band, 0));
+
+      await repo.markAllRead(userId, kinds: {});
+      await repo.deleteAll(userId, kinds: {});
+
+      expect((await repo.watchAll(userId).first).single.read, isFalse);
+    });
+  });
+
   test('deletes alerts older than a time', () async {
     await repo.add(hr(band, 0));
     await repo.add(hr(band, 10));

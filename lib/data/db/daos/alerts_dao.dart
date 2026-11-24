@@ -32,10 +32,14 @@ class AlertsDao extends DatabaseAccessor<AppDatabase> with _$AlertsDaoMixin {
     return query.watchSingle().map((row) => row.read(count) ?? 0);
   }
 
-  /// Marks all of [userId]'s alerts read.
-  Future<void> markAllRead(int userId) =>
-      (update(raisedAlerts)
-            ..where((a) => a.isRead.equals(false) & a.deviceId.isInQuery(_deviceIdsOf(userId))))
+  /// Marks all of [userId]'s alerts read; with [kinds], only alerts of those kinds.
+  Future<void> markAllRead(int userId, {Set<String>? kinds}) =>
+      (update(raisedAlerts)..where(
+            (a) =>
+                a.isRead.equals(false) &
+                a.deviceId.isInQuery(_deviceIdsOf(userId)) &
+                _ofKinds(a, kinds),
+          ))
           .write(const RaisedAlertsCompanion(isRead: Value(true)));
 
   /// Deletes [userId]'s alert [alertId]; nothing if it is not theirs.
@@ -43,9 +47,14 @@ class AlertsDao extends DatabaseAccessor<AppDatabase> with _$AlertsDaoMixin {
     raisedAlerts,
   )..where((a) => a.id.equals(alertId) & a.deviceId.isInQuery(_deviceIdsOf(userId)))).go();
 
-  /// Deletes all of [userId]'s alerts.
-  Future<void> deleteAllFor(int userId) =>
-      (delete(raisedAlerts)..where((a) => a.deviceId.isInQuery(_deviceIdsOf(userId)))).go();
+  /// Deletes all of [userId]'s alerts; with [kinds], only alerts of those kinds.
+  Future<void> deleteAllFor(int userId, {Set<String>? kinds}) => (delete(
+    raisedAlerts,
+  )..where((a) => a.deviceId.isInQuery(_deviceIdsOf(userId)) & _ofKinds(a, kinds))).go();
+
+  /// Alerts of [kinds]; every alert when null.
+  static Expression<bool> _ofKinds($RaisedAlertsTable a, Set<String>? kinds) =>
+      kinds == null ? const Constant(true) : a.kind.isIn(kinds);
 
   /// The ids of [userId]'s devices.
   JoinedSelectStatement<HasResultSet, dynamic> _deviceIdsOf(int userId) => selectOnly(devices)

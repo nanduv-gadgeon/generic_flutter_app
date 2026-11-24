@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generic_flutter_app/domain/alerts/alert.dart';
 import 'package:generic_flutter_app/domain/alerts/alert_category.dart';
 
-/// Which filter of the Alerts list each kind of alert is under.
+/// Which filter of the Alerts list each kind of alert is under, and the kinds each filter covers.
 void main() {
   // kind -> category
   final cases = {
@@ -18,4 +18,19 @@ void main() {
   test('every kind has a category', () {
     expect(AlertKind.values.map(categoryOf), hasLength(AlertKind.values.length));
   });
+
+  // filter -> kinds it covers (null: every kind)
+  final kinds = <AlertCategory?, Set<AlertKind>?>{
+    null: null,
+    AlertCategory.reading: {AlertKind.above, AlertKind.below},
+    AlertCategory.health: {AlertKind.batteryLow, AlertKind.offline},
+    AlertCategory.event: {},
+    AlertCategory.episode: {},
+    AlertCategory.channel: {},
+  };
+  for (final MapEntry(key: category, value: covered) in kinds.entries) {
+    test('kindsOf ${category?.name ?? 'all'} -> $covered', () {
+      expect(kindsOf(category), covered);
+    });
+  }
 }

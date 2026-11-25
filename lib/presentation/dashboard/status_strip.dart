@@ -4,6 +4,7 @@ import '../../domain/dashboard/event_summary.dart';
 import '../../domain/devices/link_state.dart';
 import '../../domain/models/device_profile.dart';
 import '../../domain/models/user_device.dart';
+import '../widgets/text_fit.dart';
 import 'dashboard_format.dart';
 
 /// One cell of the status strip.
@@ -11,10 +12,26 @@ typedef StripCellData = ({IconData icon, String label, String value, Color? colo
 
 /// The three cells under the header (mockup screens 13–21): Link, Battery and a third the
 /// profile's `dashboard.strip` chooses. Each says its state in words; colour only adds to it.
+///
+/// Side by side as in the mockup while every label and value fits its column on one line; with
+/// large text or a narrow screen the cells stack, one full-width row each, so no word is broken
+/// or cut off.
 class StatusStrip extends StatelessWidget {
   const StatusStrip({super.key, required this.cells});
 
   final List<StripCellData> cells;
+
+  /// The space a column's padding, icon and gap take from its text.
+  static const _cellPadding = 12.0;
+  static const _iconSize = 14.0;
+  static const _iconGap = 5.0;
+
+  static const _labelStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 0.4,
+  );
+  static const _valueStyle = TextStyle(fontSize: 14, fontWeight: FontWeight.w700);
 
   @override
   Widget build(BuildContext context) {
@@ -25,21 +42,91 @@ class StatusStrip extends StatelessWidget {
         border: Border.all(color: tokens.border),
         borderRadius: BorderRadius.circular(tokens.radius),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final (i, cell) in cells.indexed) ...[
-              if (i > 0) VerticalDivider(width: 1, thickness: 1, color: tokens.border),
-              Expanded(child: _Cell(cell)),
-            ],
-          ],
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Borders and dividers aside, each column gets an equal share.
+          final column = (constraints.maxWidth - 2 - (cells.length - 1)) / cells.length;
+          final text = column - 2 * _cellPadding;
+          final fits =
+              fitsOnOneLine(
+                context,
+                [for (final c in cells) c.label.toUpperCase()],
+                _labelStyle,
+                text - _iconSize - _iconGap,
+              ) &&
+              fitsOnOneLine(context, [for (final c in cells) c.value], _valueStyle, text);
+          if (!fits) {
+            return Column(
+              // Full-width rows, so the label sits on the left and the value on the right.
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, cell) in cells.indexed) ...[
+                  if (i > 0) Divider(height: 1, thickness: 1, color: tokens.border),
+                  _Row(cell),
+                ],
+              ],
+            );
+          }
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, cell) in cells.indexed) ...[
+                  if (i > 0) VerticalDivider(width: 1, thickness: 1, color: tokens.border),
+                  Expanded(child: _Cell(cell)),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
+/// A cell's spoken text: its label and value, read as one.
+class _Spoken extends StatelessWidget {
+  const _Spoken(this.cell, {required this.child});
+
+  final StripCellData cell;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    liveRegion: true,
+    label: context.l10n.stripCell(cell.label, cell.value),
+    excludeSemantics: true,
+    child: child,
+  );
+}
+
+/// The cell's icon and its label in capitals.
+class _Label extends StatelessWidget {
+  const _Label(this.cell);
+
+  final StripCellData cell;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = context.tokens.muted;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(cell.icon, size: StatusStrip._iconSize, color: muted),
+        const SizedBox(width: StatusStrip._iconGap),
+        Flexible(
+          child: Text(
+            cell.label.toUpperCase(),
+            style: StatusStrip._labelStyle.copyWith(color: muted),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One column of the side-by-side strip: label over value.
 class _Cell extends StatelessWidget {
   const _Cell(this.cell);
 
@@ -47,41 +134,49 @@ class _Cell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = context.tokens.muted;
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      label: context.l10n.stripCell(cell.label, cell.value),
-      excludeSemantics: true,
+    return _Spoken(
+      cell,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(StatusStrip._cellPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(cell.icon, size: 14, color: muted),
-                const SizedBox(width: 5),
-                Expanded(
-                  child: Text(
-                    cell.label.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                      color: muted,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _Label(cell),
             const SizedBox(height: 5),
             Text(
               cell.value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cell.color),
+              style: StatusStrip._valueStyle.copyWith(color: cell.color),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One row of the stacked strip: label on the left, value on the right, or under it when they do
+/// not fit side by side.
+class _Row extends StatelessWidget {
+  const _Row(this.cell);
+
+  final StripCellData cell;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Spoken(
+      cell,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: StatusStrip._cellPadding, vertical: 10),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 4,
+          children: [
+            _Label(cell),
+            Text(cell.value, style: StatusStrip._valueStyle.copyWith(color: cell.color)),
           ],
         ),
       ),

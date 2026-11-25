@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/dashboard/reading_status.dart';
 import '../../../domain/models/reading.dart';
+import '../../widgets/fit_grid.dart';
+import '../../widgets/text_fit.dart';
 import '../dashboard_format.dart';
 import 'parts/dash_card.dart';
 import 'parts/trace_chart.dart';
@@ -50,19 +52,28 @@ class WaveformView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          // The status goes under the title when they do not fit side by side.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: tokens.danger, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(color: tokens.danger, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
               if (statusText != null)
                 Text(
@@ -92,30 +103,29 @@ class WaveformView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Spread under the trace; with large text the labels wrap onto more lines.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
             children: [
               Text(l10n.axisSecondsAgo(seconds), style: small),
               if (scaleLabel case final label?) Text(label, style: small),
               Text(l10n.axisNow, style: small),
             ],
           ),
-          if (stats.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final (i, stat) in stats.indexed) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  Expanded(child: _Stat(stat)),
-                ],
-                for (var i = stats.length; i < 3; i++) ...[
-                  const SizedBox(width: 8),
-                  const Expanded(child: SizedBox()),
-                ],
-              ],
+          if (stats.isNotEmpty)
+            FitGrid(
+              columns: 3,
+              gap: 8,
+              top: 10,
+              fits: (context, width) => stats.every((stat) {
+                final (reading, _) = stat;
+                final value = _text(context, stat).$1 ?? '';
+                return fitsOnOneLine(context, [reading.label], _Stat.labelStyle, width) &&
+                    fitsOnOneLine(context, [value], _Stat.valueStyle, width);
+              }),
+              children: [for (final stat in stats) _Stat(stat)],
             ),
-          ],
         ],
       ),
     );
@@ -140,6 +150,9 @@ class _Stat extends StatelessWidget {
 
   final (Reading, double?) stat;
 
+  static const labelStyle = TextStyle(fontSize: 11, fontWeight: FontWeight.w600);
+  static const valueStyle = TextStyle(fontSize: 17, fontWeight: FontWeight.w800);
+
   @override
   Widget build(BuildContext context) {
     final (reading, _) = stat;
@@ -151,19 +164,9 @@ class _Stat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            reading.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: context.tokens.muted,
-            ),
-          ),
+          Text(reading.label, style: labelStyle.copyWith(color: context.tokens.muted)),
           const SizedBox(height: 2),
-          Text(
-            text ?? '',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color),
-          ),
+          Text(text ?? '', style: valueStyle.copyWith(color: color)),
         ],
       ),
     );

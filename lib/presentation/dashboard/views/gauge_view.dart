@@ -4,6 +4,7 @@ import '../../../domain/dashboard/reading_status.dart';
 import '../../../domain/decoder/decoded_packet.dart';
 import '../../../domain/models/reading.dart';
 import '../../widgets/device_icons.dart';
+import '../../widgets/text_fit.dart';
 import '../dashboard_format.dart';
 import 'parts/arc_gauge.dart';
 import 'parts/dash_card.dart';
@@ -62,9 +63,14 @@ class GaugeView extends StatelessWidget {
       label: l10n.spoken(reading.label, text, reading.unit, word ?? footer),
       excludeSemantics: true,
       child: DashCard(
-        child: Row(
-          children: [
-            ArcGauge(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // The arc grows with the text size, up to the card's width, so the number and unit
+            // stay inside the ring.
+            final grow = MediaQuery.textScalerOf(context).scale(_valueSize) / _valueSize;
+            final size = (_arcSize * grow).clamp(_arcSize, constraints.maxWidth).toDouble();
+            final gauge = ArcGauge(
+              size: size,
               trackColor: tokens.chipBg,
               valueColor: status.isWarning ? tokens.warn : tokens.accent,
               value: fraction,
@@ -73,7 +79,7 @@ class GaugeView extends StatelessWidget {
                   : (scaleFraction(scale, normal.low), scaleFraction(scale, normal.high)),
               bandColor: tokens.ok.withAlpha(0x40),
               child: SizedBox(
-                width: 112,
+                width: size * _readoutShare,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -82,7 +88,7 @@ class GaugeView extends StatelessWidget {
                       child: Text(
                         text ?? l10n.noValue,
                         style: const TextStyle(
-                          fontSize: 30,
+                          fontSize: _valueSize,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -1,
                           height: 1,
@@ -101,24 +107,53 @@ class GaugeView extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _Details(
-                reading,
-                status,
-                word,
-                footer,
-                trend,
-                now,
-                value == null ? null : updatedAt,
-              ),
-            ),
-          ],
+            );
+            final details = _Details(
+              reading,
+              status,
+              word,
+              footer,
+              trend,
+              now,
+              value == null ? null : updatedAt,
+            );
+            // Beside the arc as in the mockup while the reading's label fits on one line there;
+            // with large text the details go under the arc, so the label is not cut off.
+            final beside = constraints.maxWidth - gauge.size - _gap;
+            if (!fitsOnOneLine(context, [reading.label], _labelStyle, beside - _labelIcon)) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(child: gauge),
+                  const SizedBox(height: 14),
+                  details,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                gauge,
+                const SizedBox(width: _gap),
+                Expanded(child: details),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+
+  static const _gap = 14.0;
+
+  /// The arc at normal text size, the number's font size, and how much of the arc's width the
+  /// number may take (112 of 132 px, as in the mockup).
+  static const _arcSize = 132.0;
+  static const _valueSize = 30.0;
+  static const _readoutShare = 112 / 132;
+  static const _labelStyle = TextStyle(fontSize: 15, fontWeight: FontWeight.w700);
+
+  /// The reading's icon and the space after it, before its label.
+  static const _labelIcon = 26.0;
 }
 
 class _Details extends StatelessWidget {
@@ -153,12 +188,8 @@ class _Details extends StatelessWidget {
             Icon(readingIconFor(reading.icon), size: 18, color: tokens.accent),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                reading.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
+              // One line beside the arc (GaugeView checks it fits); under the arc it may wrap.
+              child: Text(reading.label, style: GaugeView._labelStyle),
             ),
           ],
         ),

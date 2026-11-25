@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/models/reading.dart';
+import '../../widgets/fit_grid.dart';
 import '../dashboard_format.dart';
 import 'parts/section_title.dart';
 import 'reading_tile.dart';
 
-/// "All readings" and a two-column grid of [ReadingTile]s; tiles in a row share its height.
+/// "All readings" and a two-column grid of [ReadingTile]s; tiles in a row share its height. With
+/// large text, when a tile's texts would not fit half the width, each tile gets a row of its own.
 class TilesView extends StatelessWidget {
   const TilesView({
     super.key,
@@ -29,12 +31,13 @@ class TilesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    Widget tile(Reading r) => ReadingTile(
+    ReadingTile tile(Reading r) => ReadingTile(
       reading: r,
       value: values[r.key],
       pairValue: r.pair == null ? null : values[r.pair],
       live: missingIsNoSignal,
     );
+    final tiles = [for (final r in readings) tile(r)];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -42,19 +45,11 @@ class TilesView extends StatelessWidget {
           l10n.allReadings,
           trailing: live ? l10n.valuesLive(count) : l10n.valuesCount(count),
         ),
-        for (var i = 0; i < readings.length; i += 2) ...[
-          const SizedBox(height: 10),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: tile(readings[i])),
-                const SizedBox(width: 10),
-                Expanded(child: i + 1 < readings.length ? tile(readings[i + 1]) : const SizedBox()),
-              ],
-            ),
-          ),
-        ],
+        FitGrid(
+          top: 10,
+          fits: (context, width) => tiles.every((t) => t.fitsWidth(context, width)),
+          children: tiles,
+        ),
       ],
     );
   }

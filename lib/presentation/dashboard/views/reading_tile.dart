@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../domain/dashboard/reading_status.dart';
 import '../../../domain/models/reading.dart';
 import '../../widgets/device_icons.dart';
+import '../../widgets/text_fit.dart';
 import '../dashboard_format.dart';
 import 'parts/dash_card.dart';
 import 'parts/scale_bar.dart';
@@ -28,6 +29,33 @@ class ReadingTile extends StatelessWidget {
   final double? pairValue;
   final bool live;
 
+  static const labelStyle = TextStyle(fontSize: 13, fontWeight: FontWeight.w600);
+  static const footerStyle = TextStyle(fontSize: 11);
+  static const _valueSize = 24.0;
+  static const _padding = 12.0;
+
+  /// The space the round icon and the gap after it take from the label.
+  static const _iconSpace = 38.0;
+
+  /// Whether the tile's label, value and footer each fit on one line in a tile [width] wide; when
+  /// they do not, [TilesView] shows one tile per row.
+  bool fitsWidth(BuildContext context, double width) {
+    final l10n = context.l10n;
+    final value = this.value;
+    final status = statusOf(reading, value, live: live);
+    final text = value == null ? l10n.noValue : l10n.value(reading, value, pairValue: pairValue);
+    final inner = width - 2 * _padding;
+    const valueStyle = TextStyle(fontSize: _valueSize, fontWeight: FontWeight.w800);
+    return fitsOnOneLine(context, [reading.label], labelStyle, inner - _iconSpace) &&
+        fitsOnOneLine(context, ['$text ${reading.unit}'], valueStyle, inner) &&
+        fitsOnOneLine(
+          context,
+          ['${l10n.footer(reading, status) ?? ''} ${l10n.statusWord(status) ?? ''}'],
+          footerStyle,
+          inner,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -45,7 +73,7 @@ class ReadingTile extends StatelessWidget {
       label: l10n.spoken(reading.label, text, reading.unit, word),
       excludeSemantics: true,
       child: DashCard(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(_padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -68,19 +96,13 @@ class ReadingTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     reading.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: tokens.muted,
-                    ),
+                    style: ReadingTile.labelStyle.copyWith(color: tokens.muted),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 9),
-            ValueWithUnit(value: text ?? l10n.noValue, unit: reading.unit, size: 24),
+            ValueWithUnit(value: text ?? l10n.noValue, unit: reading.unit, size: _valueSize),
             ...switch (value == null
                 ? null
                 : _bar(tokens.ok.withAlpha(0x4D), statusColor, status)) {
@@ -93,20 +115,19 @@ class ReadingTile extends StatelessWidget {
               final ScaleBar bar? => [const SizedBox(height: 11), bar, const SizedBox(height: 11)],
               _ => [const SizedBox(height: 9)],
             },
-            Row(
+            // The status word goes under the range when they do not fit side by side.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 8,
               children: [
-                Expanded(
-                  child: Text(
-                    footer ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 11, color: tokens.muted),
-                  ),
-                ),
+                Text(footer ?? '', style: ReadingTile.footerStyle.copyWith(color: tokens.muted)),
                 if (word != null && status.word != StatusWord.state)
                   Text(
                     word,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
+                    style: ReadingTile.footerStyle.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
                   ),
               ],
             ),
@@ -154,11 +175,10 @@ class ValueWithUnit extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
+        // Wraps rather than being cut off at a large text size.
         Flexible(
           child: Text(
             value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: size,
               fontWeight: FontWeight.w800,

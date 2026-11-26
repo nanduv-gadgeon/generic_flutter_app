@@ -103,13 +103,14 @@ class SpotValueView extends StatelessWidget {
         markerSize: 16,
       ),
       const SizedBox(height: 8),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      // Spread under the bar; with large text the labels wrap onto more lines.
+      Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        spacing: 12,
+        runSpacing: 2,
         children: [
           for (final label in labels)
-            Flexible(
-              child: Text(label, style: TextStyle(fontSize: 10, color: tokens.muted)),
-            ),
+            Text(label, style: TextStyle(fontSize: 10, color: tokens.muted)),
         ],
       ),
     ];

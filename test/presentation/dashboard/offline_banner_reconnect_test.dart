@@ -9,6 +9,7 @@ import 'package:generic_flutter_app/presentation/dashboard/live_device_screen.da
 
 import '../../fixtures/dashboard_harness.dart';
 import '../../fixtures/scripted_live_readings.dart';
+import '../../fixtures/text_fit_checks.dart';
 
 final _now = DateTime.utc(2026, 11, 12, 9);
 
@@ -28,6 +29,9 @@ const _failed = 'Could not reconnect. Check the device is on and nearby.';
 
 /// The offline banner, Reconnect and the bottom buttons (task 1.3.6, TC-DSH-010 to TC-DSH-014).
 void main() {
+  // Real letter widths, so layouts that depend on text fitting behave as on a phone.
+  setUpAll(loadRealFont);
+
   late ScriptedLiveReadings live;
 
   setUp(() => live = ScriptedLiveReadings());

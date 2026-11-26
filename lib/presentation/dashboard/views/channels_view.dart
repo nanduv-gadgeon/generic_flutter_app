@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/fit_grid.dart';
+import '../../widgets/text_fit.dart';
 import '../dashboard_format.dart';
 import 'parts/dash_card.dart';
 
@@ -47,17 +49,13 @@ class ChannelsView extends StatelessWidget {
             header: true,
             label: l10n.dashboardChannelsSpoken(title, on, count),
             excludeSemantics: true,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+            // "2 of 7 on" goes under the title when they do not fit side by side.
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 8,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 Text(
                   summary,
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tokens.accent),
@@ -69,16 +67,17 @@ class ChannelsView extends StatelessWidget {
             const SizedBox(height: 10),
             Text(text, style: TextStyle(fontSize: 12, height: 1.4, color: tokens.muted)),
           ],
-          for (var i = 0; i < options.length; i += 2) ...[
-            SizedBox(height: i == 0 ? 10 : 8),
-            Row(
-              children: [
-                Expanded(child: options[i]),
-                const SizedBox(width: 8),
-                Expanded(child: i + 1 < options.length ? options[i + 1] : const SizedBox.shrink()),
-              ],
+          FitGrid(
+            top: 10,
+            gap: 8,
+            fits: (context, width) => fitsOnOneLine(
+              context,
+              [for (final o in options) o.label],
+              _Channel.labelStyle,
+              width - _Channel.chrome,
             ),
-          ],
+            children: options,
+          ),
         ],
       ),
     );
@@ -91,6 +90,11 @@ class _Channel extends StatelessWidget {
 
   final String label;
   final bool on;
+
+  static const labelStyle = TextStyle(fontSize: 13, fontWeight: FontWeight.w700);
+
+  /// The width the padding, border, tick box and gap take from the label.
+  static const chrome = 2 * 12 + 2 * 1.5 + 18 + 8;
 
   @override
   Widget build(BuildContext context) {
@@ -124,11 +128,7 @@ class _Channel extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: on ? tokens.accent : tokens.muted,
-                ),
+                style: labelStyle.copyWith(color: on ? tokens.accent : tokens.muted),
               ),
             ),
           ],
